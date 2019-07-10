@@ -4,13 +4,17 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "blockstack": "^19.2.1",
     "crypto": "^1.0.1",
     "crypto-js": "^3.1.9-1",
     "safer-pass": "^1.0.3"
+  },
+  "devDependencies": {
+    "mocha": "^6.1.4"
   }
 }
