@@ -2,17 +2,23 @@ var assert = require('assert');
 var crypto = require('crypto-browserify');
 var auth = require('../auth');
 var appObj = { appOrigin: "https://app.graphitedocs.com", scopes: ['store_write', 'publish_data']}
-var id = 'ID-1E39wtwvgd4rSowKBiv91FS92h2inu1LKk';
-const creds = {id: "jehunter5811.id", pass: "thisisasecurepassword123!"}
 
 var testKeychain = ''
+const clientTransmitKeys = crypto.createECDH('secp256k1')
+clientTransmitKeys.generateKeys()
+const clientPrivateKey = clientTransmitKeys.getPrivateKey('hex').toString()
+const clientPublicKey = clientTransmitKeys.getPublicKey('hex', 'compressed').toString()
+const keyPair = {
+    priv: clientPrivateKey, 
+    pub: clientPublicKey
+}
 
 
 //Stand alone tests
 describe('MakeKeyChain', function() {
   this.timeout(10000); 
   it('should create and return a keychain', async function() {
-    const keychain = await auth.makeKeychain("jehunter5811.id");
+    const keychain = await auth.makeKeychain("jehunter5811.id", keyPair);
     console.log(keychain);
     testKeychain = keychain.body;
     assert.equal(keychain.message, 'successfully created keychain');
@@ -22,7 +28,8 @@ describe('MakeKeyChain', function() {
 describe('MakeAppKeypair', function() {
   this.timeout(10000); 
   it('should create and an app specific keypair', async function() {
-    const keypair = await auth.makeAppKeyPair(testKeychain, appObj);
+    const keypair = await auth.makeAppKeyPair(testKeychain, appObj, keyPair);
+    console.log(keypair);
     assert.equal(keypair.message, 'successfully created app keypair');
   })
 })

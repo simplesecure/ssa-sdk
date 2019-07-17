@@ -11,6 +11,7 @@ var blockstackCrypto = require('blockstack/lib/encryption');
 let ciphertext;
 let idPayload;
 var storageKeys;
+require('dotenv').config()
 
 module.exports = {
     nameLookUp: function(name) {
@@ -27,7 +28,6 @@ module.exports = {
         }
     },
     makeKeychain: async function(userId, keyPair) {
-        console.log(keyPair)
         //Generate a random passphrase: 
         //Commented out for testing.
         // const clientTransmitKeys = crypto.createECDH('secp256k1')
@@ -49,7 +49,7 @@ module.exports = {
         }
         const config = {
             method: 'POST',
-            url: 'https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/keychain',
+            url: process.env.DEV_KEYCHAIN_URL,
             data: payload, 
             headers: {
                 'Content-Type': "application/json"
@@ -59,7 +59,6 @@ module.exports = {
         return axios(config)
             .then(async (res) => {
                 const data = res.data.split('Client: ')[1];
-                console.log(keyPair.priv);
                 try {
                     const decryptedData = await blockstackCrypto.decryptECIES(keyPair.priv, JSON.parse(data));
                     console.log(decryptedData);
@@ -117,7 +116,7 @@ module.exports = {
 
         var dataString = JSON.stringify(payload);
 
-        var options = { url: 'https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/appkeys', method: 'POST', headers: headers, body: dataString };
+        var options = { url: process.env.DEV_APP_KEY_URL, method: 'POST', headers: headers, body: dataString };
 
         return request(options, (error, response, body) => {
             if (!error && response.statusCode == 200) { 

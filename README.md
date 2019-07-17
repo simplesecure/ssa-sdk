@@ -3,13 +3,12 @@
 This is the JavaScript SDK for SSA, a framework for allowing users to authenticate into your app in a far more secure way than traditional usernames and passwords while still giving them the convenience of that same flow.
 
 ---
-Under Construction. To test the basic premise with stubbed out data, run: 
+Under Construction. To test the basic premise with stubbed out data, do the following: 
 
-`node test.js` for a valid account creation and login.  
-
-Run: 
-
-`node testFail.js` for a valid account creation and invalid login attempt.  
+1. Clone the repo  
+2. `cd client-sdk`  
+3. `npm install`  
+4. `npm test` 
 
 ---
 
