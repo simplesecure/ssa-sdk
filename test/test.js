@@ -3,32 +3,41 @@ var crypto = require('crypto-browserify');
 var auth = require('../auth');
 var appObj = { appOrigin: "https://app.graphitedocs.com", scopes: ['store_write', 'publish_data']}
 
-var testKeychain = ''
 const clientTransmitKeys = crypto.createECDH('secp256k1')
 clientTransmitKeys.generateKeys()
 const clientPrivateKey = clientTransmitKeys.getPrivateKey('hex').toString()
 const clientPublicKey = clientTransmitKeys.getPublicKey('hex', 'compressed').toString()
-const keyPair = {
-    priv: clientPrivateKey, 
-    pub: clientPublicKey
+const clientKeyPair = {
+    privateKey: clientPrivateKey,
+    publicKey: clientPublicKey
 }
 
+// const serverTransmitKeys = crypto.createECDH('secp256k1')
+// serverTransmitKeys.generateKeys()
+// const serverPrivateKey = serverTransmitKeys.getPrivateKey('hex').toString()
+// const serverPublicKey = serverTransmitKeys.getPublicKey('hex', 'compressed').toString()
+// const serverKeyPair = {
+//     privateKey: serverPrivateKey,
+//     publicKey: serverPublicKey
+// }
+
+let testKeychain;
 
 //Stand alone tests
 describe('MakeKeyChain', function() {
-  this.timeout(10000); 
+  this.timeout(10000);
   it('should create and return a keychain', async function() {
-    const keychain = await auth.makeKeychain("jehunter5811.id", keyPair);
-    console.log(keychain);
+    const keychain = await auth.makeKeychain("jehunter5811.id", clientKeyPair);
+    console.log('*****************', keychain);
     testKeychain = keychain.body;
     assert.equal(keychain.message, 'successfully created keychain');
   })
 })
 
 describe('MakeAppKeypair', function() {
-  this.timeout(10000); 
+  this.timeout(10000);
   it('should create and an app specific keypair', async function() {
-    const keypair = await auth.makeAppKeyPair(testKeychain, appObj, keyPair);
+    const keypair = await auth.makeAppKeyPair(testKeychain, appObj, clientKeyPair);
     console.log(keypair);
     assert.equal(keypair.message, 'successfully created app keypair');
   })
@@ -62,13 +71,13 @@ describe('MakeAppKeypair', function() {
 //             const appOrigin = 'helloblockstack.com'
 //             const userData = {
 //                 appPrivKey,
-//                 hubUrl, 
+//                 hubUrl,
 //                 scopes,
-//                 appOrigin, 
+//                 appOrigin,
 //                 id: creds.id
 //             }
 //             const userSession = await auth.makeUserSession(userData);
-            
+
 //             assert(userSession.message, "user session created");
 //         })
 //     });
