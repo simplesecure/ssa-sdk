@@ -6,39 +6,26 @@ var id = 'ID-1E39wtwvgd4rSowKBiv91FS92h2inu1LKk';
 const creds = {id: "jehunter5811.id", pass: "thisisasecurepassword123!"}
 
 var testKeychain = ''
-doWork();
-async function doWork() {
-    const clientTransmitKeys = crypto.createECDH('secp256k1')
-    clientTransmitKeys.generateKeys()
-    const clientPrivateKey = clientTransmitKeys.getPrivateKey('hex').toString()
-    const clientPublicKey = clientTransmitKeys.getPublicKey('hex', 'compressed').toString()
-    const keyPair = {
-        priv: clientPrivateKey, 
-        pub: clientPublicKey
-    }
-    const keychain = await auth.makeKeychain("jehunter5811.id", keyPair);
-    const keypair = await auth.makeAppKeyPair(keychain.body, appObj, keyPair);
-}
 
 
-//Stand alone tests
-// describe('MakeKeyChain', function() {
-//   this.timeout(10000); 
-//   it('should create and return a keychain', async function() {
-//     const keychain = await auth.makeKeychain("jehunter5811.id");
-//     console.log(keychain);
-//     testKeychain = keychain.body;
-//     assert.equal(keychain.message, 'successfully created keychain');
-//   })
-// })
+Stand alone tests
+describe('MakeKeyChain', function() {
+  this.timeout(10000); 
+  it('should create and return a keychain', async function() {
+    const keychain = await auth.makeKeychain("jehunter5811.id");
+    console.log(keychain);
+    testKeychain = keychain.body;
+    assert.equal(keychain.message, 'successfully created keychain');
+  })
+})
 
-// describe('MakeAppKeypair', function() {
-//   this.timeout(10000); 
-//   it('should create and an app specific keypair', async function() {
-//     const keypair = await auth.makeAppKeyPair(testKeychain, appObj);
-//     assert.equal(keypair.message, 'successfully created app keypair');
-//   })
-// })
+describe('MakeAppKeypair', function() {
+  this.timeout(10000); 
+  it('should create and an app specific keypair', async function() {
+    const keypair = await auth.makeAppKeyPair(testKeychain, appObj);
+    assert.equal(keypair.message, 'successfully created app keypair');
+  })
+})
 
 //Account Creation
 // describe('CreateAccount', function() {
