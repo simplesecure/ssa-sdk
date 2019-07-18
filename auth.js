@@ -3,9 +3,8 @@ const CryptoJS = require("crypto-js");
 const request = require('request-promise');
 const crypto = require('crypto-browserify');
 
-const { AppConfig, InstanceDataStore, UserSession } = require('blockstack');
-const profile = require('blockstack/lib/profiles/profileLookup');
-const blockstackCrypto = require('blockstack/lib/encryption');
+const { AppConfig, InstanceDataStore, UserSession, Profile } = require('blockstack');
+const { encryptECIES, decryptECIES } = require('blockstack/lib/encryption');
 let idPayload;
 
 const headers = { 'Content-Type': 'application/json' };
@@ -23,16 +22,16 @@ module.exports = {
     .catch(error => {
       if(error.error === '{\n  "status": "available"\n}\n') {
         return {
-          pass: true, 
+          pass: true,
           message: "name available"
         }
       } else {
         return {
-          pass: false, 
+          pass: false,
           body: error
         }
       }
-      
+
     });
   },
   makeKeychain: async function(username, keypair) {
@@ -59,7 +58,7 @@ module.exports = {
     .then(async (body) => {
       // POST succeeded...
       console.log("\n\nCLIENT KEYCHAIN")
-      const decryptedData = await blockstackCrypto.decryptECIES(privateKey, JSON.parse(body))
+      const decryptedData = await decryptECIES(privateKey, JSON.parse(body))
       console.log('\nDecrypted Keychain: ', decryptedData);
       console.log('\n')
       return {
@@ -79,9 +78,9 @@ module.exports = {
   makeAppKeyPair: async function(keychain, appObj, clientKeyPair) {
     //encrypt the mnemonic with the key sent by the server
     const { privateKey, publicKey } = clientKeyPair
-    const decryptedData = JSON.parse(await blockstackCrypto.decryptECIES(privateKey, JSON.parse(keychain)))
+    const decryptedData = JSON.parse(await decryptECIES(privateKey, JSON.parse(keychain)))
     const mnemonic = decryptedData.mnemonic;
-    const encryptedMnemonic = await blockstackCrypto.encryptECIES(decryptedData.publicKey, mnemonic);
+    const encryptedMnemonic = await encryptECIES(decryptedData.publicKey, mnemonic);
     //Config for the post
     const dataString = JSON.stringify({
       publicKey,
