@@ -23,16 +23,16 @@ module.exports = {
     .catch(error => {
       if(error.error === '{\n  "status": "available"\n}\n') {
         return {
-          pass: true, 
+          pass: true,
           message: "name available"
         }
       } else {
         return {
-          pass: false, 
+          pass: false,
           body: error
         }
       }
-      
+
     });
   },
   makeKeychain: async function(username, keypair) {
