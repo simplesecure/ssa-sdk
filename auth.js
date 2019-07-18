@@ -13,7 +13,7 @@ const headers = { 'Content-Type': 'application/json' };
 module.exports = {
   nameLookUp: function(name) {
     //Note: if we want to support other names spaces and other root id, we will need a different approach.
-    const options = { url: `${process.env.NAME_LOOKUP_URL}${name}.id.blockstack`, method: 'GET' };
+    const options = { url: `${process.env.NAME_LOOKUP_URL}${name}`, method: 'GET' };
     return request(options)
     .then(async () => {
       return {
@@ -80,7 +80,7 @@ module.exports = {
     var options = { url: process.env.DEV_APP_KEY_URL, method: 'POST', headers: headers, body: dataString };
     return request(options)
     .then((body) => {
-      console.log(body)
+      // console.log(body)
       return {
         message: "successfully created app keypair",
         body: body
