@@ -53,21 +53,21 @@ describe('MakeAppKeypair', function() {
   })
 })
 
-// describe('StoreEncryptedMnemonic', function() {
-//   this.timeout(10000);
-//   it('should encrypt the mnemonic with the password and the server transit key', async function() {
-//     console.log('SERVER PUBLIC KEY');
-//     console.log(mnemonic);
-//     const encryptedMnenomic = CryptoJS.AES.encrypt(JSON.stringify(mnemonic), credObj.password);
-//     console.log('MNEMNOIC ENCRYPTED')
-//     console.log(encryptedMnenomic)
-//     const doubleEncryptedMnemonic = await encryptECIES(serverPublicKey, encryptedMnenomic.toString());
-//     console.log('\n\n\n')
-//     console.log(doubleEncryptedMnemonic)
-//     const postedMnemonic = await auth.storeMnemonic(credObj.id, doubleEncryptedMnemonic);
-//     assert.equal(postedMnemonic.message, 'successfully stored encrypted mnemonic');
-//   })
-// })
+describe('StoreEncryptedMnemonic', function() {
+  this.timeout(10000);
+  it('should encrypt the mnemonic with the password and the server transit key', async function() {
+    console.log('SERVER PUBLIC KEY');
+    console.log(mnemonic);
+    const encryptedMnenomic = CryptoJS.AES.encrypt(JSON.stringify(mnemonic), credObj.password);
+    console.log('MNEMNOIC ENCRYPTED')
+    console.log(encryptedMnenomic)
+    const doubleEncryptedMnemonic = await encryptECIES(serverPublicKey, encryptedMnenomic.toString());
+    console.log('\n\n\n')
+    console.log(doubleEncryptedMnemonic)
+    const postedMnemonic = await auth.storeMnemonic(credObj.id, doubleEncryptedMnemonic);
+    assert.equal(postedMnemonic.message, 'successfully stored encrypted mnemonic');
+  })
+})
 
 //Account Creation
 // describe('CreateAccount', function() {
