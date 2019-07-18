@@ -1,10 +1,12 @@
 const assert = require('assert');
 const crypto = require('crypto-browserify');
+const CryptoJS = require("crypto-js");
+const { encryptECIES, decryptECIES } = require('blockstack/lib/encryption');
 const auth = require('../auth');
 const availableName = "thisnameshouldbeavailableright.id";
 const takenName = "jehunter5811.id";
 const appObj = { appOrigin: "https://app.graphitedocs.com", scopes: ['store_write', 'publish_data']}
-
+const credObj = {id: "thisnameshouldbeavailableright.id", password: "this is my super secure password", hubUrl: "https://gaia.blockstack.org"}
 const clientTransmitKeys = crypto.createECDH('secp256k1')
 clientTransmitKeys.generateKeys()
 const clientPrivateKey = clientTransmitKeys.getPrivateKey('hex').toString()
@@ -13,13 +15,14 @@ const clientKeyPair = {
     privateKey: clientPrivateKey,
     publicKey: clientPublicKey
 }
-
+let serverPublicKey;
+let mnemonic
 let testKeychain;
 
 //Stand alone tests
 
 describe("NameLookUp", function() {
-  this.timeout(5000);
+  this.timeout(7000);
   it("name should be available", async function() {
     const nameResponse = await auth.nameLookUp(availableName);
     assert.equal(nameResponse.message, 'name available');
@@ -33,8 +36,7 @@ describe("NameLookUp", function() {
 describe('MakeKeyChain', function() {
   this.timeout(10000);
   it('should create and return a keychain', async function() {
-    const keychain = await auth.makeKeychain("jehunter5811.id", clientKeyPair);
-    //console.log('*****************', keychain);
+    const keychain = await auth.makeKeychain(credObj.id, clientKeyPair);
     testKeychain = keychain.body;
     assert.equal(keychain.message, 'successfully created keychain');
   })
@@ -44,26 +46,33 @@ describe('MakeAppKeypair', function() {
   this.timeout(10000);
   it('should create and an app specific keypair', async function() {
     const keypair = await auth.makeAppKeyPair(testKeychain, appObj, clientKeyPair);
-    console.log(keypair);
+    const encryptedData = keypair.body.split('encrypted ')[1];
+    const decryptedData = JSON.parse(await decryptECIES(clientKeyPair.privateKey, JSON.parse(encryptedData)))
+    serverPublicKey = decryptedData.public;
+    mnemonic = decryptedData.mnemonic;
     assert.equal(keypair.message, 'successfully created app keypair');
+  })
+})
+
+describe('StoreEncryptedMnemonic', function() {
+  this.timeout(10000);
+  it('should encrypt the mnemonic with the password and the server transit key', async function() {
+    console.log(serverPublicKey);
+    const encryptedMnenomic = CryptoJS.AES.encrypt(JSON.stringify(mnemonic), credObj.password);
+    const doubleEncryptedMnemonic = await encryptECIES(serverPublicKey, encryptedMnenomic.toString());
+    const postedMnemonic = await auth.storeMnemonic(credObj.id, doubleEncryptedMnemonic);
+    assert.equal(postedMnemonic.message, 'successfully stored encrypted mnemonic');
   })
 })
 
 //Account Creation
 // describe('CreateAccount', function() {
-//   describe('AccountSuccess', function() {
+//   this.timeout(10000);
 //     it('should return account created message', async function() {
-//         const create = await auth.createUserAccount(creds);
-//         assert.equal(create.message,"account created")
+//         const create = await auth.createUserAccount(credObj, appObj);
+//         console.log(create)
+//         assert.equal(create.message,"successfully created user session")
 //     });
-//   });
-//   describe('NameTaken', function() {
-//       it('should not allow account to be created', async function() {
-//         const creds = {id: "nametaken.id", pass: "thisisasecurepassword123!"}
-//         const create = await auth.createUserAccount(creds);
-//         assert.equal(create.message,"name already taken")
-//       });
-//   })
 // });
 
 
