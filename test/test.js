@@ -3,10 +3,10 @@ const crypto = require('crypto-browserify');
 const CryptoJS = require("crypto-js");
 const { encryptECIES, decryptECIES } = require('blockstack/lib/encryption');
 const auth = require('../auth');
-const availableName = "thisnameshouldbeavailableright";
+const availableName = "thisnameshouldbeavailableright.id";
 const takenName = "jehunter5811.id";
 const appObj = { appOrigin: "https://app.graphitedocs.com", scopes: ['store_write', 'publish_data']}
-const credObj = {id: "thisnameshouldbeavailableright", password: "this is my super secure password", hubUrl: "https://gaia.blockstack.org"}
+const credObj = {id: "thisnameshouldbeavailableright.id", password: "this is my super secure password", hubUrl: "https://gaia.blockstack.org"}
 const clientTransmitKeys = crypto.createECDH('secp256k1')
 clientTransmitKeys.generateKeys()
 const clientPrivateKey = clientTransmitKeys.getPrivateKey('hex').toString()
@@ -17,7 +17,6 @@ const clientKeyPair = {
 }
 let serverPublicKey;
 let mnemonic
-let testKeychain;
 
 //Stand alone tests
 
@@ -45,8 +44,8 @@ describe('MakeKeyChain', function() {
 describe('MakeAppKeypair', function() {
   this.timeout(10000);
   it('should create and an app specific keypair', async function() {
-    const keypair = await auth.makeAppKeyPair(testKeychain, appObj, clientKeyPair);
-    const encryptedData = keypair.body.split('encrypted ')[1];
+    const keypair = await auth.makeAppKeyPair(credObj.id, testKeychain, appObj, clientKeyPair)
+    const encryptedData = keypair.body
     const decryptedData = JSON.parse(await decryptECIES(clientKeyPair.privateKey, JSON.parse(encryptedData)))
     serverPublicKey = decryptedData.public;
     mnemonic = decryptedData.mnemonic;
@@ -57,9 +56,14 @@ describe('MakeAppKeypair', function() {
 describe('StoreEncryptedMnemonic', function() {
   this.timeout(10000);
   it('should encrypt the mnemonic with the password and the server transit key', async function() {
+    console.log('SERVER PUBLIC KEY');
     console.log(serverPublicKey);
     const encryptedMnenomic = CryptoJS.AES.encrypt(JSON.stringify(mnemonic), credObj.password);
+    console.log('MNEMNOIC ENCRYPTED')
+    console.log(encryptedMnenomic)
     const doubleEncryptedMnemonic = await encryptECIES(serverPublicKey, encryptedMnenomic.toString());
+    console.log('\n\n\n')
+    console.log(doubleEncryptedMnemonic)
     const postedMnemonic = await auth.storeMnemonic(credObj.id, doubleEncryptedMnemonic);
     assert.equal(postedMnemonic.message, 'successfully stored encrypted mnemonic');
   })

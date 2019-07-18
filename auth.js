@@ -61,7 +61,7 @@ module.exports = {
       }
     });
   },
-  makeAppKeyPair: async function(keychain, appObj, clientKeyPair) {
+  makeAppKeyPair: async function(username, keychain, appObj, clientKeyPair) {
     //encrypt the mnemonic with the key sent by the server
     const { privateKey, publicKey } = clientKeyPair
     const decryptedData = JSON.parse(await decryptECIES(privateKey, JSON.parse(keychain)));
@@ -71,7 +71,7 @@ module.exports = {
     //Config for the post
     const dataString = JSON.stringify({
       publicKey,
-      id: decryptedData.ownerKeyInfo.idAddress,
+      username,
       url: appObj.appOrigin,
       mnemonic: encryptedMnemonic
     })
