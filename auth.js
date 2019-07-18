@@ -12,7 +12,8 @@ const headers = { 'Content-Type': 'application/json' };
 
 module.exports = {
   nameLookUp: function(name) {
-    const options = { url: `${process.env.NAME_LOOKUP_URL}${name}`, method: 'GET' };
+    //Note: if we want to support other names spaces and other root id, we will need a different approach.
+    const options = { url: `${process.env.NAME_LOOKUP_URL}${name}.id.blockstack`, method: 'GET' };
     return request(options)
     .then(async () => {
       return {
@@ -21,7 +22,8 @@ module.exports = {
       }
     })
     .catch(error => {
-      if(error.error === '{\n  "status": "available"\n}\n') {
+      console.log(error.error)
+      if(error.error === '{\n  "status": "available"\n}\n' || error.error === '{"status":"available"}') {
         return {
           pass: true,
           message: "name available"
