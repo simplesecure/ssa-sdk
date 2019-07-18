@@ -3,10 +3,10 @@ const crypto = require('crypto-browserify');
 const CryptoJS = require("crypto-js");
 const { encryptECIES, decryptECIES } = require('blockstack/lib/encryption');
 const auth = require('../auth');
-const availableName = "thisnameshouldbeavailableright.id";
+const availableName = "thisnameshouldbeavailableright";
 const takenName = "jehunter5811.id";
 const appObj = { appOrigin: "https://app.graphitedocs.com", scopes: ['store_write', 'publish_data']}
-const credObj = {id: "thisnameshouldbeavailableright.id", password: "this is my super secure password", hubUrl: "https://gaia.blockstack.org"}
+const credObj = {id: "thisnameshouldbeavailableright", password: "this is my super secure password", hubUrl: "https://gaia.blockstack.org"}
 const clientTransmitKeys = crypto.createECDH('secp256k1')
 clientTransmitKeys.generateKeys()
 const clientPrivateKey = clientTransmitKeys.getPrivateKey('hex').toString()

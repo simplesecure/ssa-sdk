@@ -107,7 +107,7 @@ module.exports = {
     const nameCheck = await this.nameLookUp(credObj.id);
     if(nameCheck.pass) {
 
-      //Step Two 
+      //Step Two
       const clientTransmitKeys = createECDH('secp256k1')
       clientTransmitKeys.generateKeys()
       const clientPrivateKey = clientTransmitKeys.getPrivateKey('hex').toString()
@@ -128,7 +128,7 @@ module.exports = {
       const userSessionParams = {
         fetchFromDB: false,
         credObj,
-        appObj, 
+        appObj,
         userPayload: {
           privateKey: appPrivateKey
         }
@@ -136,12 +136,12 @@ module.exports = {
       try {
         const userSession = await this.login(userSessionParams);
         return {
-          message: "successfully created user session", 
+          message: "successfully created user session",
           body: userSession
         }
       } catch (err) {
         return {
-          message: "failed to create user session", 
+          message: "failed to create user session",
           body: err
         }
       }
@@ -239,7 +239,7 @@ module.exports = {
       sessionStore: dataStore
     })
     try {
-      
+
       return {
           message: "user session created",
           body: userSession
@@ -250,9 +250,9 @@ module.exports = {
           body: err
       }
     }
-  }, 
-  storeMnemonic: async function (id, encryptedMnemonic) {
-    const dataString = JSON.stringify({id, encryptedKeychain: encryptedMnemonic});
+  },
+  storeMnemonic: async function (username, encryptedMnemonic) {
+    const dataString = JSON.stringify({username, encryptedKeychain: encryptedMnemonic});
     const options = { url: process.env.DEV_STORE_ENCRYPTED_KEYCHAIN, method: 'POST', headers: headers, body: dataString };
     return request(options)
     .then(async (body) => {
