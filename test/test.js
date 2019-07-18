@@ -1,7 +1,9 @@
-var assert = require('assert');
-var crypto = require('crypto-browserify');
-var auth = require('../auth');
-var appObj = { appOrigin: "https://app.graphitedocs.com", scopes: ['store_write', 'publish_data']}
+const assert = require('assert');
+const crypto = require('crypto-browserify');
+const auth = require('../auth');
+const availableName = "thisnameshouldbeavailableright.id";
+const takenName = "jehunter5811.id";
+const appObj = { appOrigin: "https://app.graphitedocs.com", scopes: ['store_write', 'publish_data']}
 
 const clientTransmitKeys = crypto.createECDH('secp256k1')
 clientTransmitKeys.generateKeys()
@@ -12,23 +14,27 @@ const clientKeyPair = {
     publicKey: clientPublicKey
 }
 
-// const serverTransmitKeys = crypto.createECDH('secp256k1')
-// serverTransmitKeys.generateKeys()
-// const serverPrivateKey = serverTransmitKeys.getPrivateKey('hex').toString()
-// const serverPublicKey = serverTransmitKeys.getPublicKey('hex', 'compressed').toString()
-// const serverKeyPair = {
-//     privateKey: serverPrivateKey,
-//     publicKey: serverPublicKey
-// }
-
 let testKeychain;
 
 //Stand alone tests
+
+describe("NameLookUp", function() {
+  this.timeout(5000);
+  it("name should be available", async function() {
+    const nameResponse = await auth.nameLookUp(availableName);
+    assert.equal(nameResponse.message, 'name available');
+  })
+  it("name should be taken", async function() {
+    const takenResponse = await auth.nameLookUp(takenName);
+    assert.equal(takenResponse.message, 'name taken');
+  })
+})
+
 describe('MakeKeyChain', function() {
   this.timeout(10000);
   it('should create and return a keychain', async function() {
     const keychain = await auth.makeKeychain("jehunter5811.id", clientKeyPair);
-    console.log('*****************', keychain);
+    //console.log('*****************', keychain);
     testKeychain = keychain.body;
     assert.equal(keychain.message, 'successfully created keychain');
   })

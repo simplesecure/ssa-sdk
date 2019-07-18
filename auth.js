@@ -12,20 +12,30 @@ const headers = { 'Content-Type': 'application/json' };
 
 module.exports = {
   nameLookUp: function(name) {
-    if(name === "nametaken.id") {
+    const options = { url: `${process.env.NAME_LOOKUP_URL}${name}`, method: 'GET' };
+    return request(options)
+    .then(async () => {
       return {
         pass: false,
-        message: "name already taken"
+        message: "name taken"
       }
-    } else {
-      return {
-        pass: true,
-        message: "name available"
+    })
+    .catch(error => {
+      if(error.error === '{\n  "status": "available"\n}\n') {
+        return {
+          pass: true, 
+          message: "name available"
+        }
+      } else {
+        return {
+          pass: false, 
+          body: error
+        }
       }
-    }
+      
+    });
   },
   makeKeychain: async function(username, keypair) {
-    //Generate a random passphrase:
     //Commented out for testing.
     // const clientTransmitKeys = crypto.createECDH('secp256k1')
     // clientTransmitKeys.generateKeys()
@@ -48,9 +58,9 @@ module.exports = {
     return request(options)
     .then(async (body) => {
       // POST succeeded...
-      // console.log("\n\nCLIENT KEYCHAIN")
+      console.log("\n\nCLIENT KEYCHAIN")
       const decryptedData = await blockstackCrypto.decryptECIES(privateKey, JSON.parse(body))
-      // console.log('\nDecrypted Keychain: ', decryptedData);
+      console.log('\nDecrypted Keychain: ', decryptedData);
       console.log('\n')
       return {
         message: "successfully created keychain",
@@ -65,27 +75,6 @@ module.exports = {
         body: error
       }
     });
-  },
-  generateTransitKey: function(credObj, appObj) {
-    const dataString = JSON.stringify({
-      url: appObj.appOrigin,
-      user: credObj.id,
-      timestamp: Date.now()
-    })
-    const options = { url: 'https://trasitkeyurl.com', method: 'POST', headers: headers, body: dataString };
-    return request(options)
-    .then((body) => {
-      return {
-        message: "transit key generated",
-        body
-      }
-    })
-    .catch((error) => {
-      return {
-        message: "error generating transit key",
-        body: error
-      }
-    })
   },
   makeAppKeyPair: async function(keychain, appObj, clientKeyPair) {
     //encrypt the mnemonic with the key sent by the server
@@ -117,49 +106,48 @@ module.exports = {
       }
     });
   },
-  // createUserAccount: async function(credObj, appObj) {
-  //   //Take the credentials object and run the following in order:
-  //   //1. Check to see if name is available.
-  //   //2. If available, make a keychain
-  //   //3. Fetch a transit public key from the server
-  //   //4. Encrypt the mnemonic with the transit pubKey
-  //   //5. Send identifier plus encrypted mnemonic to server
-  //   //6. Server should send back appPrivKey
-  //   //7. Encrypt mnemonic with password
-  //   //8. Post password encrypted mnemonic and id to server
-  //   //9. Return mnemonic and app key payload to the client so user can log in.
-  //   const nameCheck = await this.nameLookUp(credObj.id);
-  //   if(nameCheck.pass) {
-  //     const keychain = await this.makeKeychain();
-  //     const transitKey = await this.generateTransitKey(credObj, appObj);
-  //     //encrypt the mnemonic and send it off to the server
-  //     const encryptedMnenomic = encryptContent(keychain.body.mnemonic, transitKey);
-  //     const keyGenPayload = {
-  //       reference: idPayload,
-  //       encryptedMnenomic
-  //     }
-  //     const appKeys = await this.makeAppKeyPair(keyGenPayload);
-  //     if(appKeys) {
-  //       return {
-  //         message: "account successfully created",
-  //         body: {
-  //           menmonic: keychain.body.mnemonic,
-  //           appPrivKey: appKeys.privKey
-  //         }
-  //       }
-  //     } else {
-  //       return {
-  //         message: "could not create account",
-  //         body: null
-  //       }
-  //     }
-  //   } else {
-  //     return {
-  //       message: nameCheck.message,
-  //       body: null
-  //     }
-  //   }
-  // },
+  createUserAccount: async function(credObj, appObj) {
+    //Take the credentials object and run the following in order:
+    //1. Check to see if name is available.
+    //2. If available, generate transit keypair and send request to server to make a keychain along with transit pubKey to be used for encrypting the response
+    //3. Decrypt response with transit privKey, then send request for server to derive appKeyPair, send transit pubKey again so server can encrypt response
+    //4. Verify user session can be created with info now available
+    //5. Encrypt mnemonic with password
+    //6. Post password encrypted mnemonic and id to server
+    //7. Encrypt mnemonic with password
+    //8. Post password encrypted mnemonic and id to server
+    const nameCheck = await this.nameLookUp(credObj.id);
+    if(nameCheck.pass) {
+      const keychain = await this.makeKeychain();
+      const transitKey = await this.generateTransitKey(credObj, appObj);
+      //encrypt the mnemonic and send it off to the server
+      const encryptedMnenomic = encryptContent(keychain.body.mnemonic, transitKey);
+      const keyGenPayload = {
+        reference: idPayload,
+        encryptedMnenomic
+      }
+      const appKeys = await this.makeAppKeyPair(keyGenPayload);
+      if(appKeys) {
+        return {
+          message: "account successfully created",
+          body: {
+            menmonic: keychain.body.mnemonic,
+            appPrivKey: appKeys.privKey
+          }
+        }
+      } else {
+        return {
+          message: "could not create account",
+          body: null
+        }
+      }
+    } else {
+      return {
+        message: nameCheck.message,
+        body: null
+      }
+    }
+  },
   // login: async function(params) {
   //   let userPayload;
   //   //params object should include the credentials obj, appObj, (optional) user payload with appKey and mnemonic and (optional) a bool determining whether we need to fetch data from the DB
