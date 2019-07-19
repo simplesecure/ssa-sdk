@@ -122,9 +122,9 @@ module.exports = {
       const keychain = await this.makeKeychain(credObj.id, keyPair);
 
       //Step Three
-      const appKeys = await this.makeAppKeyPair(keychain.body, appObj, keyPair);
-      const encryptedKeys = appKeys.body.split('encrypted ')[1];
-      const decryptedKeys = await decryptECIES(clientPrivateKey, JSON.parse(encryptedKeys))
+      const appKeys = await this.makeAppKeyPair(credObj.id, keychain.body, appObj, keyPair);
+      const encryptedKeys = appKeys.body;
+      const decryptedKeys = await decryptECIES(clientPrivateKey, JSON.parse(encryptedKeys));
       const appPrivateKey = JSON.parse(decryptedKeys).private;
       //Step Four
       const userSessionParams = {
@@ -205,10 +205,10 @@ module.exports = {
         username: params.credObj.id
       }
       const userSession = await this.makeUserSession(sessionObj);
-      if(usersession) {
+      if(userSession) {
         //Step five
         const encryptedMnenomic = CryptoJS.AES.encrypt(JSON.stringify(mnemonic), params.credObj.password);
-        const doubleEncryptedMnemonic = await encryptECIES(serverPublicKey, encryptedMnenomic);
+        const doubleEncryptedMnemonic = await encryptECIES(serverPublicKey, encryptedMnenomic.toString());
         const id = params.credObj.id
         const storeMnemonic = await this.storeMnemonic(id, doubleEncryptedMnemonic);
         if(storeMnemonic) {

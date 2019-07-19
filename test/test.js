@@ -61,14 +61,14 @@ describe('StoreEncryptedMnemonic', function() {
 })
 
 //Account Creation
-// describe('CreateAccount', function() {
-//   this.timeout(10000);
-//     it('should return account created message', async function() {
-//         const create = await auth.createUserAccount(credObj, appObj);
-//         console.log(create)
-//         assert.equal(create.message,"successfully created user session")
-//     });
-// });
+describe('CreateAccount', function() {
+  this.timeout(10000);
+    it('should return account created message', async function() {
+        const create = await auth.createUserAccount(credObj, appObj);
+        console.log(create)
+        assert.equal(create.message,"successfully created user session")
+    });
+});
 
 
 // //Log In
