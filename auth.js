@@ -154,6 +154,17 @@ module.exports = {
       }
       try {
         const userSession = await this.login(userSessionParams);
+        if (typeof window === 'undefined') {
+          //this is node or mobile, so we need to store encrypted user session data a different way
+        } else {
+          const encryptedUserPayload = CryptoJS.AES.encrypt(JSON.stringify(userSessionParams.userPayload), credObj.password);
+          const cookiePayload = {
+            username: credObj.id,
+            userPayload: encryptedUserPayload
+          }
+        
+          cookies.set('encryptedUserCreds', cookiePayload, { path: '/' });
+        }
         return {
           message: "successfully created user session",
           body: userSession
@@ -191,7 +202,7 @@ module.exports = {
     //@params userPayload object that includes the app key and the mnemonic
     if(params.login) {
       //Check to see if there is an encrypted mnemonic in cookie storage
-      const mnemonicAvailable = cookies.get('encryptedMnemonic');
+      const mnemonicAvailable = cookies.get('encryptedUserCreds');
       if(mnemonicAvailable) {
         //Just use the available mnemonic, decrypt with password and get to work
       } else {
