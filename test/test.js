@@ -3,10 +3,11 @@ const crypto = require('crypto-browserify');
 const CryptoJS = require("crypto-js");
 const { encryptECIES, decryptECIES } = require('blockstack/lib/encryption');
 const auth = require('../auth');
-const availableName = "thisnameshouldbeavailableright.id";
+const availableName = "thisnameshouldbeavailableright3.id";
+const emailToUse = "justin@graphitedocs.com";
 const takenName = "jehunter5811.id";
 const appObj = { appOrigin: "https://app.graphitedocs.com", scopes: ['store_write', 'publish_data']}
-const credObj = {id: "thisnameshouldbeavailableright.id", password: "this is my super secure password", hubUrl: "https://gaia.blockstack.org"}
+const credObj = {id: availableName, password: "this is my super secure password", hubUrl: "https://gaia.blockstack.org", email: emailToUse}
 const clientTransmitKeys = crypto.createECDH('secp256k1')
 clientTransmitKeys.generateKeys()
 const clientPrivateKey = clientTransmitKeys.getPrivateKey('hex').toString()
@@ -52,7 +53,7 @@ describe("NameLookUp", function() {
 describe('MakeKeyChain', function() {
   this.timeout(10000);
   it('should create and return a keychain', async function() {
-    const keychain = await auth.makeKeychain(credObj.id, clientKeyPair);
+    const keychain = await auth.makeKeychain(credObj.email, credObj.id, clientKeyPair);
     testKeychain = keychain.body;
     assert.equal(keychain.message, 'successfully created keychain');
   })
@@ -61,7 +62,14 @@ describe('MakeKeyChain', function() {
 describe('MakeAppKeypair', function() {
   this.timeout(10000);
   it('should create and an app specific keypair', async function() {
-    const keypair = await auth.makeAppKeyPair(credObj.id, testKeychain, appObj, clientKeyPair)
+    const appKeyParams = {
+      login: false, 
+      username: credObj.id,
+      keychain: testKeychain,
+      appObj,
+      keyPair: clientKeyPair
+    }
+    const keypair = await auth.makeAppKeyPair(appKeyParams)
     assert.equal(keypair.message, 'successfully created app keypair');
   })
 })
@@ -90,20 +98,19 @@ describe('CreateAccount', function() {
 });
 
 
-// //Log In
-// describe('LogIn', function() {
-//   this.timeout(10000);
-//   it('should use supplied username and password to log in', async function() {
-//     const credObj = creds;
-//     const appObj = {
-//       hubUrl: 'https://hub.blockstack.org',
-//       scopes: ['store_write'],
-//       appOrigin: 'helloblockstack.com'
-//     }
-//     const loggedIn = await auth.login(credObj, appObj);
-
-//     assert(loggedIn.message, "user session created");
-//   })
-// });
+//Log In
+describe('LogIn', function() {
+  this.timeout(10000);
+  it('kick off recovery flow with email, username, and password', async function() {
+    const params = {
+      login: true,
+      credObj,
+      appObj,
+      userPayload: {}
+    }
+    const loggedIn = await auth.login(params);
+    assert(loggedIn.message, "user session created");
+  })
+});
 
 //BlockstackJS Operations

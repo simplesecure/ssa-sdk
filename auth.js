@@ -1,10 +1,12 @@
 require('dotenv').config()
 const CryptoJS = require("crypto-js");
+const Cookies = require('universal-cookie');
 const request = require('request-promise');
 const { createECDH } = require('crypto-browserify');
 const { InstanceDataStore } = require('blockstack/lib/auth/sessionStore');
 const { AppConfig, UserSession, lookupProfile } = require('blockstack');
 const { encryptECIES, decryptECIES } = require('blockstack/lib/encryption');
+const cookies = new Cookies();
 let mnemonic;
 let serverPublicKey;
 
@@ -37,12 +39,13 @@ module.exports = {
 
     });
   },
-  makeKeychain: async function(username, keypair) {
+  makeKeychain: async function(email, username, keypair) {
     //Send the username and the passphrase which will be used by the server to encrypt sensitive data
     const { publicKey, privateKey } = keypair
     const dataString = JSON.stringify({
       publicKey,
-      username
+      username, 
+      email
     })
     //This is a simple call to replicate blockstack's make keychain function
     const options = { url: process.env.DEV_KEYCHAIN_URL, method: 'POST', headers: headers, body: dataString };
@@ -63,24 +66,38 @@ module.exports = {
       }
     });
   },
-  makeAppKeyPair: async function(username, keychain, appObj, clientKeyPair) {
-    //encrypt the mnemonic with the key sent by the server
-    const { privateKey, publicKey } = clientKeyPair
-    const decryptedData = JSON.parse(await decryptECIES(privateKey, JSON.parse(keychain)));
-    serverPublicKey = decryptedData.publicKey;
-    mnemonic = decryptedData.mnemonic;
-    const encryptedMnemonic = await encryptECIES(serverPublicKey, mnemonic);
-    //Config for the post
-    const dataString = JSON.stringify({
-      publicKey,
-      username,
-      url: appObj.appOrigin,
-      mnemonic: encryptedMnemonic
-    })
+  makeAppKeyPair: async function(params) {
+    //Need to determine if this call is being made on account registration or not
+    let dataString;
+    let encryptedMnemonic;
+    if(params.login) {
+      const { publicKey } = params.keyPair;
+      encryptedMnemonic = await encryptECIES(params.serverPublicKey, params.decryptedMnemonic);
+      dataString = JSON.stringify({
+        publicKey,
+        username: params.username,
+        url: params.appObj.appOrigin,
+        mnemonic: encryptedMnemonic
+      });
+    } else {
+      //encrypt the mnemonic with the key sent by the server
+      const { privateKey, publicKey } = params.keyPair;
+      const decryptedData = JSON.parse(await decryptECIES(privateKey, JSON.parse(params.keychain)));
+      serverPublicKey = decryptedData.publicKey;
+      mnemonic = decryptedData.mnemonic;
+      encryptedMnemonic = await encryptECIES(serverPublicKey, mnemonic);
+      //Config for the post
+      dataString = JSON.stringify({
+        publicKey,
+        username: params.username,
+        url: params.appObj.appOrigin,
+        mnemonic: encryptedMnemonic
+      });
+    }
+
     var options = { url: process.env.DEV_APP_KEY_URL, method: 'POST', headers: headers, body: dataString };
     return request(options)
     .then((body) => {
-      // console.log(body)
       return {
         message: "successfully created app keypair",
         body: body
@@ -110,25 +127,25 @@ module.exports = {
     if(nameCheck.pass) {
 
       //Step Two
-      const clientTransmitKeys = createECDH('secp256k1')
-      clientTransmitKeys.generateKeys()
-      const clientPrivateKey = clientTransmitKeys.getPrivateKey('hex').toString()
-      const clientPublicKey = clientTransmitKeys.getPublicKey('hex', 'compressed').toString()
-      const keyPair = {
-          privateKey: clientPrivateKey,
-          publicKey: clientPublicKey
-      }
-
-      const keychain = await this.makeKeychain(credObj.id, keyPair);
+      //generate transit keys then make a keychain
+      const keyPair = await this.makeTransitKeys();
+      const { privateKey } = keyPair;
+      const keychain = await this.makeKeychain(credObj.email, credObj.id, keyPair);
 
       //Step Three
-      const appKeys = await this.makeAppKeyPair(credObj.id, keychain.body, appObj, keyPair);
+      const appKeyParams = {
+        username: credObj.id,
+        keychain: keychain.body,
+        appObj,
+        keyPair
+      }
+      const appKeys = await this.makeAppKeyPair(appKeyParams);
       const encryptedKeys = appKeys.body;
-      const decryptedKeys = await decryptECIES(clientPrivateKey, JSON.parse(encryptedKeys));
+      const decryptedKeys = await decryptECIES(privateKey, JSON.parse(encryptedKeys));
       const appPrivateKey = JSON.parse(decryptedKeys).private;
       //Step Four
       const userSessionParams = {
-        fetchFromDB: false,
+        login: false,
         credObj,
         appObj,
         userPayload: {
@@ -154,6 +171,17 @@ module.exports = {
       }
     }
   },
+  makeTransitKeys: async function() {
+    const clientTransmitKeys = createECDH('secp256k1')
+    await clientTransmitKeys.generateKeys()
+    const clientPrivateKey = await clientTransmitKeys.getPrivateKey('hex').toString()
+    const clientPublicKey = await clientTransmitKeys.getPublicKey('hex', 'compressed').toString()
+    const keyPair = {
+        privateKey: clientPrivateKey,
+        publicKey: clientPublicKey
+    }
+    return keyPair;
+  },
   login: async function(params) {
     let userPayload;
     //params object should include the credentials obj, appObj, (optional) user payload with appKey and mnemonic and (optional) a bool determining whether we need to fetch data from the DB
@@ -161,39 +189,80 @@ module.exports = {
     //@params credObj is simply the username and password
     //@params appObj is provided by the developer and is an object containing app scopes and app origin
     //@params userPayload object that includes the app key and the mnemonic
-    if(params.fetchFromDB) {
-      //Fetch the data from the db first
-      //this will get us the encrypted mnemonic
-      let ciphertext = res.data.encryptedMnenomic
-      //then decrypt it with the password if password is valid
-      var bytes  = CryptoJS.AES.decrypt(ciphertext.toString(), credObj.pass);
-      try {
-        var decryptedData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
-        var mnemonic = decryptedData;
-        //Go get a transit public key
-        const transitKey = await this.generateTransitKey(params.credObj, params.appObj);
-        const encryptedMnenomic = encryptContent(mnemonic, transitKey);
-        const keyGenPayload = {
-          reference: idPayload,
-          encryptedMnenomic
+    if(params.login) {
+      //Check to see if there is an encrypted mnemonic in cookie storage
+      const mnemonicAvailable = cookies.get('encryptedMnemonic');
+      if(mnemonicAvailable) {
+        //Just use the available mnemonic, decrypt with password and get to work
+      } else {
+        //Need to kick off a recovery flow that requires email address
+        if(params.credObj.email) {
+          const username = params.credObj.id;
+          const email = params.credObj.email;
+          //First we need to generate a transit keypair
+          const keyPair = await this.makeTransitKeys();
+          const { publicKey, privateKey } = keyPair;
+          const dataString = JSON.stringify({publicKey, username, email});
+          const options = { url: process.env.DEV_GET_MNEMONIC, method: 'POST', headers: headers, body: dataString };
+          return request(options)
+          .then(async (body) => {
+            // POST succeeded...
+            const { encryptedKeychain, serverPublicKey } = JSON.parse(body);
+            //this will get us the encrypted mnemonic
+            const encryptedMnemonic = JSON.parse(decryptECIES(privateKey, JSON.parse(encryptedKeychain)));
+            //then decrypt it with the password if password is valid
+            try {
+              const bytes  = CryptoJS.AES.decrypt(encryptedMnemonic.toString(), params.credObj.password);
+              const decryptedMnemonic = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+              //Now we need to derive the app keys
+              const appKeyParams = {
+                login: true,
+                username: params.credObj.id,
+                decryptedMnemonic,
+                appObj: params.appObj,
+                keyPair,
+                serverPublicKey
+              }
+              const appKeys = await this.makeAppKeyPair(appKeyParams);
+              const decryptedAppKeys = JSON.parse(await decryptECIES(privateKey, JSON.parse(appKeys.body)));
+
+              userPayload = {
+                privateKey: decryptedAppKeys.privateKey
+              }
+              const sessionObj = {
+                scopes: params.appObj.scopes,
+                appOrigin: params.appObj.appOrigin,
+                appPrivKey: userPayload.privateKey,
+                hubUrl: params.credObj.hubUrl, //Still have to think through this one
+                username: params.credObj.id
+              }
+              const userSession = await this.makeUserSession(sessionObj);
+              if(userSession) {
+                return {
+                  message: "user session created",
+                  body: userSession
+                }
+              }
+            } catch(error) {
+              return {
+                message: "invalid password", 
+                body: error
+              }
+            }
+          })
+          .catch(err => {
+            // POST failed...
+            console.log('ERROR: ', err)
+            return {
+              message: "failed to fetch user info from db",
+              body: err
+            }
+          });
+        } else {
+          return {
+            message: "For log in on a new device, the email address is required"
+          }
         }
-        const appKeys = await this.makeAppKeyPair(keyGenPayload);
-        //Build up an object to use for the userSession:
-        const sessionObj = {
-          scopes: params.appObj.scopes,
-          appOrigin: params.appObj.appOrigin,
-          appPrivKey: params.appKeys.body,
-          hubUrl: params.credObj.hubUrl, //Still have to think through this one
-          username: params.credObj.id
-        }
-        const userSession = await this.makeUserSession(sessionObj)
-        return userSession;
-      } catch(error) {
-        const resFail = {
-          message: "invalid password",
-          body: null
-        }
-        return resFail
       }
     } else {
       userPayload = params.userPayload;
@@ -209,7 +278,8 @@ module.exports = {
         //Step five
         const encryptedMnenomic = CryptoJS.AES.encrypt(JSON.stringify(mnemonic), params.credObj.password);
         const doubleEncryptedMnemonic = await encryptECIES(serverPublicKey, encryptedMnenomic.toString());
-        const id = params.credObj.id
+        const id = params.credObj.id;
+        const email = params.credObj.email;
         const storeMnemonic = await this.storeMnemonic(id, doubleEncryptedMnemonic);
         if(storeMnemonic) {
           return userSession;
