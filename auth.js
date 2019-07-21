@@ -9,13 +9,15 @@ const { encryptECIES, decryptECIES } = require('blockstack/lib/encryption');
 const cookies = new Cookies();
 let mnemonic;
 let serverPublicKey;
+let idAddress;
 
 const headers = { 'Content-Type': 'application/json' };
 
 module.exports = {
   nameLookUp: function(name) {
+    console.log(`${name}.id`)
     //Note: if we want to support other names spaces and other root id, we will need a different approach.
-    const options = { url: `${process.env.NAME_LOOKUP_URL}${name}`, method: 'GET' };
+    const options = { url: `${process.env.NAME_LOOKUP_URL}${name}.id`, method: 'GET' };
     return request(options)
     .then(async () => {
       return {
@@ -83,6 +85,7 @@ module.exports = {
       //encrypt the mnemonic with the key sent by the server
       const { privateKey, publicKey } = params.keyPair;
       const decryptedData = JSON.parse(await decryptECIES(privateKey, JSON.parse(params.keychain)));
+      idAddress = decryptedData.ownerKeyInfo.idAddress.split("ID-")[1];
       serverPublicKey = decryptedData.publicKey;
       mnemonic = decryptedData.mnemonic;
       encryptedMnemonic = await encryptECIES(serverPublicKey, mnemonic);
@@ -125,7 +128,6 @@ module.exports = {
     //Step One
     const nameCheck = await this.nameLookUp(credObj.id);
     if(nameCheck.pass) {
-
       //Step Two
       //generate transit keys then make a keychain
       const keyPair = await this.makeTransitKeys();
@@ -290,10 +292,19 @@ module.exports = {
         const encryptedMnenomic = CryptoJS.AES.encrypt(JSON.stringify(mnemonic), params.credObj.password);
         const doubleEncryptedMnemonic = await encryptECIES(serverPublicKey, encryptedMnenomic.toString());
         const id = params.credObj.id;
-        const email = params.credObj.email;
         const storeMnemonic = await this.storeMnemonic(id, doubleEncryptedMnemonic);
         if(storeMnemonic) {
-          return userSession;
+          //Finally, let's register the username onchain (eventually)
+          console.log("registering subdomain")
+          const registeredName = await this.registerSubdomain(params.credObj.id, idAddress)
+          if(registeredName.message === "username registered") {
+            return userSession;
+          } else {
+            return {
+              message: registeredName.message,
+              body: registeredName.body
+            }
+          }
         } else {
           return "Error storing mnemonic"
         }
@@ -350,6 +361,28 @@ module.exports = {
       console.log('ERROR: ', error)
       return {
         message: "failed to store encrypted mnemonic",
+        body: error
+      }
+    });
+  }, 
+  registerSubdomain: function(name, idAddress) {
+    const zonefile = `$ORIGIN ${name}\n$TTL 3600\n_https._tcp URI 10 1`
+    const dataString = JSON.stringify({name, owner_address: idAddress, zonefile});
+    console.log(dataString);
+    const options = { url: process.env.SUBDOMAIN_REGISTRATION, method: 'POST', headers: headers, body: dataString };
+    return request(options)
+    .then(async (body) => {
+      // POST succeeded...
+      return {
+        message: "username registered",
+        body: body
+      }
+    })
+    .catch(error => {
+      // POST failed...
+      console.log('ERROR: ', error)
+      return {
+        message: "failed to register username",
         body: error
       }
     });
