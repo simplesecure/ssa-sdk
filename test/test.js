@@ -116,3 +116,25 @@ describe('LogIn', function() {
 });
 
 //BlockstackJS Operations
+
+// describe("Storage, putFile", function() {
+//   this.timeout(10000);
+//   it("should build up a user session and store the file", async function() {
+//     const appPrivKey = '8681e1cdaa96c5caf0c5da4e3a49c587b6b468fce89f71bef0525d28ce5450fc';
+//     const hubUrl = 'https://hub.blockstack.org';
+//     const scopes = ['store_write'];
+//     const appOrigin = 'helloblockstack.com'
+//     const userData = {
+//         appPrivKey,
+//         hubUrl,
+//         scopes,
+//         appOrigin,
+//         id: credObj.id
+//     }
+//     const userSession = await auth.makeUserSession(userData);
+//     userSession.putFile("hello.json", "hello world")
+//       .then((res) => {
+//         console.log(res);
+//       }).catch(err => console.log(err));
+//   })
+// })

@@ -202,78 +202,115 @@ module.exports = {
     //@params appObj is provided by the developer and is an object containing app scopes and app origin
     //@params userPayload object that includes the app key and the mnemonic
     if(params.login) {
-      //Check to see if there is an encrypted mnemonic in cookie storage
-      const mnemonicAvailable = Cookies.get('simple-secure');
-      if(mnemonicAvailable) {
-        console.log(mnemonicAvailable)
-        //Just use the available mnemonic, decrypt with password and get to work
-      } else {
-        //Need to kick off a recovery flow that requires email address
-        if(params.credObj.email) {
-          const username = params.credObj.id;
-          const email = params.credObj.email;
-          //First we need to generate a transit keypair
-          const keyPair = await this.makeTransitKeys();
-          const { publicKey, privateKey } = keyPair;
-          const dataString = JSON.stringify({publicKey, username, email});
-          const options = { url: process.env.DEV_GET_MNEMONIC, method: 'POST', headers: headers, body: dataString };
-          return request(options)
-          .then(async (body) => {
-            // POST succeeded...
-            const { encryptedKeychain, serverPublicKey } = JSON.parse(body);
-            //this will get us the encrypted mnemonic
-            const encryptedMnemonic = JSON.parse(decryptECIES(privateKey, JSON.parse(encryptedKeychain)));
-            //then decrypt it with the password if password is valid
-            try {
-              const bytes  = CryptoJS.AES.decrypt(encryptedMnemonic.toString(), params.credObj.password);
-              const decryptedMnemonic = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
-              //Now we need to derive the app keys
-              const appKeyParams = {
-                login: true,
-                username: params.credObj.id,
-                decryptedMnemonic,
-                appObj: params.appObj,
-                keyPair,
-                serverPublicKey
-              }
-              const appKeys = await this.makeAppKeyPair(appKeyParams);
-              const decryptedAppKeys = JSON.parse(await decryptECIES(privateKey, JSON.parse(appKeys.body)));
-
-              userPayload = {
-                privateKey: decryptedAppKeys.privateKey
-              }
-              const sessionObj = {
-                scopes: params.appObj.scopes,
-                appOrigin: params.appObj.appOrigin,
-                appPrivKey: userPayload.privateKey,
-                hubUrl: params.credObj.hubUrl, //Still have to think through this one
-                username: params.credObj.id
-              }
-              const userSession = await this.makeUserSession(sessionObj);
-              if(userSession) {
-                return {
-                  message: "user session created",
-                  body: userSession
-                }
-              }
-            } catch(error) {
+      if(params.credObj.email) {
+        const username = params.credObj.id;
+        const email = params.credObj.email;
+        //First we need to generate a transit keypair
+        const keyPair = await this.makeTransitKeys();
+        const { publicKey, privateKey } = keyPair;
+        const dataString = JSON.stringify({publicKey, username, email});
+        const options = { url: 'https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/getMnemonic-dev', method: 'POST', headers: headers, body: dataString };
+        return request(options)
+        .then(async (body) => {
+          // POST succeeded...
+          const { encryptedKeychain, serverPublicKey, idHash } = JSON.parse(body);
+          //this will get us the encrypted mnemonic
+          const encryptedMnemonic = JSON.parse(decryptECIES(privateKey, JSON.parse(encryptedKeychain)));
+          //then decrypt it with the password if password is valid
+          try {
+            const bytes  = CryptoJS.AES.decrypt(encryptedMnemonic.toString(), params.credObj.password);
+            const decryptedMnemonic = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+            console.log(decryptedMnemonic);
+            //Now we need to derive the app keys
+            const appKeyParams = {
+              login: true,
+              username: params.credObj.id,
+              decryptedMnemonic,
+              appObj: params.appObj,
+              keyPair,
+              serverPublicKey
+            }
+            const appKeys = await this.makeAppKeyPair(appKeyParams);
+            const decryptedAppKeys = JSON.parse(await decryptECIES(privateKey, JSON.parse(appKeys.body)));
+            idAddress = idHash;
+            userPayload = {
+              privateKey: decryptedAppKeys.privateKey
+            }
+            const sessionObj = {
+              scopes: params.appObj.scopes,
+              appOrigin: params.appObj.appOrigin,
+              appPrivKey: userPayload.privateKey,
+              hubUrl: params.credObj.hubUrl, //Still have to think through this one
+              username: params.credObj.id
+            }
+            const userSession = await this.makeUserSession(sessionObj);
+            if(userSession) {
               return {
-                message: "invalid password", 
-                body: error
+                message: "user session created",
+                body: userSession
+              }
+            } else {
+              return {
+                message: "error creating user session"
               }
             }
-          })
-          .catch(err => {
-            // POST failed...
-            console.log('ERROR: ', err)
+          } catch(error) {
             return {
-              message: "failed to fetch user info from db",
-              body: err
+              message: "invalid password", 
+              body: error
             }
-          });
-        } else {
+          }
+        })
+        .catch(err => {
+          // POST failed...
+          console.log('ERROR: ', err)
           return {
-            message: "For log in on a new device, the email address is required"
+            message: "failed to fetch user info from db",
+            body: err
+          }
+        });
+      } else {
+        //Check to see if there is an encrypted mnemonic in cookie storage
+        const mnemonicAvailable = await Cookies.get('simple-secure');
+        if(mnemonicAvailable) {
+          //Just use the available mnemonic, decrypt with password and get to work
+          const cookiePayload = JSON.parse(mnemonicAvailable);
+          if(cookiePayload.username === params.credObj.id) {
+            const encryptedKeychain = cookiePayload.userPayload;
+            const bytes  = CryptoJS.AES.decrypt(encryptedKeychain, params.credObj.password);
+            const decryptedMnemonic = bytes.toString(CryptoJS.enc.Utf8);
+            const privateKey = JSON.parse(decryptedMnemonic).privateKey;
+            userPayload = {
+              privateKey
+            }
+            idAddress= cookiePayload.idAddress;
+            const sessionObj = {
+              scopes: params.appObj.scopes,
+              appOrigin: params.appObj.appOrigin,
+              appPrivKey: userPayload.privateKey,
+              hubUrl: params.credObj.hubUrl, //Still have to think through this one
+              username: params.credObj.id
+            }
+            const userSession = await this.makeUserSession(sessionObj);
+            if(userSession) {
+              return {
+                message: "user session created",
+                body: userSession
+              }
+            } else {
+              return {
+                message: "error creating user session"
+              }
+            }
+          } else {
+            return {
+              message: "Need to go through recovery flow"
+            }
+          }
+        } else {
+          //Need to kick off a recovery flow that requires email address
+          return {
+            message: "Need to go through recovery flow"
           }
         }
       }
@@ -324,14 +361,22 @@ module.exports = {
       userData: {
         appPrivateKey: sessionObj.appPrivKey,
         hubUrl: sessionObj.hubUrl,
-        username: sessionObj.username
+        username: sessionObj.username, 
+        gaiaHubConfig: {
+          address: idAddress,
+          server: 'https://hub.blockstack.org',
+          token: '',
+          url_prefix: 'https://gaia.blockstack.org/hub/'
+        }
         // profile: profileObj,  ***We will need to be returning the profile object here once we figure it out***
-      }
+      }, 
+      username: sessionObj.username
     })
     const userSession = new UserSession({
       appConfig,
       sessionStore: dataStore
     })
+    console.log(userSession);
     try {
 
       return {
