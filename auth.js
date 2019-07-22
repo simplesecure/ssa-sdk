@@ -1,12 +1,11 @@
 require('dotenv').config()
 const CryptoJS = require("crypto-js");
-const Cookies = require('universal-cookie');
+const Cookies = require('js-cookie');
 const request = require('request-promise');
 const { createECDH } = require('crypto-browserify');
 const { InstanceDataStore } = require('blockstack/lib/auth/sessionStore');
 const { AppConfig, UserSession, lookupProfile } = require('blockstack');
 const { encryptECIES, decryptECIES } = require('blockstack/lib/encryption');
-const cookies = new Cookies();
 let mnemonic;
 let serverPublicKey;
 let idAddress;
@@ -162,10 +161,10 @@ module.exports = {
           const encryptedUserPayload = CryptoJS.AES.encrypt(JSON.stringify(userSessionParams.userPayload), credObj.password);
           const cookiePayload = {
             username: credObj.id,
-            userPayload: encryptedUserPayload
+            userPayload: encryptedUserPayload.toString()
           }
         
-          cookies.set('encryptedUserCreds', cookiePayload, { path: '/' });
+          Cookies.set('simple-secure', JSON.stringify(cookiePayload), { expires: 7 });
         }
         return {
           message: "successfully created user session",
@@ -204,8 +203,9 @@ module.exports = {
     //@params userPayload object that includes the app key and the mnemonic
     if(params.login) {
       //Check to see if there is an encrypted mnemonic in cookie storage
-      const mnemonicAvailable = cookies.get('encryptedUserCreds');
+      const mnemonicAvailable = Cookies.get('simple-secure');
       if(mnemonicAvailable) {
+        console.log(mnemonicAvailable)
         //Just use the available mnemonic, decrypt with password and get to work
       } else {
         //Need to kick off a recovery flow that requires email address
