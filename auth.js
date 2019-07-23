@@ -11,7 +11,7 @@ let mnemonic;
 let serverPublicKey;
 let idAddress;
 
-const headers = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
+const headers = { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Access-Control-Allow-Origin': '*' };
 
 export function nameLookUp(name) {
   //Note: if we want to support other names spaces and other root id, we will need a different approach.
