@@ -344,8 +344,8 @@ export async function login(params) {
       const encryptedMnenomic = CryptoJS.AES.encrypt(JSON.stringify(mnemonic), params.credObj.password);
       const doubleEncryptedMnemonic = await encryptECIES(serverPublicKey, encryptedMnenomic.toString());
       const id = params.credObj.id;
-      const storeMnemonic = await storeMnemonic(id, doubleEncryptedMnemonic);
-      if(storeMnemonic) {
+      const postedMnemonic = await storeMnemonic(id, doubleEncryptedMnemonic);
+      if(postedMnemonic) {
         //Finally, let's register the username onchain (eventually)
         console.log("registering subdomain")
         const registeredName = await registerSubdomain(params.credObj.id, idAddress)
