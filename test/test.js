@@ -2,6 +2,7 @@ const assert = require('assert');
 const crypto = require('crypto-browserify');
 const CryptoJS = require("crypto-js");
 const { encryptECIES, decryptECIES } = require('blockstack/lib/encryption');
+const { AppConfig, UserSession, getFile, putFile } = require('blockstack');
 const auth = require('../auth');
 const availableName = `thisismyusername_${Date.now()}`;
 const emailToUse = "justin@graphitedocs.com";
@@ -131,8 +132,13 @@ describe('LogIn', function() {
 //         appOrigin,
 //         id: credObj.id
 //     }
-//     const userSession = await auth.makeUserSession(userData);
-//     userSession.putFile("hello.json", "hello world")
+//     const session = await auth.makeUserSession(userData);
+//     const appConfig = new AppConfig(
+//       ['store_write'], 
+//       'helloblockstack.com' /* your app origin */ 
+//     )
+//     const userSession = new UserSession({ appConfig, sessionStore: session.body.store.sessionData });
+//     userSession.putFile("hello.json", "hello world", {encrypt: false})
 //       .then((res) => {
 //         console.log(res);
 //       }).catch(err => console.log(err));

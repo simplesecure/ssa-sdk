@@ -3,8 +3,9 @@ const CryptoJS = require("crypto-js");
 const Cookies = require('js-cookie');
 const request = require('request-promise');
 const { createECDH } = require('crypto-browserify');
+const { connectToGaiaHub } = require('blockstack/lib/storage/hub');
 const { InstanceDataStore } = require('blockstack/lib/auth/sessionStore');
-const { AppConfig, UserSession, lookupProfile } = require('blockstack');
+const { AppConfig, UserSession } = require('blockstack');
 const { encryptECIES, decryptECIES } = require('blockstack/lib/encryption');
 let mnemonic;
 let serverPublicKey;
@@ -371,22 +372,16 @@ module.exports = {
       userData: {
         appPrivateKey: sessionObj.appPrivKey,
         hubUrl: sessionObj.hubUrl,
+        identityAddress: idAddress,
         username: sessionObj.username, 
-        gaiaHubConfig: {
-          address: idAddress,
-          server: 'https://hub.blockstack.org',
-          token: '',
-          url_prefix: 'https://gaia.blockstack.org/hub/'
-        }
+        gaiaHubConfig: await connectToGaiaHub('https://hub.blockstack.org', sessionObj.appPrivKey,"")
         // profile: profileObj,  ***We will need to be returning the profile object here once we figure it out***
       }, 
-      username: sessionObj.username
     })
     const userSession = new UserSession({
       appConfig,
       sessionStore: dataStore
     })
-    console.log(userSession);
     try {
 
       return {
