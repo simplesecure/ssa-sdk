@@ -213,14 +213,13 @@ module.exports = {
         return request(options)
         .then(async (body) => {
           // POST succeeded...
-          const { encryptedKeychain, serverPublicKey, idHash } = JSON.parse(body);
+          const { encryptedKeychain, serverPublicKey, id } = JSON.parse(body);
           //this will get us the encrypted mnemonic
           const encryptedMnemonic = JSON.parse(decryptECIES(privateKey, JSON.parse(encryptedKeychain)));
           //then decrypt it with the password if password is valid
           try {
             const bytes  = CryptoJS.AES.decrypt(encryptedMnemonic.toString(), params.credObj.password);
             const decryptedMnemonic = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
-            console.log(decryptedMnemonic);
             //Now we need to derive the app keys
             const appKeyParams = {
               login: true,
@@ -232,19 +231,30 @@ module.exports = {
             }
             const appKeys = await this.makeAppKeyPair(appKeyParams);
             const decryptedAppKeys = JSON.parse(await decryptECIES(privateKey, JSON.parse(appKeys.body)));
-            idAddress = idHash;
-            userPayload = {
-              privateKey: decryptedAppKeys.privateKey
-            }
+            console.log(decryptedAppKeys.private);
+            idAddress = id.split("ID-")[1];
             const sessionObj = {
               scopes: params.appObj.scopes,
               appOrigin: params.appObj.appOrigin,
-              appPrivKey: userPayload.privateKey,
+              appPrivKey: decryptedAppKeys.private,
               hubUrl: params.credObj.hubUrl, //Still have to think through this one
               username: params.credObj.id
             }
             const userSession = await this.makeUserSession(sessionObj);
+          
+            const userPayload = {
+              privateKey: decryptedAppKeys.private
+            }
+
             if(userSession) {
+              const encryptedUserPayload = CryptoJS.AES.encrypt(JSON.stringify(userPayload), params.credObj.password);
+              const cookiePayload = {
+                username: params.credObj.id,
+                idAddress,
+                userPayload: encryptedUserPayload.toString()
+              }
+            
+              Cookies.set('simple-secure', JSON.stringify(cookiePayload), { expires: 7 });
               return {
                 message: "user session created",
                 body: userSession
