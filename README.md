@@ -1,6 +1,6 @@
-# Simple Secure Authentication
+# SimpleID Javascript SDK
 
-This is the JavaScript SDK for SSA, a framework for allowing users to authenticate into your app in a far more secure way than traditional usernames and passwords while still giving them the convenience of that same flow.
+This is the JavaScript SDK for SimpleID, a framework for allowing users to authenticate into your app in a far more secure way than traditional usernames and passwords while still giving them the convenience of that same flow.
 
 ---
 Under Construction. To test the basic premise with stubbed out data, do the following: 
@@ -30,14 +30,14 @@ So what does the user get out of this exactly? They get the simple login flow th
 
 The first thing you'll want to do is install the package: 
 
-`npm i simple-secure-auth`  
+`npm i simpleid-js-sdk`  
 
 Then, start using it!  
 
 ```
-//Require statement if you prefer: const ssa = require('simple-secure-auth')  
+//Require statement if you prefer: const ssa = require('simpleid-js-sdk')  
 
-import { createUserAccount, login } from 'simple-secure-auth'
+import { createUserAccount, login } from 'simpleid-js-sdk'
 
 const simpleExampleCreds = {
     id: "johnnycash",
