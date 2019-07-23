@@ -289,28 +289,35 @@ module.exports = {
           if(cookiePayload.username === params.credObj.id) {
             const encryptedKeychain = cookiePayload.userPayload;
             const bytes  = CryptoJS.AES.decrypt(encryptedKeychain, params.credObj.password);
-            const decryptedMnemonic = bytes.toString(CryptoJS.enc.Utf8);
-            const privateKey = JSON.parse(decryptedMnemonic).privateKey;
-            userPayload = {
-              privateKey
-            }
-            idAddress= cookiePayload.idAddress;
-            const sessionObj = {
-              scopes: params.appObj.scopes,
-              appOrigin: params.appObj.appOrigin,
-              appPrivKey: userPayload.privateKey,
-              hubUrl: params.credObj.hubUrl, //Still have to think through this one
-              username: params.credObj.id
-            }
-            const userSession = await this.makeUserSession(sessionObj);
-            if(userSession) {
-              return {
-                message: "user session created",
-                body: userSession
+            
+            try {
+              const decryptedMnemonic = bytes.toString(CryptoJS.enc.Utf8);
+              const privateKey = JSON.parse(decryptedMnemonic).privateKey;
+              userPayload = {
+                privateKey
               }
-            } else {
+              idAddress= cookiePayload.idAddress;
+              const sessionObj = {
+                scopes: params.appObj.scopes,
+                appOrigin: params.appObj.appOrigin,
+                appPrivKey: userPayload.privateKey,
+                hubUrl: params.credObj.hubUrl, //Still have to think through this one
+                username: params.credObj.id
+              }
+              const userSession = await this.makeUserSession(sessionObj);
+              if(userSession) {
+                return {
+                  message: "user session created",
+                  body: userSession
+                }
+              } else {
+                return {
+                  message: "error creating user session"
+                }
+              }
+            } catch(err) {
               return {
-                message: "error creating user session"
+                message: "invalid password"
               }
             }
           } else {

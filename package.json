@@ -1,8 +1,8 @@
 {
-  "name": "ssa-client",
-  "version": "0.1.0",
+  "name": "simpleid-js-sdk",
+  "version": "0.0.1",
   "description": "",
-  "main": "index.js",
+  "main": "auth.js",
   "scripts": {
     "test": "mocha"
   },
