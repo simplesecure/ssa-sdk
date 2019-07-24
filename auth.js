@@ -11,7 +11,7 @@ let mnemonic;
 let serverPublicKey;
 let idAddress;
 
-const headers = { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Access-Control-Allow-Origin': '*' };
+const headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
 
 export function nameLookUp(name) {
   //Note: if we want to support other names spaces and other root id, we will need a different approach.
@@ -45,11 +45,11 @@ export async function makeKeychain(email, username, keypair) {
   const { publicKey } = keypair
   const dataString = JSON.stringify({
     publicKey,
-    username, 
+    username,
     email
   })
   //This is a simple call to replicate blockstack's make keychain function
-  const options = { url: 'https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/keychain-dev', method: 'POST', headers: headers, body: dataString };
+  const options = { url: process.env.DEV_KEYCHAIN_URL, method: 'POST', headers: headers, body: dataString };
   return request(options)
   .then(async (body) => {
     // POST succeeded...
@@ -98,7 +98,7 @@ export async function makeAppKeyPair(params) {
     });
   }
 
-  var options = { url: 'https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/appkeys-dev', method: 'POST', headers: headers, body: dataString };
+  var options = { url: process.env.DEV_APP_KEY_URL, method: 'POST', headers: headers, body: dataString };
   return request(options)
   .then((body) => {
     return {
@@ -166,7 +166,7 @@ export async function createUserAccount(credObj, appObj) {
           idAddress,
           userPayload: encryptedUserPayload.toString()
         }
-      
+
         Cookies.set('simple-secure', JSON.stringify(cookiePayload), { expires: 7 });
       }
       return {
@@ -214,7 +214,7 @@ export async function login(params) {
       const keyPair = await makeTransitKeys();
       const { publicKey, privateKey } = keyPair;
       const dataString = JSON.stringify({publicKey, username, email});
-      const options = { url: 'https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/getMnemonic-dev', method: 'POST', headers: headers, body: dataString };
+      const options = { url: process.env.DEV_MNEMONIC_URL, method: 'POST', headers: headers, body: dataString };
       return request(options)
       .then(async (body) => {
         // POST succeeded...
@@ -246,7 +246,7 @@ export async function login(params) {
             username: params.credObj.id
           }
           const userSession = await makeUserSession(sessionObj);
-         
+
           const userPayload = {
             privateKey: decryptedAppKeys.private
           }
@@ -258,7 +258,7 @@ export async function login(params) {
               idAddress,
               userPayload: encryptedUserPayload.toString()
             }
-          
+
             Cookies.set('simple-secure', JSON.stringify(cookiePayload), { expires: 7 });
             return {
               message: "user session created",
@@ -271,7 +271,7 @@ export async function login(params) {
           }
         } catch(error) {
           return {
-            message: "invalid password", 
+            message: "invalid password",
             body: error
           }
         }
@@ -378,10 +378,10 @@ export async function makeUserSession(sessionObj) {
       appPrivateKey: sessionObj.appPrivKey,
       hubUrl: sessionObj.hubUrl,
       identityAddress: idAddress,
-      username: sessionObj.username, 
+      username: sessionObj.username,
       gaiaHubConfig: await connectToGaiaHub('https://hub.blockstack.org', sessionObj.appPrivKey,"")
       // profile: profileObj,  ***We will need to be returning the profile object here once we figure it out***
-    }, 
+    },
   })
   const userSession = new UserSession({
     appConfig,
@@ -404,7 +404,7 @@ export async function makeUserSession(sessionObj) {
 
 export async function storeMnemonic(username, encryptedMnemonic) {
   const dataString = JSON.stringify({username, encryptedKeychain: encryptedMnemonic});
-  const options = { url: 'https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/encryptedKeychain-dev', method: 'POST', headers: headers, body: dataString };
+  const options = { url: process.env.DEV_ENCRYPTED_KEY_URL, method: 'POST', headers: headers, body: dataString };
   return request(options)
   .then(async (body) => {
     // POST succeeded...
