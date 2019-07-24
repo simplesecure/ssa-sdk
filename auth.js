@@ -404,7 +404,7 @@ export async function makeUserSession(sessionObj) {
 }
 
 export async function storeMnemonic(username, encryptedMnemonic) {
-  const dataString = {username, encryptedKeychain: encryptedMnemonic};
+  const dataString = {username, encryptedKeychain: JSON.stringify(encryptedMnemonic)};
   const options = { url: config.DEV_ENCRYPTED_KEY_URL, method: 'POST', headers: headers, form: dataString };
   return request(options)
   .then(async (body) => {
