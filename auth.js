@@ -1,4 +1,5 @@
 require('dotenv').config()
+const config = require('./config.json');
 const CryptoJS = require("crypto-js");
 const Cookies = require('js-cookie');
 const request = require('request-promise');
@@ -49,7 +50,7 @@ export async function makeKeychain(email, username, keypair) {
     email
   })
   //This is a simple call to replicate blockstack's make keychain function
-  const options = { url: process.env.DEV_KEYCHAIN_URL, method: 'POST', headers: headers, body: dataString };
+  const options = { url: config.DEV_KEYCHAIN_URL, method: 'POST', headers: headers, form: dataString };
   return request(options)
   .then(async (body) => {
     // POST succeeded...
@@ -98,7 +99,7 @@ export async function makeAppKeyPair(params) {
     });
   }
 
-  var options = { url: process.env.DEV_APP_KEY_URL, method: 'POST', headers: headers, body: dataString };
+  var options = { url: config.DEV_APP_KEY_URL, method: 'POST', headers: headers, form: dataString };
   return request(options)
   .then((body) => {
     return {
@@ -214,7 +215,7 @@ export async function login(params) {
       const keyPair = await makeTransitKeys();
       const { publicKey, privateKey } = keyPair;
       const dataString = JSON.stringify({publicKey, username, email});
-      const options = { url: process.env.DEV_MNEMONIC_URL, method: 'POST', headers: headers, body: dataString };
+      const options = { url: config.DEV_MNEMONIC_URL, method: 'POST', headers: headers, body: dataString };
       return request(options)
       .then(async (body) => {
         // POST succeeded...
@@ -404,7 +405,7 @@ export async function makeUserSession(sessionObj) {
 
 export async function storeMnemonic(username, encryptedMnemonic) {
   const dataString = JSON.stringify({username, encryptedKeychain: encryptedMnemonic});
-  const options = { url: process.env.DEV_ENCRYPTED_KEY_URL, method: 'POST', headers: headers, body: dataString };
+  const options = { url: config.DEV_ENCRYPTED_KEY_URL, method: 'POST', headers: headers, form: dataString };
   return request(options)
   .then(async (body) => {
     // POST succeeded...
