@@ -80,7 +80,7 @@ export async function makeAppKeyPair(params) {
       publicKey,
       username: params.username,
       url: params.appObj.appOrigin,
-      mnemonic: encryptedMnemonic
+      mnemonic: JSON.stringify(encryptedMnemonic)
     };
   } else {
     //encrypt the mnemonic with the key sent by the server
@@ -95,7 +95,7 @@ export async function makeAppKeyPair(params) {
       publicKey,
       username: params.username,
       url: params.appObj.appOrigin,
-      mnemonic: encryptedMnemonic
+      mnemonic: JSON.stringify(encryptedMnemonic)
     };
   }
 
