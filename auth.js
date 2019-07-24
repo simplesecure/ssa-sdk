@@ -44,11 +44,11 @@ export function nameLookUp(name) {
 export async function makeKeychain(email, username, keypair) {
   //Send the username and the passphrase which will be used by the server to encrypt sensitive data
   const { publicKey } = keypair
-  const dataString = JSON.stringify({
+  const dataString = {
     publicKey,
     username,
     email
-  })
+  }
   //This is a simple call to replicate blockstack's make keychain function
   const options = { url: config.DEV_KEYCHAIN_URL, method: 'POST', headers: headers, form: dataString };
   return request(options)
@@ -76,12 +76,12 @@ export async function makeAppKeyPair(params) {
   if(params.login) {
     const { publicKey } = params.keyPair;
     encryptedMnemonic = await encryptECIES(params.serverPublicKey, params.decryptedMnemonic);
-    dataString = JSON.stringify({
+    dataString = {
       publicKey,
       username: params.username,
       url: params.appObj.appOrigin,
       mnemonic: encryptedMnemonic
-    });
+    };
   } else {
     //encrypt the mnemonic with the key sent by the server
     const { privateKey, publicKey } = params.keyPair;
@@ -91,12 +91,12 @@ export async function makeAppKeyPair(params) {
     mnemonic = decryptedData.mnemonic;
     encryptedMnemonic = await encryptECIES(serverPublicKey, mnemonic);
     //Config for the post
-    dataString = JSON.stringify({
+    dataString = {
       publicKey,
       username: params.username,
       url: params.appObj.appOrigin,
       mnemonic: encryptedMnemonic
-    });
+    };
   }
 
   var options = { url: config.DEV_APP_KEY_URL, method: 'POST', headers: headers, form: dataString };
@@ -214,7 +214,7 @@ export async function login(params) {
       //First we need to generate a transit keypair
       const keyPair = await makeTransitKeys();
       const { publicKey, privateKey } = keyPair;
-      const dataString = JSON.stringify({publicKey, username, email});
+      const dataString = {publicKey, username, email};
       const options = { url: config.DEV_MNEMONIC_URL, method: 'POST', headers: headers, body: dataString };
       return request(options)
       .then(async (body) => {
@@ -404,7 +404,7 @@ export async function makeUserSession(sessionObj) {
 }
 
 export async function storeMnemonic(username, encryptedMnemonic) {
-  const dataString = JSON.stringify({username, encryptedKeychain: encryptedMnemonic});
+  const dataString = {username, encryptedKeychain: encryptedMnemonic};
   const options = { url: config.DEV_ENCRYPTED_KEY_URL, method: 'POST', headers: headers, form: dataString };
   return request(options)
   .then(async (body) => {
