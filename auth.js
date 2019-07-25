@@ -215,7 +215,7 @@ export async function login(params) {
       const keyPair = await makeTransitKeys();
       const { publicKey, privateKey } = keyPair;
       const dataString = {publicKey, username, email};
-      const options = { url: config.DEV_MNEMONIC_URL, method: 'POST', headers: headers, body: dataString };
+      const options = { url: config.DEV_MNEMONIC_URL, method: 'POST', headers: headers, form: dataString };
       return request(options)
       .then(async (body) => {
         // POST succeeded...
