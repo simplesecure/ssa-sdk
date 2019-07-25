@@ -43,14 +43,14 @@ module.exports = {
   },
   makeKeychain: async function(email, username, keypair) {
     //Send the username and the passphrase which will be used by the server to encrypt sensitive data
-    const { publicKey, privateKey } = keypair
-    const dataString = JSON.stringify({
+    const { publicKey } = keypair
+    const dataString = {
       publicKey,
-      username, 
+      username,
       email
-    })
+    }
     //This is a simple call to replicate blockstack's make keychain function
-    const options = { url: process.env.DEV_KEYCHAIN_URL, method: 'POST', headers: headers, body: dataString };
+    const options = { url: process.env.DEV_KEYCHAIN_URL, method: 'POST', headers: headers, form: dataString };
     return request(options)
     .then(async (body) => {
       // POST succeeded...
@@ -75,12 +75,12 @@ module.exports = {
     if(params.login) {
       const { publicKey } = params.keyPair;
       encryptedMnemonic = await encryptECIES(params.serverPublicKey, params.decryptedMnemonic);
-      dataString = JSON.stringify({
+      dataString = {
         publicKey,
         username: params.username,
         url: params.appObj.appOrigin,
-        mnemonic: encryptedMnemonic
-      });
+        mnemonic: JSON.stringify(encryptedMnemonic)
+      };
     } else {
       //encrypt the mnemonic with the key sent by the server
       const { privateKey, publicKey } = params.keyPair;
@@ -90,15 +90,15 @@ module.exports = {
       mnemonic = decryptedData.mnemonic;
       encryptedMnemonic = await encryptECIES(serverPublicKey, mnemonic);
       //Config for the post
-      dataString = JSON.stringify({
+      dataString = {
         publicKey,
         username: params.username,
         url: params.appObj.appOrigin,
-        mnemonic: encryptedMnemonic
-      });
+        mnemonic: JSON.stringify(encryptedMnemonic)
+      };
     }
 
-    var options = { url: process.env.DEV_APP_KEY_URL, method: 'POST', headers: headers, body: dataString };
+    var options = { url: process.env.DEV_APP_KEY_URL, method: 'POST', headers: headers, form: dataString };
     return request(options)
     .then((body) => {
       return {
@@ -164,7 +164,7 @@ module.exports = {
             username: credObj.id,
             userPayload: encryptedUserPayload.toString()
           }
-        
+
           Cookies.set('simple-secure', JSON.stringify(cookiePayload), { expires: 7 });
         }
         return {
@@ -209,8 +209,8 @@ module.exports = {
         //First we need to generate a transit keypair
         const keyPair = await this.makeTransitKeys();
         const { publicKey, privateKey } = keyPair;
-        const dataString = JSON.stringify({publicKey, username, email});
-        const options = { url: 'https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/getMnemonic-dev', method: 'POST', headers: headers, body: dataString };
+        const dataString = {publicKey, username, email};
+        const options = { url: process.env.DEV_MNEMONIC_URL, method: 'POST', headers: headers, form: dataString };
         return request(options)
         .then(async (body) => {
           // POST succeeded...
@@ -242,7 +242,7 @@ module.exports = {
               username: params.credObj.id
             }
             const userSession = await this.makeUserSession(sessionObj);
-          
+
             const userPayload = {
               privateKey: decryptedAppKeys.private
             }
@@ -254,7 +254,7 @@ module.exports = {
                 idAddress,
                 userPayload: encryptedUserPayload.toString()
               }
-            
+
               Cookies.set('simple-secure', JSON.stringify(cookiePayload), { expires: 7 });
               return {
                 message: "user session created",
@@ -267,7 +267,7 @@ module.exports = {
             }
           } catch(error) {
             return {
-              message: "invalid password", 
+              message: "invalid password",
               body: error
             }
           }
@@ -289,7 +289,7 @@ module.exports = {
           if(cookiePayload.username === params.credObj.id) {
             const encryptedKeychain = cookiePayload.userPayload;
             const bytes  = CryptoJS.AES.decrypt(encryptedKeychain, params.credObj.password);
-            
+
             try {
               const decryptedMnemonic = bytes.toString(CryptoJS.enc.Utf8);
               const privateKey = JSON.parse(decryptedMnemonic).privateKey;
@@ -380,10 +380,10 @@ module.exports = {
         appPrivateKey: sessionObj.appPrivKey,
         hubUrl: sessionObj.hubUrl,
         identityAddress: idAddress,
-        username: sessionObj.username, 
+        username: sessionObj.username,
         gaiaHubConfig: await connectToGaiaHub('https://hub.blockstack.org', sessionObj.appPrivKey,"")
         // profile: profileObj,  ***We will need to be returning the profile object here once we figure it out***
-      }, 
+      },
     })
     const userSession = new UserSession({
       appConfig,
@@ -403,8 +403,8 @@ module.exports = {
     }
   },
   storeMnemonic: async function (username, encryptedMnemonic) {
-    const dataString = JSON.stringify({username, encryptedKeychain: encryptedMnemonic});
-    const options = { url: process.env.DEV_STORE_ENCRYPTED_KEYCHAIN, method: 'POST', headers: headers, body: dataString };
+    const dataString = {username, encryptedKeychain: JSON.stringify(encryptedMnemonic)};
+    const options = { url: process.env.DEV_ENCRYPTED_KEY_URL, method: 'POST', headers: headers, form: dataString };
     return request(options)
     .then(async (body) => {
       // POST succeeded...
@@ -421,7 +421,7 @@ module.exports = {
         body: error
       }
     });
-  }, 
+  },
   registerSubdomain: function(name, idAddress) {
     const zonefile = `$ORIGIN ${name}\n$TTL 3600\n_https._tcp URI 10 1`
     const dataString = JSON.stringify({name, owner_address: idAddress, zonefile});
