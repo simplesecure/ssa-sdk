@@ -43,14 +43,14 @@ module.exports = {
   },
   makeKeychain: async function(email, username, keypair) {
     //Send the username and the passphrase which will be used by the server to encrypt sensitive data
-    const { publicKey, privateKey } = keypair
-    const dataString = JSON.stringify({
+    const { publicKey } = keypair
+    const dataString = {
       publicKey,
       username,
       email
-    })
+    }
     //This is a simple call to replicate blockstack's make keychain function
-    const options = { url: process.env.DEV_KEYCHAIN_URL, method: 'POST', headers: headers, body: dataString };
+    const options = { url: process.env.DEV_KEYCHAIN_URL, method: 'POST', headers: headers, form: dataString };
     return request(options)
     .then(async (body) => {
       // POST succeeded...
@@ -75,12 +75,12 @@ module.exports = {
     if(params.login) {
       const { publicKey } = params.keyPair;
       encryptedMnemonic = await encryptECIES(params.serverPublicKey, params.decryptedMnemonic);
-      dataString = JSON.stringify({
+      dataString = {
         publicKey,
         username: params.username,
         url: params.appObj.appOrigin,
-        mnemonic: encryptedMnemonic
-      });
+        mnemonic: JSON.stringify(encryptedMnemonic)
+      };
     } else {
       //encrypt the mnemonic with the key sent by the server
       const { privateKey, publicKey } = params.keyPair;
@@ -90,15 +90,15 @@ module.exports = {
       mnemonic = decryptedData.mnemonic;
       encryptedMnemonic = await encryptECIES(serverPublicKey, mnemonic);
       //Config for the post
-      dataString = JSON.stringify({
+      dataString = {
         publicKey,
         username: params.username,
         url: params.appObj.appOrigin,
-        mnemonic: encryptedMnemonic
-      });
+        mnemonic: JSON.stringify(encryptedMnemonic)
+      };
     }
 
-    var options = { url: process.env.DEV_APP_KEY_URL, method: 'POST', headers: headers, body: dataString };
+    var options = { url: process.env.DEV_APP_KEY_URL, method: 'POST', headers: headers, form: dataString };
     return request(options)
     .then((body) => {
       return {
@@ -209,8 +209,8 @@ module.exports = {
         //First we need to generate a transit keypair
         const keyPair = await this.makeTransitKeys();
         const { publicKey, privateKey } = keyPair;
-        const dataString = JSON.stringify({publicKey, username, email});
-        const options = { url: process.env.DEV_MNEMONIC_URL, method: 'POST', headers: headers, body: dataString };
+        const dataString = {publicKey, username, email};
+        const options = { url: process.env.DEV_MNEMONIC_URL, method: 'POST', headers: headers, form: dataString };
         return request(options)
         .then(async (body) => {
           // POST succeeded...
@@ -403,8 +403,8 @@ module.exports = {
     }
   },
   storeMnemonic: async function (username, encryptedMnemonic) {
-    const dataString = JSON.stringify({username, encryptedKeychain: encryptedMnemonic});
-    const options = { url: process.env.DEV_ENCRYPTED_KEY_URL, method: 'POST', headers: headers, body: dataString };
+    const dataString = {username, encryptedKeychain: JSON.stringify(encryptedMnemonic)};
+    const options = { url: process.env.DEV_ENCRYPTED_KEY_URL, method: 'POST', headers: headers, form: dataString };
     return request(options)
     .then(async (body) => {
       // POST succeeded...
