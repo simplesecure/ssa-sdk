@@ -16,7 +16,7 @@ const headers = { 'Content-Type': 'application/json', 'Accept': 'application/jso
 
 export function nameLookUp(name) {
   //Note: if we want to support other names spaces and other root id, we will need a different approach.
-  const options = { url: `https://core.blockstack.org/v1/names/${name}.id`, method: 'GET' };
+  const options = { url: `https://core.blockstack.org/v1/names/${name}.id.blockstack`, method: 'GET' };
   return request(options)
   .then(async () => {
     return {
