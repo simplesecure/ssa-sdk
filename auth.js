@@ -1,3 +1,6 @@
+import { lookup } from 'dns';
+import { lookupProfile } from 'blockstack';
+
 require('dotenv').config()
 const config = require('./config.json');
 const CryptoJS = require("crypto-js");
@@ -69,7 +72,7 @@ export async function makeKeychain(email, username, keypair) {
   });
 }
 
-export async function makeAppKeyPair(params) {
+export async function makeAppKeyPair(params, profile) {
   //Need to determine if this call is being made on account registration or not
   let dataString;
   let encryptedMnemonic;
@@ -80,7 +83,8 @@ export async function makeAppKeyPair(params) {
       publicKey,
       username: params.username,
       url: params.appObj.appOrigin,
-      mnemonic: JSON.stringify(encryptedMnemonic)
+      mnemonic: JSON.stringify(encryptedMnemonic), 
+      profile: profile && profile.apps ? JSON.stringify(profile) : null
     };
   } else {
     //encrypt the mnemonic with the key sent by the server
@@ -95,7 +99,8 @@ export async function makeAppKeyPair(params) {
       publicKey,
       username: params.username,
       url: params.appObj.appOrigin,
-      mnemonic: JSON.stringify(encryptedMnemonic)
+      mnemonic: JSON.stringify(encryptedMnemonic), 
+      profile: profile && profile.apps ? JSON.stringify(profile) : null
     };
   }
 
@@ -143,7 +148,9 @@ export async function createUserAccount(credObj, appObj) {
       appObj,
       keyPair
     }
-    const appKeys = await makeAppKeyPair(appKeyParams);
+    const profile = await makeProfile(appObj);
+
+    const appKeys = await makeAppKeyPair(appKeyParams, profile);
     const encryptedKeys = appKeys.body;
     const decryptedKeys = await decryptECIES(privateKey, JSON.parse(encryptedKeys));
     const appPrivateKey = JSON.parse(decryptedKeys).private;
@@ -235,7 +242,8 @@ export async function login(params) {
             keyPair,
             serverPublicKey
           }
-          const appKeys = await makeAppKeyPair(appKeyParams);
+          const profile = await updateProfile(params.credObj.id, params.appObj);
+          const appKeys = await makeAppKeyPair(appKeyParams, profile);
           const decryptedAppKeys = JSON.parse(await decryptECIES(privateKey, JSON.parse(appKeys.body)));
           console.log(decryptedAppKeys.private);
           idAddress = id.split("ID-")[1];
@@ -445,4 +453,33 @@ export function registerSubdomain(name) {
       body: error
     }
   });
+}
+
+export function makeProfile(appObj) {
+  let profile = {
+    '@type': 'Person',
+    '@context': 'http://schema.org', 
+    'apps': {}
+  }
+
+  profile.apps[appObj.appOrigin] = ""
+  return profile;
+}
+
+export function updateProfile(name, appObj) {
+  //First we look up the profile
+  let profile;
+  profile = lookupProfile(name, 'https://core.blockstack.org');
+  if(profile){
+    profile.apps[appObj.appOrigin] = ""
+  } else {
+    profile = {
+      '@type': 'Person',
+      '@context': 'http://schema.org', 
+      'apps': {}
+    }
+    profile.apps[appObj.appOrigin] = ""
+  }
+  
+  return profile;
 }

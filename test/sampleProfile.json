@@ -1,0 +1,75 @@
+[
+    {
+      "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NksifQ.eyJqdGkiOiI3Zjg3YTg3MC1kY2QyLTQ0NDctYTIwYy0wZjY2NWYyMDQyMzAiLCJpYXQiOiIyMDE5LTA3LTIzVDE0OjM0OjA0LjkwNVoiLCJleHAiOiIyMDIwLTA3LTIzVDE0OjM0OjA0LjkwNVoiLCJzdWJqZWN0Ijp7InB1YmxpY0tleSI6IjAzZGQ3MTJiMGEzMDAwZTUwMjk2YmYxNDM5Y2EzMWVlNGEyZWViOWVmYjMzNWVlMDRiYWZmZmM2ZjJmODNmYTBlMSJ9LCJpc3N1ZXIiOnsicHVibGljS2V5IjoiMDNkZDcxMmIwYTMwMDBlNTAyOTZiZjE0MzljYTMxZWU0YTJlZWI5ZWZiMzM1ZWUwNGJhZmZmYzZmMmY4M2ZhMGUxIn0sImNsYWltIjp7IkB0eXBlIjoiUGVyc29uIiwiQGNvbnRleHQiOiJodHRwOi8vc2NoZW1hLm9yZyIsImFjY291bnQiOlt7IkB0eXBlIjoiQWNjb3VudCIsInBsYWNlaG9sZGVyIjpmYWxzZSwic2VydmljZSI6InR3aXR0ZXIiLCJpZGVudGlmaWVyIjoiamVodW50ZXI1ODExIiwicHJvb2ZUeXBlIjoiaHR0cCIsInByb29mVXJsIjoiaHR0cHM6Ly90d2l0dGVyLmNvbS9qZWh1bnRlcjU4MTEvc3RhdHVzLzk4MDIyNjg5MjA5MDQ4Njc4NCJ9LHsiQHR5cGUiOiJBY2NvdW50IiwicGxhY2Vob2xkZXIiOmZhbHNlLCJzZXJ2aWNlIjoiZ2l0aHViIiwiaWRlbnRpZmllciI6ImplaHVudGVyNTgxMSIsInByb29mVHlwZSI6Imh0dHAiLCJwcm9vZlVybCI6Imh0dHBzOi8vZ2lzdC5naXRodWIuY29tL2plaHVudGVyNTgxMS8yMmJiNmIwNWIyZTcwY2ViMDE2YmFiYzZjYzVmYjExNCJ9LHsiQHR5cGUiOiJBY2NvdW50IiwicGxhY2Vob2xkZXIiOmZhbHNlLCJzZXJ2aWNlIjoiaGFja2VyTmV3cyIsImlkZW50aWZpZXIiOiJqaHVudGVyMTAxNiIsInByb29mVHlwZSI6Imh0dHAiLCJwcm9vZlVybCI6Imh0dHBzOi8vbmV3cy55Y29tYmluYXRvci5jb20vdXNlcj9pZD1qaHVudGVyMTAxNiJ9XSwibmFtZSI6Ikp1c3RpbiBIdW50ZXIiLCJkZXNjcmlwdGlvbiI6IkZvdW5kZXIgb2YgR3JhcGhpdGUuICIsImltYWdlIjpbeyJAdHlwZSI6IkltYWdlT2JqZWN0IiwibmFtZSI6ImF2YXRhciIsImNvbnRlbnRVcmwiOiJodHRwczovL2dhaWEuYmxvY2tzdGFjay5vcmcvaHViLzFDaVV3UFl5bThWS2VLcHBES1N1UlZSQXlITmFKZHlTU0cvL2F2YXRhci0wIn1dLCJhcHBzIjp7Imh0dHBzOi8vYXBwLmdyYXBoaXRlZG9jcy5jb20iOiJodHRwczovL2dhaWEuYmxvY2tzdGFjay5vcmcvaHViLzFCb3BZU2ZDTjF2SlZUY05OcEV1ZlZDclhOOGpadjVaVzUvIiwiaHR0cDovL2xvY2FsaG9zdDo4MDgwIjoiaHR0cHM6Ly9nYWlhLmJsb2Nrc3RhY2sub3JnL2h1Yi8xNlZEanBwZVV4M1F2eFhhQ0xOMVR4dmthQXpaVlJVdFAxLyIsImh0dHBzOi8vc2VyZW5lLWhhbWlsdG9uLTU2ZTg4ZS5uZXRsaWZ5LmNvbSI6Imh0dHBzOi8vZ2FpYS5ibG9ja3N0YWNrLm9yZy9odWIvMUVISnZNa3hNNmo1SHhQWXlvcWdrdFAzU3dxTEY4YTg5WS8iLCJodHRwOi8vbG9jYWxob3N0OjMwMDAiOiJodHRwczovL2dhaWEuYmxvY2tzdGFjay5vcmcvaHViLzFObmVKcWN5RjM2VTJwN0V1aXE0ZU15a29keWdlTjlOWDEvIiwiaHR0cHM6Ly90ZXN0bmV0Lm1pc3Rob3MuaW8iOiJodHRwczovL2dhaWEuYmxvY2tzdGFjay5vcmcvaHViLzFHdkthamY5dFhIRlFpcHdYdUVHWDU1VDRpaGtEWHBkWkovIn0sImFwaSI6eyJnYWlhSHViQ29uZmlnIjp7InVybF9wcmVmaXgiOiJodHRwczovL2dhaWEuYmxvY2tzdGFjay5vcmcvaHViLyJ9LCJnYWlhSHViVXJsIjoiaHR0cHM6Ly9odWIuYmxvY2tzdGFjay5vcmcifX19.yVO5NWc9xpz10OgHC8oTrD44koa-idWxl45Z50FpPtd3PzCtsIf94hHyZ2LTz-Gq0Fazsw5ZJGeOPNLHA06_eQ",
+      "decodedToken": {
+        "header": {
+          "typ": "JWT",
+          "alg": "ES256K"
+        },
+        "payload": {
+          "jti": "7f87a870-dcd2-4447-a20c-0f665f204230",
+          "iat": "2019-07-23T14:34:04.905Z",
+          "exp": "2020-07-23T14:34:04.905Z",
+          "subject": {
+            "publicKey": "03dd712b0a3000e50296bf1439ca31ee4a2eeb9efb335ee04bafffc6f2f83fa0e1"
+          },
+          "issuer": {
+            "publicKey": "03dd712b0a3000e50296bf1439ca31ee4a2eeb9efb335ee04bafffc6f2f83fa0e1"
+          },
+          "claim": {
+            "@type": "Person",
+            "@context": "http://schema.org",
+            "account": [
+              {
+                "@type": "Account",
+                "placeholder": false,
+                "service": "twitter",
+                "identifier": "jehunter5811",
+                "proofType": "http",
+                "proofUrl": "https://twitter.com/jehunter5811/status/980226892090486784"
+              },
+              {
+                "@type": "Account",
+                "placeholder": false,
+                "service": "github",
+                "identifier": "jehunter5811",
+                "proofType": "http",
+                "proofUrl": "https://gist.github.com/jehunter5811/22bb6b05b2e70ceb016babc6cc5fb114"
+              },
+              {
+                "@type": "Account",
+                "placeholder": false,
+                "service": "hackerNews",
+                "identifier": "jhunter1016",
+                "proofType": "http",
+                "proofUrl": "https://news.ycombinator.com/user?id=jhunter1016"
+              }
+            ],
+            "name": "Justin Hunter",
+            "description": "Founder of Graphite. ",
+            "image": [
+              {
+                "@type": "ImageObject",
+                "name": "avatar",
+                "contentUrl": "https://gaia.blockstack.org/hub/1CiUwPYym8VKeKppDKSuRVRAyHNaJdySSG//avatar-0"
+              }
+            ],
+            "apps": {
+              "https://app.graphitedocs.com": "https://gaia.blockstack.org/hub/1BopYSfCN1vJVTcNNpEufVCrXN8jZv5ZW5/",
+              "http://localhost:8080": "https://gaia.blockstack.org/hub/16VDjppeUx3QvxXaCLN1TxvkaAzZVRUtP1/",
+              "https://serene-hamilton-56e88e.netlify.com": "https://gaia.blockstack.org/hub/1EHJvMkxM6j5HxPYyoqgktP3SwqLF8a89Y/",
+              "http://localhost:3000": "https://gaia.blockstack.org/hub/1NneJqcyF36U2p7Euiq4eMykodygeN9NX1/",
+              "https://testnet.misthos.io": "https://gaia.blockstack.org/hub/1GvKajf9tXHFQipwXuEGX55T4ihkDXpdZJ/"
+            },
+            "api": {
+              "gaiaHubConfig": {
+                "url_prefix": "https://gaia.blockstack.org/hub/"
+              },
+              "gaiaHubUrl": "https://hub.blockstack.org"
+            }
+          }
+        },
+        "signature": "yVO5NWc9xpz10OgHC8oTrD44koa-idWxl45Z50FpPtd3PzCtsIf94hHyZ2LTz-Gq0Fazsw5ZJGeOPNLHA06_eQ"
+      }
+    }
+  ]

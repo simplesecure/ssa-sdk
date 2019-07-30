@@ -1,11 +1,11 @@
-require('dotenv').config()
+require('dotenv').config();
+const config = require('../config.json');
 const CryptoJS = require("crypto-js");
 const Cookies = require('js-cookie');
 const request = require('request-promise');
 const { createECDH } = require('crypto-browserify');
-const { connectToGaiaHub } = require('blockstack/lib/storage/hub');
 const { InstanceDataStore } = require('blockstack/lib/auth/sessionStore');
-const { AppConfig, UserSession } = require('blockstack');
+const { AppConfig, UserSession, signProfileToken, connectToGaiaHub, uploadToGaiaHub } = require('blockstack');
 const { encryptECIES, decryptECIES } = require('blockstack/lib/encryption');
 let mnemonic;
 let serverPublicKey;
@@ -17,7 +17,7 @@ module.exports = {
   nameLookUp: function(name) {
     console.log(`${name}.id`)
     //Note: if we want to support other names spaces and other root id, we will need a different approach.
-    const options = { url: `${process.env.NAME_LOOKUP_URL}${name}.id`, method: 'GET' };
+    const options = { url: `${process.env.NAME_LOOKUP_URL}${name}.id.blockstack`, method: 'GET' };
     return request(options)
     .then(async () => {
       return {
@@ -68,8 +68,8 @@ module.exports = {
       }
     });
   },
-  makeAppKeyPair: async function(params) {
-    //Need to determine if this call is being made on account registration or not
+  makeAppKeyPair: async function(params, profile) {
+   //Need to determine if this call is being made on account registration or not
     let dataString;
     let encryptedMnemonic;
     if(params.login) {
@@ -79,8 +79,10 @@ module.exports = {
         publicKey,
         username: params.username,
         url: params.appObj.appOrigin,
-        mnemonic: JSON.stringify(encryptedMnemonic)
+        mnemonic: JSON.stringify(encryptedMnemonic), 
+        profile: profile && profile.apps ? JSON.stringify(profile) : null
       };
+      console.log(dataString);
     } else {
       //encrypt the mnemonic with the key sent by the server
       const { privateKey, publicKey } = params.keyPair;
@@ -94,11 +96,13 @@ module.exports = {
         publicKey,
         username: params.username,
         url: params.appObj.appOrigin,
-        mnemonic: JSON.stringify(encryptedMnemonic)
+        mnemonic: JSON.stringify(encryptedMnemonic), 
+        profile: profile && profile.apps ? JSON.stringify(profile) : null
       };
+      console.log(dataString);
     }
 
-    var options = { url: process.env.DEV_APP_KEY_URL, method: 'POST', headers: headers, form: dataString };
+    var options = { url: config.DEV_APP_KEY_URL, method: 'POST', headers: headers, form: dataString };
     return request(options)
     .then((body) => {
       return {
@@ -115,7 +119,7 @@ module.exports = {
     });
   },
   createUserAccount: async function(credObj, appObj) {
-    //Take the credentials object and run the following in order:
+     //Take the credentials object and run the following in order:
     //1. Check to see if name is available.
     //2. If available, generate transit keypair and send request to server to make a keychain along with transit pubKey to be used for encrypting the response
     //3. Decrypt response with transit privKey, then send request for server to derive appKeyPair, send transit pubKey again so server can encrypt response
@@ -141,7 +145,9 @@ module.exports = {
         appObj,
         keyPair
       }
-      const appKeys = await this.makeAppKeyPair(appKeyParams);
+      const profile = await this.makeProfile(appObj);
+
+      const appKeys = await this.makeAppKeyPair(appKeyParams, profile);
       const encryptedKeys = appKeys.body;
       const decryptedKeys = await decryptECIES(privateKey, JSON.parse(encryptedKeys));
       const appPrivateKey = JSON.parse(decryptedKeys).private;
@@ -162,6 +168,7 @@ module.exports = {
           const encryptedUserPayload = CryptoJS.AES.encrypt(JSON.stringify(userSessionParams.userPayload), credObj.password);
           const cookiePayload = {
             username: credObj.id,
+            idAddress,
             userPayload: encryptedUserPayload.toString()
           }
 
@@ -210,7 +217,7 @@ module.exports = {
         const keyPair = await this.makeTransitKeys();
         const { publicKey, privateKey } = keyPair;
         const dataString = {publicKey, username, email};
-        const options = { url: process.env.DEV_MNEMONIC_URL, method: 'POST', headers: headers, form: dataString };
+        const options = { url: config.DEV_MNEMONIC_URL, method: 'POST', headers: headers, form: dataString };
         return request(options)
         .then(async (body) => {
           // POST succeeded...
@@ -230,7 +237,8 @@ module.exports = {
               keyPair,
               serverPublicKey
             }
-            const appKeys = await this.makeAppKeyPair(appKeyParams);
+            const profile = await this.updateProfile(params.credObj.id, params.appObj);
+            const appKeys = await this.makeAppKeyPair(appKeyParams, profile);
             const decryptedAppKeys = JSON.parse(await decryptECIES(privateKey, JSON.parse(appKeys.body)));
             console.log(decryptedAppKeys.private);
             idAddress = id.split("ID-")[1];
@@ -242,11 +250,11 @@ module.exports = {
               username: params.credObj.id
             }
             const userSession = await this.makeUserSession(sessionObj);
-
+  
             const userPayload = {
               privateKey: decryptedAppKeys.private
             }
-
+  
             if(userSession) {
               const encryptedUserPayload = CryptoJS.AES.encrypt(JSON.stringify(userPayload), params.credObj.password);
               const cookiePayload = {
@@ -254,7 +262,7 @@ module.exports = {
                 idAddress,
                 userPayload: encryptedUserPayload.toString()
               }
-
+  
               Cookies.set('simple-secure', JSON.stringify(cookiePayload), { expires: 7 });
               return {
                 message: "user session created",
@@ -289,35 +297,28 @@ module.exports = {
           if(cookiePayload.username === params.credObj.id) {
             const encryptedKeychain = cookiePayload.userPayload;
             const bytes  = CryptoJS.AES.decrypt(encryptedKeychain, params.credObj.password);
-
-            try {
-              const decryptedMnemonic = bytes.toString(CryptoJS.enc.Utf8);
-              const privateKey = JSON.parse(decryptedMnemonic).privateKey;
-              userPayload = {
-                privateKey
-              }
-              idAddress= cookiePayload.idAddress;
-              const sessionObj = {
-                scopes: params.appObj.scopes,
-                appOrigin: params.appObj.appOrigin,
-                appPrivKey: userPayload.privateKey,
-                hubUrl: params.credObj.hubUrl, //Still have to think through this one
-                username: params.credObj.id
-              }
-              const userSession = await this.makeUserSession(sessionObj);
-              if(userSession) {
-                return {
-                  message: "user session created",
-                  body: userSession
-                }
-              } else {
-                return {
-                  message: "error creating user session"
-                }
-              }
-            } catch(err) {
+            const decryptedMnemonic = bytes.toString(CryptoJS.enc.Utf8);
+            const privateKey = JSON.parse(decryptedMnemonic).privateKey;
+            userPayload = {
+              privateKey
+            }
+            idAddress= cookiePayload.idAddress;
+            const sessionObj = {
+              scopes: params.appObj.scopes,
+              appOrigin: params.appObj.appOrigin,
+              appPrivKey: userPayload.privateKey,
+              hubUrl: params.credObj.hubUrl, //Still have to think through this one
+              username: params.credObj.id
+            }
+            const userSession = await this.makeUserSession(sessionObj);
+            if(userSession) {
               return {
-                message: "invalid password"
+                message: "user session created",
+                body: userSession
+              }
+            } else {
+              return {
+                message: "error creating user session"
               }
             }
           } else {
@@ -347,8 +348,8 @@ module.exports = {
         const encryptedMnenomic = CryptoJS.AES.encrypt(JSON.stringify(mnemonic), params.credObj.password);
         const doubleEncryptedMnemonic = await encryptECIES(serverPublicKey, encryptedMnenomic.toString());
         const id = params.credObj.id;
-        const storeMnemonic = await this.storeMnemonic(id, doubleEncryptedMnemonic);
-        if(storeMnemonic) {
+        const postedMnemonic = await this.storeMnemonic(id, doubleEncryptedMnemonic);
+        if(postedMnemonic) {
           //Finally, let's register the username onchain (eventually)
           console.log("registering subdomain")
           const registeredName = await this.registerSubdomain(params.credObj.id, idAddress)
@@ -423,7 +424,7 @@ module.exports = {
     });
   },
   registerSubdomain: function(name, idAddress) {
-    const zonefile = `$ORIGIN ${name}\n$TTL 3600\n_https._tcp URI 10 1`
+    const zonefile = `$ORIGIN ${name}\n$TTL 3600\n_http._tcp IN URI 10 1 \n"https://gaia.blockstack.org/hub/${idAddress}/profile.json"`
     const dataString = JSON.stringify({name, owner_address: idAddress, zonefile});
     console.log(dataString);
     const options = { url: process.env.SUBDOMAIN_REGISTRATION, method: 'POST', headers: headers, body: dataString };
@@ -443,5 +444,32 @@ module.exports = {
         body: error
       }
     });
+  }, 
+  updateProfile: function(name, appObj) {
+    //First we look up the profile
+    let profile;
+    profile = lookupProfile(name, 'https://core.blockstack.org');
+    if(profile){
+      profile.apps[appObj.appOrigin] = ""
+    } else {
+      profile = {
+        '@type': 'Person',
+        '@context': 'http://schema.org', 
+        'apps': {}
+      }
+      profile.apps[appObj.appOrigin] = ""
+    }
+    
+    return profile;
+  },
+  makeProfile: function(appObj) {
+    let profile = {
+      '@type': 'Person',
+      '@context': 'http://schema.org', 
+      'apps': {}
+    }
+  
+    profile.apps[appObj.appOrigin] = ""
+    return profile;
   }
 }
