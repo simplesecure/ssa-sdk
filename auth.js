@@ -436,7 +436,7 @@ export function registerSubdomain(name) {
   const zonefile = `$ORIGIN ${name}\n$TTL 3600\n_http._tcp IN URI 10 1 \n"https://gaia.blockstack.org/hub/${idAddress}/profile.json"`
   const dataString = JSON.stringify({name, owner_address: idAddress, zonefile});
   console.log(dataString);
-  const options = { url: 'https://registrar.blockstack.org/register', method: 'POST', headers: headers, body: dataString };
+  const options = { url: config.SUBDOMAIN_REGISTRATION, method: 'POST', headers: headers, body: dataString };
   return request(options)
   .then(async (body) => {
     // POST succeeded...

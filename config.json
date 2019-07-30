@@ -7,6 +7,6 @@
     "PROD_ENCRYPTED_KEY_URL":"https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/encryptedKeychain-prod",
     "DEV_MNEMONIC_URL":"https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/getMnemonic-dev",
     "PROD_MNEMONIC_URL":"https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/getMnemonic-prod",
-    "SUBDOMAIN_REGISTRATION":"https://registrar.blockstack.org/regiser",
+    "SUBDOMAIN_REGISTRATION":"https://registrar.blockstack.org/register",
     "NAME_LOOKUP_URL":"https://core.blockstack.org/v1/names/"
 }
