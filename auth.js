@@ -461,7 +461,7 @@ export function makeProfile(appObj) {
     '@context': 'http://schema.org', 
     'apps': {}
   }
-  if(appObj.scopes.includes("publish")) {
+  if(appObj.scopes.indexOf("publish_data") > -1) {
     profile.apps[appObj.appOrigin] = ""
   }
   
@@ -473,7 +473,7 @@ export function updateProfile(name, appObj) {
   let profile;
   profile = lookupProfile(name, 'https://core.blockstack.org');
   if(profile){
-    if(appObj.scopes.includes("publish")) {
+    if(appObj.scopes.indexOf("publish_data") > -1) {
       profile.apps[appObj.appOrigin] = ""
     }
   } else {
@@ -482,7 +482,7 @@ export function updateProfile(name, appObj) {
       '@context': 'http://schema.org', 
       'apps': {}
     }
-    if(appObj.scopes.includes("publish")) {
+    if(appObj.scopes.indexOf("publish_data") > -1) {
       profile.apps[appObj.appOrigin] = ""
     }
   }
