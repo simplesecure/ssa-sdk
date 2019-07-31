@@ -449,14 +449,18 @@ module.exports = {
     let profile;
     profile = lookupProfile(name, 'https://core.blockstack.org');
     if(profile){
-      profile.apps[appObj.appOrigin] = ""
+      if(appObj.scopes.includes("publish")) {
+        profile.apps[appObj.appOrigin] = ""
+      }
     } else {
       profile = {
         '@type': 'Person',
         '@context': 'http://schema.org', 
         'apps': {}
       }
-      profile.apps[appObj.appOrigin] = ""
+      if(appObj.scopes.includes("publish")) {
+        profile.apps[appObj.appOrigin] = ""
+      }
     }
     
     return profile;
@@ -467,8 +471,10 @@ module.exports = {
       '@context': 'http://schema.org', 
       'apps': {}
     }
-  
-    profile.apps[appObj.appOrigin] = ""
+    if(appObj.scopes.includes("publish")) {
+      profile.apps[appObj.appOrigin] = ""
+    }
+    
     return profile;
   }
 }
