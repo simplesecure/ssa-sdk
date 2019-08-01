@@ -5,7 +5,7 @@ const Cookies = require('js-cookie');
 const request = require('request-promise');
 const { createECDH } = require('crypto-browserify');
 const { InstanceDataStore } = require('blockstack/lib/auth/sessionStore');
-const { AppConfig, UserSession, lookupProfile, connectToGaiaHub, uploadToGaiaHub } = require('blockstack');
+const { AppConfig, UserSession, signProfileToken, lookupProfile, connectToGaiaHub, uploadToGaiaHub } = require('blockstack');
 const { encryptECIES, decryptECIES } = require('blockstack/lib/encryption');
 let mnemonic;
 let serverPublicKey;
@@ -17,7 +17,7 @@ module.exports = {
   nameLookUp: function(name) {
     console.log(`${name}.id`)
     //Note: if we want to support other names spaces and other root id, we will need a different approach.
-    const options = { url: `${process.env.NAME_LOOKUP_URL}${name}.id.blockstack`, method: 'GET' };
+    const options = { url: `${config.NAME_LOOKUP_URL}${name}.id.blockstack`, method: 'GET' };
     return request(options)
     .then(async () => {
       return {
@@ -405,7 +405,7 @@ module.exports = {
   },
   storeMnemonic: async function (username, encryptedMnemonic) {
     const dataString = {username, encryptedKeychain: JSON.stringify(encryptedMnemonic)};
-    const options = { url: process.env.DEV_ENCRYPTED_KEY_URL, method: 'POST', headers: headers, form: dataString };
+    const options = { url: config.DEV_ENCRYPTED_KEY_URL, method: 'POST', headers: headers, form: dataString };
     return request(options)
     .then(async (body) => {
       // POST succeeded...
@@ -444,10 +444,11 @@ module.exports = {
       }
     });
   },
-  updateProfile: function(name, appObj) {
+  updateProfile: async function(name, appObj) {
     //First we look up the profile
     let profile;
-    profile = lookupProfile(name, 'https://core.blockstack.org');
+    profile = await lookupProfile(name, 'https://core.blockstack.org');
+    debugger
     if(profile){
       if(appObj.scopes.indexOf("publish_data") > -1) {
         profile.apps[appObj.appOrigin] = ""
