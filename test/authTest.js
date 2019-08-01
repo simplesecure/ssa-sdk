@@ -17,7 +17,7 @@ module.exports = {
   nameLookUp: function(name) {
     console.log(`${name}.id`)
     //Note: if we want to support other names spaces and other root id, we will need a different approach.
-    const options = { url: `${process.env.NAME_LOOKUP_URL}${name}.id.blockstack`, method: 'GET' };
+    const options = { url: `${config.NAME_LOOKUP_URL}${name}.id.blockstack`, method: 'GET' };
     return request(options)
     .then(async () => {
       return {
@@ -50,7 +50,7 @@ module.exports = {
       email
     }
     //This is a simple call to replicate blockstack's make keychain function
-    const options = { url: process.env.DEV_KEYCHAIN_URL, method: 'POST', headers: headers, form: dataString };
+    const options = { url: config.DEV_KEYCHAIN_URL, method: 'POST', headers: headers, form: dataString };
     return request(options)
     .then(async (body) => {
       // POST succeeded...
@@ -102,7 +102,7 @@ module.exports = {
       console.log(dataString);
     }
 
-    var options = { url: 'http://localhost:3000/appkeys-dev', method: 'POST', headers: headers, form: dataString };
+    var options = { url: config.DEV_APP_KEY_URL, method: 'POST', headers: headers, form: dataString };
     return request(options)
     .then((body) => {
       return {
@@ -405,7 +405,7 @@ module.exports = {
   },
   storeMnemonic: async function (username, encryptedMnemonic) {
     const dataString = {username, encryptedKeychain: JSON.stringify(encryptedMnemonic)};
-    const options = { url: process.env.DEV_ENCRYPTED_KEY_URL, method: 'POST', headers: headers, form: dataString };
+    const options = { url: config.DEV_ENCRYPTED_KEY_URL, method: 'POST', headers: headers, form: dataString };
     return request(options)
     .then(async (body) => {
       // POST succeeded...
