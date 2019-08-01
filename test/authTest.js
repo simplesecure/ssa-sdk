@@ -446,14 +446,19 @@ module.exports = {
   },
   updateProfile: async function(name, appObj) {
     //First we look up the profile
-    let profile;
-    profile = await lookupProfile(`${name}.id.blockstack`, 'https://core.blockstack.org');
-    debugger
-    if(profile){
-      if(appObj.scopes.indexOf("publish_data") > -1) {
-        profile.apps[appObj.appOrigin] = ""
+    let profile
+    try {
+      profile = await lookupProfile(`${name}.id.blockstack`, 'https://core.blockstack.org');
+      console.log("PROFILE", profile)
+      if (profile) {
+        if(appObj.scopes.indexOf("publish_data") > -1) {
+          profile.apps[appObj.appOrigin] = ""
+        }
       }
-    } else {
+      return profile;
+    }
+    catch (error) {
+      console.log("ERROR", error)
       profile = {
         '@type': 'Person',
         '@context': 'http://schema.org',
@@ -462,9 +467,9 @@ module.exports = {
       if(appObj.scopes.indexOf("publish_data") > -1) {
         profile.apps[appObj.appOrigin] = ""
       }
+      console.log("PROFILE", profile)
+      return profile;
     }
-
-    return profile;
   },
   makeProfile: function(appObj) {
     let profile = {
@@ -475,7 +480,7 @@ module.exports = {
     if(appObj.scopes.indexOf("publish_data") > -1) {
       profile.apps[appObj.appOrigin] = ""
     }
-    
+
     return profile;
   }
 }
