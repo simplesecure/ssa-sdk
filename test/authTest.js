@@ -5,7 +5,7 @@ const Cookies = require('js-cookie');
 const request = require('request-promise');
 const { createECDH } = require('crypto-browserify');
 const { InstanceDataStore } = require('blockstack/lib/auth/sessionStore');
-const { AppConfig, UserSession, signProfileToken, connectToGaiaHub, uploadToGaiaHub } = require('blockstack');
+const { AppConfig, UserSession, signProfileToken, lookupProfile, connectToGaiaHub, uploadToGaiaHub } = require('blockstack');
 const { encryptECIES, decryptECIES } = require('blockstack/lib/encryption');
 let mnemonic;
 let serverPublicKey;
@@ -444,10 +444,11 @@ module.exports = {
       }
     });
   },
-  updateProfile: function(name, appObj) {
+  updateProfile: async function(name, appObj) {
     //First we look up the profile
     let profile;
-    profile = lookupProfile(name, 'https://core.blockstack.org');
+    profile = await lookupProfile(name, 'https://core.blockstack.org');
+    debugger
     if(profile){
       if(appObj.scopes.includes("publish")) {
         profile.apps[appObj.appOrigin] = ""

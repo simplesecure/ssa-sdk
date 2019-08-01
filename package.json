@@ -4,7 +4,8 @@
   "description": "",
   "main": "auth.js",
   "scripts": {
-    "test": "mocha"
+    "test": "mocha",
+    "debug": "mocha --inspect-brk"
   },
   "author": "",
   "license": "ISC",
