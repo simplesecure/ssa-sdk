@@ -83,7 +83,7 @@ export async function makeAppKeyPair(params, profile) {
       publicKey,
       username: params.username,
       url: params.appObj.appOrigin,
-      mnemonic: JSON.stringify(encryptedMnemonic), 
+      mnemonic: JSON.stringify(encryptedMnemonic),
       profile: profile && profile.apps ? JSON.stringify(profile) : null
     };
   } else {
@@ -99,7 +99,7 @@ export async function makeAppKeyPair(params, profile) {
       publicKey,
       username: params.username,
       url: params.appObj.appOrigin,
-      mnemonic: JSON.stringify(encryptedMnemonic), 
+      mnemonic: JSON.stringify(encryptedMnemonic),
       profile: profile && profile.apps ? JSON.stringify(profile) : null
     };
   }
@@ -433,7 +433,7 @@ export async function storeMnemonic(username, encryptedMnemonic) {
 }
 
 export function registerSubdomain(name) {
-  const zonefile = `$ORIGIN ${name}\n$TTL 3600\n_http._tcp IN URI 10 1 \n"https://gaia.blockstack.org/hub/${idAddress}/profile.json"`
+  const zonefile = `$ORIGIN ${name}\n$TTL 3600\n_http._tcp URI 10 1 "https://gaia.blockstack.org/hub/${idAddress}/profile.json"`
   const dataString = JSON.stringify({name, owner_address: idAddress, zonefile});
   console.log(dataString);
   const options = { url: config.SUBDOMAIN_REGISTRATION, method: 'POST', headers: headers, body: dataString };
@@ -458,7 +458,7 @@ export function registerSubdomain(name) {
 export function makeProfile(appObj) {
   let profile = {
     '@type': 'Person',
-    '@context': 'http://schema.org', 
+    '@context': 'http://schema.org',
     'apps': {}
   }
 
@@ -475,11 +475,11 @@ export function updateProfile(name, appObj) {
   } else {
     profile = {
       '@type': 'Person',
-      '@context': 'http://schema.org', 
+      '@context': 'http://schema.org',
       'apps': {}
     }
     profile.apps[appObj.appOrigin] = ""
   }
-  
+
   return profile;
 }

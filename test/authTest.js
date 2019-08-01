@@ -79,7 +79,7 @@ module.exports = {
         publicKey,
         username: params.username,
         url: params.appObj.appOrigin,
-        mnemonic: JSON.stringify(encryptedMnemonic), 
+        mnemonic: JSON.stringify(encryptedMnemonic),
         profile: profile && profile.apps ? JSON.stringify(profile) : null
       };
       console.log(dataString);
@@ -96,13 +96,13 @@ module.exports = {
         publicKey,
         username: params.username,
         url: params.appObj.appOrigin,
-        mnemonic: JSON.stringify(encryptedMnemonic), 
+        mnemonic: JSON.stringify(encryptedMnemonic),
         profile: profile && profile.apps ? JSON.stringify(profile) : null
       };
       console.log(dataString);
     }
 
-    var options = { url: config.DEV_APP_KEY_URL, method: 'POST', headers: headers, form: dataString };
+    var options = { url: 'http://localhost:3000/appkeys-dev', method: 'POST', headers: headers, form: dataString };
     return request(options)
     .then((body) => {
       return {
@@ -250,11 +250,11 @@ module.exports = {
               username: params.credObj.id
             }
             const userSession = await this.makeUserSession(sessionObj);
-  
+
             const userPayload = {
               privateKey: decryptedAppKeys.private
             }
-  
+
             if(userSession) {
               const encryptedUserPayload = CryptoJS.AES.encrypt(JSON.stringify(userPayload), params.credObj.password);
               const cookiePayload = {
@@ -262,7 +262,7 @@ module.exports = {
                 idAddress,
                 userPayload: encryptedUserPayload.toString()
               }
-  
+
               Cookies.set('simple-secure', JSON.stringify(cookiePayload), { expires: 7 });
               return {
                 message: "user session created",
@@ -424,7 +424,7 @@ module.exports = {
     });
   },
   registerSubdomain: function(name, idAddress) {
-    const zonefile = `$ORIGIN ${name}\n$TTL 3600\n_http._tcp IN URI 10 1 \n"https://gaia.blockstack.org/hub/${idAddress}/profile.json"`
+    const zonefile = `$ORIGIN ${name}\n$TTL 3600\n_http._tcp URI 10 1 "https://gaia.blockstack.org/hub/${idAddress}/profile.json"`
     const dataString = JSON.stringify({name, owner_address: idAddress, zonefile});
     const options = { url: config.SUBDOMAIN_REGISTRATION, method: 'POST', headers: headers, body: dataString };
     return request(options)
@@ -437,13 +437,13 @@ module.exports = {
     })
     .catch(error => {
       // POST failed...
-      console.log('ERROR: ', error)
+      // console.log('ERROR: ', error)
       return {
         message: "failed to register username",
-        body: error
+        body: 'error'
       }
     });
-  }, 
+  },
   updateProfile: function(name, appObj) {
     //First we look up the profile
     let profile;
@@ -453,21 +453,21 @@ module.exports = {
     } else {
       profile = {
         '@type': 'Person',
-        '@context': 'http://schema.org', 
+        '@context': 'http://schema.org',
         'apps': {}
       }
       profile.apps[appObj.appOrigin] = ""
     }
-    
+
     return profile;
   },
   makeProfile: function(appObj) {
     let profile = {
       '@type': 'Person',
-      '@context': 'http://schema.org', 
+      '@context': 'http://schema.org',
       'apps': {}
     }
-  
+
     profile.apps[appObj.appOrigin] = ""
     return profile;
   }
