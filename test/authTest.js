@@ -5,7 +5,7 @@ const Cookies = require('js-cookie');
 const request = require('request-promise');
 const { createECDH } = require('crypto-browserify');
 const { InstanceDataStore } = require('blockstack/lib/auth/sessionStore');
-const { AppConfig, UserSession, signProfileToken, connectToGaiaHub, uploadToGaiaHub } = require('blockstack');
+const { AppConfig, UserSession, lookupProfile, connectToGaiaHub, uploadToGaiaHub } = require('blockstack');
 const { encryptECIES, decryptECIES } = require('blockstack/lib/encryption');
 let mnemonic;
 let serverPublicKey;
@@ -50,7 +50,7 @@ module.exports = {
       email
     }
     //This is a simple call to replicate blockstack's make keychain function
-    const options = { url: process.env.DEV_KEYCHAIN_URL, method: 'POST', headers: headers, form: dataString };
+    const options = { url: config.DEV_KEYCHAIN_URL, method: 'POST', headers: headers, form: dataString };
     return request(options)
     .then(async (body) => {
       // POST succeeded...
@@ -102,7 +102,7 @@ module.exports = {
       console.log(dataString);
     }
 
-    var options = { url: 'http://localhost:3000/appkeys-dev', method: 'POST', headers: headers, form: dataString };
+    var options = { url: config.DEV_APP_KEY_URL, method: 'POST', headers: headers, form: dataString };
     return request(options)
     .then((body) => {
       return {
@@ -440,7 +440,7 @@ module.exports = {
       // console.log('ERROR: ', error)
       return {
         message: "failed to register username",
-        body: 'error'
+        body: error
       }
     });
   },
@@ -449,7 +449,7 @@ module.exports = {
     let profile;
     profile = lookupProfile(name, 'https://core.blockstack.org');
     if(profile){
-      if(appObj.scopes.includes("publish")) {
+      if(appObj.scopes.indexOf("publish_data") > -1) {
         profile.apps[appObj.appOrigin] = ""
       }
     } else {
@@ -458,7 +458,7 @@ module.exports = {
         '@context': 'http://schema.org',
         'apps': {}
       }
-      if(appObj.scopes.includes("publish")) {
+      if(appObj.scopes.indexOf("publish_data") > -1) {
         profile.apps[appObj.appOrigin] = ""
       }
     }
@@ -471,9 +471,10 @@ module.exports = {
       '@context': 'http://schema.org',
       'apps': {}
     }
-    if(appObj.scopes.includes("publish")) {
+    if(appObj.scopes.indexOf("publish_data") > -1) {
       profile.apps[appObj.appOrigin] = ""
     }
+    
     return profile;
   }
 }
