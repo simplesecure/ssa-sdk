@@ -447,7 +447,7 @@ module.exports = {
   updateProfile: async function(name, appObj) {
     //First we look up the profile
     let profile;
-    profile = await lookupProfile(name, 'https://core.blockstack.org');
+    profile = await lookupProfile(`${name}.id.blockstack`, 'https://core.blockstack.org');
     debugger
     if(profile){
       if(appObj.scopes.indexOf("publish_data") > -1) {
