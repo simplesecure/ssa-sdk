@@ -136,7 +136,7 @@ const userSession = new UserSession({ appConfig });
 console.log(userSession.isUserSignedIn()) //prints true or false
 ```
 
-From there, you can use all of the `blockstack.js` functions defined [here.]("https://blockstack.github.io/blockstack.js/")
+From there, you can use all of the `blockstack.js` functions defined [here.](https://blockstack.github.io/blockstack.js/)
 
 Now for non-Blockstack developers, you can check if your user is signed in by using the following code: 
 
