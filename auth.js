@@ -169,7 +169,7 @@ export async function createUserAccount(credObj, appObj) {
       appObj,
       userPayload: {
         privateKey: appPrivateKey,
-        menmonic: decryptedMnemonic
+        mnemonic: decryptedMnemonic
       }
     }
 
@@ -269,7 +269,7 @@ export async function login(params, newProfile) {
 
           const userPayload = {
             privateKey: decryptedAppKeys.private, 
-            menmonic: decryptedMnemonic
+            mnemonic: decryptedMnemonic
           }
 
           if(userSession) {

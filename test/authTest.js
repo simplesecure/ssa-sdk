@@ -164,7 +164,7 @@ module.exports = {
         appObj,
         userPayload: {
           privateKey: appPrivateKey,
-          menmonic: decryptedMnemonic
+          mnemonic: decryptedMnemonic
         }
       }
 
@@ -262,7 +262,7 @@ module.exports = {
 
             const userPayload = {
               privateKey: decryptedAppKeys.private, 
-              menmonic: decryptedMnemonic
+              mnemonic: decryptedMnemonic
             }
 
             if(userSession) {
