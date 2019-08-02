@@ -136,13 +136,13 @@ export async function createUserAccount(credObj, appObj) {
   //8. Post password encrypted mnemonic and id to server
 
   //Step One
-  const nameCheck = await this.nameLookUp(credObj.id);
+  const nameCheck = await nameLookUp(credObj.id);
   if(nameCheck.pass) {
     //Step Two
     //generate transit keys then make a keychain
-    const keyPair = await this.makeTransitKeys();
+    const keyPair = await makeTransitKeys();
     const { privateKey } = keyPair;
-    const keychain = await this.makeKeychain(credObj.email, credObj.id, keyPair);
+    const keychain = await makeKeychain(credObj.email, credObj.id, keyPair);
 
     //Step Three
     const appKeyParams = {
@@ -151,9 +151,9 @@ export async function createUserAccount(credObj, appObj) {
       appObj,
       keyPair
     }
-    let profile = await this.makeProfile(appObj);
+    let profile = await makeProfile(appObj);
 
-    const appKeys = await this.makeAppKeyPair(appKeyParams, profile);
+    const appKeys = await makeAppKeyPair(appKeyParams, profile);
     const encryptedKeys = appKeys.body;
     const decryptedMnemonic = appKeys.decryptedMnemonic;
     const decryptedKeys = await decryptECIES(privateKey, JSON.parse(encryptedKeys));
@@ -174,7 +174,7 @@ export async function createUserAccount(credObj, appObj) {
     }
 
     try {
-      const userSession = await this.login(userSessionParams, profile);
+      const userSession = await login(userSessionParams, profile);
       if (typeof window === 'undefined') {
         //this is node or mobile, so we need to store encrypted user session data a different way
       } else {
@@ -229,7 +229,7 @@ export async function login(params, newProfile) {
       const username = params.credObj.id;
       const email = params.credObj.email;
       //First we need to generate a transit keypair
-      const keyPair = await this.makeTransitKeys();
+      const keyPair = await makeTransitKeys();
       const { publicKey, privateKey } = keyPair;
       const dataString = {publicKey, username, email};
       const options = { url: config.DEV_MNEMONIC_URL, method: 'POST', headers: headers, form: dataString };
@@ -252,8 +252,8 @@ export async function login(params, newProfile) {
             keyPair,
             serverPublicKey
           }
-          const profile = await this.updateProfile(params.credObj.id, params.appObj);
-          const appKeys = await this.makeAppKeyPair(appKeyParams, profile);
+          const profile = await updateProfile(params.credObj.id, params.appObj);
+          const appKeys = await makeAppKeyPair(appKeyParams, profile);
           const decryptedAppKeys = JSON.parse(await decryptECIES(privateKey, JSON.parse(appKeys.body)));
           
           idAddress = id.split("ID-")[1];
@@ -265,7 +265,7 @@ export async function login(params, newProfile) {
             username: params.credObj.id,
             profile
           }
-          const userSession = await this.makeUserSession(sessionObj);
+          const userSession = await makeUserSession(sessionObj);
 
           const userPayload = {
             privateKey: decryptedAppKeys.private, 
@@ -326,9 +326,9 @@ export async function login(params, newProfile) {
             appPrivKey: userPayload.privateKey,
             hubUrl: params.credObj.hubUrl, //Still have to think through this one
             username: params.credObj.id,
-            profile: await this.updateProfile(params.credObj.id,params.appObj)
+            profile: await updateProfile(params.credObj.id,params.appObj)
           }
-          const userSession = await this.makeUserSession(sessionObj);
+          const userSession = await makeUserSession(sessionObj);
           if(userSession) {
             return {
               message: "user session created",
@@ -361,17 +361,17 @@ export async function login(params, newProfile) {
       username: params.credObj.id,
       profile: newProfile
     }
-    const userSession = await this.makeUserSession(sessionObj);
+    const userSession = await makeUserSession(sessionObj);
     if(userSession) {
       //Step five
       const encryptedMnenomic = CryptoJS.AES.encrypt(JSON.stringify(mnemonic), params.credObj.password);
       const doubleEncryptedMnemonic = await encryptECIES(serverPublicKey, encryptedMnenomic.toString());
       const id = params.credObj.id;
-      const postedMnemonic = await this.storeMnemonic(id, doubleEncryptedMnemonic);
+      const postedMnemonic = await storeMnemonic(id, doubleEncryptedMnemonic);
       if(postedMnemonic) {
         //Finally, let's register the username onchain (eventually)
         console.log("registering subdomain")
-        const registeredName = await this.registerSubdomain(params.credObj.id, idAddress)
+        const registeredName = await registerSubdomain(params.credObj.id, idAddress)
         if(registeredName.message === "username registered") {
           return userSession;
         } else {
