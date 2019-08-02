@@ -247,7 +247,8 @@ module.exports = {
               appOrigin: params.appObj.appOrigin,
               appPrivKey: decryptedAppKeys.private,
               hubUrl: params.credObj.hubUrl, //Still have to think through this one
-              username: params.credObj.id
+              username: params.credObj.id,
+              profile
             }
             const userSession = await this.makeUserSession(sessionObj);
 
@@ -308,7 +309,8 @@ module.exports = {
               appOrigin: params.appObj.appOrigin,
               appPrivKey: userPayload.privateKey,
               hubUrl: params.credObj.hubUrl, //Still have to think through this one
-              username: params.credObj.id
+              username: params.credObj.id,
+              profile: await this.updateProfile(params.credObj.id,params.appObj)
             }
             const userSession = await this.makeUserSession(sessionObj);
             if(userSession) {
@@ -340,7 +342,8 @@ module.exports = {
         appOrigin: params.appObj.appOrigin,
         appPrivKey: userPayload.privateKey,
         hubUrl: params.credObj.hubUrl, //Still have to think through this one
-        username: params.credObj.id
+        username: params.credObj.id, 
+        profile: await this.updateProfile(params.credObj.id,params.appObj)
       }
       const userSession = await this.makeUserSession(sessionObj);
       if(userSession) {
@@ -424,7 +427,7 @@ module.exports = {
     });
   },
   registerSubdomain: function(name, idAddress) {
-    const zonefile = `$ORIGIN ${name}\n$TTL 3600\n_http._tcp URI 10 1 "https://gaia.blockstack.org/hub/${idAddress}/profile.json"`
+    const zonefile = `$ORIGIN ${name}.id.blockstack\n$TTL 3600\n_http._tcp URI 10 1 "https://gaia.blockstack.org/hub/${idAddress}/profile.json"`
     const dataString = JSON.stringify({name, owner_address: idAddress, zonefile});
     const options = { url: config.SUBDOMAIN_REGISTRATION, method: 'POST', headers: headers, body: dataString };
     return request(options)
