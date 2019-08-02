@@ -121,3 +121,57 @@ const authenticate = await login(params);
 console.log(authenticate);
 ```
 
+Once you've signed in, you'll need to, of course, be able to check whether your user is signed in to render the proper pages. Additionally, once you've confirmed your user has been signed in, you can make use of all of the `blockstack.js` library functions (this is not necessary and non-blockstack developers can simply use whatever tools they'd like). First, here is a Blockstack specific example: 
+
+
+
+```
+import { UserSession, AppConfig } from 'blockstack';
+import { login, createUserAccount } from 'simpleid-js-sdk';
+const appObj = { appOrigin: window.location.origin, scopes: ['store_write', 'publish_data']}
+const appConfig = new AppConfig(appObj.scopes);
+const userSession = new UserSession({ appConfig });
+
+//To check if user is signed in, simply use userSession.isUserSignedIn()
+console.log(userSession.isUserSignedIn()) //prints true or false
+```
+
+From there, you can use all of the `blockstack.js` functions defined [here.]("https://blockstack.github.io/blockstack.js/")
+
+Now for non-Blockstack developers, you can check if your user is signed in by using the following code: 
+
+```
+import { login, createUserAccount } from 'simpleid-js-sdk';
+//You would use the below variable in your createUserAccount or login functions, but it's not used for the purpose of this example.
+const appObj = { appOrigin: window.location.origin, scopes: ['store_write', 'publish_data']}
+
+//To check if user is signed in, you just need to check localStorage
+const signedIn = localStorage.getItem('blockstack-session');
+console.log(signedIn) //prints true or false
+```
+
+Now, you probably want to let your users sign out, so let's wire up a sign out button in vanilla JS (this can apply to Blockstack or non-Blockstack devs).
+
+```
+<body>
+<!--Your HTML--->
+<button onclick="signUserOut()" id="sign-out">Sign Out</button>
+<script>
+function signUserOut(e) {
+    e.preventDefault();
+    localStorage.removeItem('blockstack-session');
+    window.location.reload();
+}
+</script>
+</body>
+```
+
+If you're using Blockstack's library, you can also just call this function: 
+
+```
+import { signUserOut } from 'blockstack';
+
+function signOut() {
+    signUserOut();
+}
+```
