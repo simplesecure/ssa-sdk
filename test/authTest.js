@@ -342,7 +342,7 @@ module.exports = {
         appOrigin: params.appObj.appOrigin,
         appPrivKey: userPayload.privateKey,
         hubUrl: params.credObj.hubUrl, //Still have to think through this one
-        username: params.credObj.id, 
+        username: params.credObj.id,
         profile: newProfile
       }
       const userSession = await this.makeUserSession(sessionObj);
@@ -427,7 +427,7 @@ module.exports = {
     });
   },
   registerSubdomain: function(name, idAddress) {
-    const zonefile = `$ORIGIN ${name}.id.blockstack\n$TTL 3600\n_http._tcp\tIN\tURI\t10\t1\t\"https://gaia.blockstack.org/hub/${idAddress}/profile.json\"\n\n`;
+    const zonefile = JSON.stringify(`$ORIGIN ${name}.id.blockstack\n$TTL 3600\n_http._tcp\tIN\tURI\t10\t1\t\"https://gaia.blockstack.org/hub/${idAddress}/profile.json\"\n\n`);
     const dataString = JSON.stringify({name, owner_address: idAddress, zonefile});
     const options = { url: config.SUBDOMAIN_REGISTRATION, method: 'POST', headers: headers, body: dataString };
     return request(options)

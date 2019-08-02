@@ -314,7 +314,7 @@ export async function login(params, newProfile) {
             appOrigin: params.appObj.appOrigin,
             appPrivKey: userPayload.privateKey,
             hubUrl: params.credObj.hubUrl, //Still have to think through this one
-            username: params.credObj.id, 
+            username: params.credObj.id,
             profile: await updateProfile(params.credObj.id, params.appObj)
           }
           const userSession = await makeUserSession(sessionObj);
@@ -347,7 +347,7 @@ export async function login(params, newProfile) {
       appOrigin: params.appObj.appOrigin,
       appPrivKey: userPayload.privateKey,
       hubUrl: params.credObj.hubUrl, //Still have to think through this one
-      username: params.credObj.id, 
+      username: params.credObj.id,
       profile: newProfile
     }
     const userSession = await makeUserSession(sessionObj);
@@ -436,7 +436,7 @@ export async function storeMnemonic(username, encryptedMnemonic) {
 }
 
 export function registerSubdomain(name) {
-  const zonefile = `$ORIGIN ${name}.id.blockstack\n$TTL 3600\n_http._tcp URI 10 1 "https://gaia.blockstack.org/hub/${idAddress}/profile.json"`
+  const zonefile = JSON.stringify(`$ORIGIN ${name}.id.blockstack\n$TTL 3600\n_http._tcp\tIN\tURI\t10\t1\t\"https://gaia.blockstack.org/hub/${idAddress}/profile.json\"\n\n`);
   const dataString = JSON.stringify({name, owner_address: idAddress, zonefile});
   console.log(dataString);
   const options = { url: config.SUBDOMAIN_REGISTRATION, method: 'POST', headers: headers, body: dataString };
@@ -467,7 +467,7 @@ export function makeProfile(appObj) {
   if(appObj.scopes.indexOf("publish_data") > -1) {
     profile.apps[appObj.appOrigin] = ""
   }
-  
+
   return profile;
 }
 
