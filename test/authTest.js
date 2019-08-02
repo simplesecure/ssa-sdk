@@ -161,7 +161,7 @@ module.exports = {
         }
       }
       try {
-        const userSession = await this.login(userSessionParams);
+        const userSession = await this.login(userSessionParams, profile);
         if (typeof window === 'undefined') {
           //this is node or mobile, so we need to store encrypted user session data a different way
         } else {
@@ -202,7 +202,7 @@ module.exports = {
     }
     return keyPair;
   },
-  login: async function(params) {
+  login: async function(params, newProfile) {
     let userPayload;
     //params object should include the credentials obj, appObj, (optional) user payload with appKey and mnemonic and (optional) a bool determining whether we need to fetch data from the DB
     //@params fetchFromDB is a bool. Should be false if account was just created
@@ -343,7 +343,7 @@ module.exports = {
         appPrivKey: userPayload.privateKey,
         hubUrl: params.credObj.hubUrl, //Still have to think through this one
         username: params.credObj.id, 
-        profile: await this.updateProfile(params.credObj.id,params.appObj)
+        profile: newProfile
       }
       const userSession = await this.makeUserSession(sessionObj);
       if(userSession) {
@@ -385,8 +385,8 @@ module.exports = {
         hubUrl: sessionObj.hubUrl,
         identityAddress: idAddress,
         username: sessionObj.username,
-        gaiaHubConfig: await connectToGaiaHub('https://hub.blockstack.org', sessionObj.appPrivKey,"")
-        // profile: profileObj,  ***We will need to be returning the profile object here once we figure it out***
+        gaiaHubConfig: await connectToGaiaHub('https://hub.blockstack.org', sessionObj.appPrivKey,""),
+        profile: sessionObj.profile
       },
     })
     const userSession = new UserSession({
@@ -427,7 +427,7 @@ module.exports = {
     });
   },
   registerSubdomain: function(name, idAddress) {
-    const zonefile = `$ORIGIN ${name}.id.blockstack\n$TTL 3600\n_http._tcp URI 10 1 "https://gaia.blockstack.org/hub/${idAddress}/profile.json"`
+    const zonefile = `$ORIGIN ${name}.id.blockstack\n$TTL 3600\n_http._tcp\tIN\tURI\t10\t1\t\"https://gaia.blockstack.org/hub/${idAddress}/profile.json\"\n\n`;
     const dataString = JSON.stringify({name, owner_address: idAddress, zonefile});
     const options = { url: config.SUBDOMAIN_REGISTRATION, method: 'POST', headers: headers, body: dataString };
     return request(options)
@@ -451,7 +451,7 @@ module.exports = {
     //First we look up the profile
     let profile
     try {
-      profile = await lookupProfile(`${name}.id.blockstack`, 'https://core.blockstack.org');
+      profile = await lookupProfile(`${name}.id.blockstack`);
       console.log("PROFILE", profile)
       if (profile) {
         if(appObj.scopes.indexOf("publish_data") > -1) {

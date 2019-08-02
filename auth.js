@@ -164,7 +164,7 @@ export async function createUserAccount(credObj, appObj) {
       }
     }
     try {
-      const userSession = await login(userSessionParams);
+      const userSession = await login(userSessionParams, profile);
       if (typeof window === 'undefined') {
         //this is node or mobile, so we need to store encrypted user session data a different way
       } else {
@@ -207,7 +207,7 @@ export async function makeTransitKeys() {
   return keyPair;
 }
 
-export async function login(params) {
+export async function login(params, newProfile) {
   let userPayload;
   //params object should include the credentials obj, appObj, (optional) user payload with appKey and mnemonic and (optional) a bool determining whether we need to fetch data from the DB
   //@params fetchFromDB is a bool. Should be false if account was just created
@@ -348,7 +348,7 @@ export async function login(params) {
       appPrivKey: userPayload.privateKey,
       hubUrl: params.credObj.hubUrl, //Still have to think through this one
       username: params.credObj.id, 
-      profile: await updateProfile(params.credObj.id, params.appObj)
+      profile: newProfile
     }
     const userSession = await makeUserSession(sessionObj);
     if(userSession) {
@@ -391,8 +391,8 @@ export async function makeUserSession(sessionObj) {
       hubUrl: sessionObj.hubUrl,
       identityAddress: idAddress,
       username: sessionObj.username,
-      gaiaHubConfig: await connectToGaiaHub('https://hub.blockstack.org', sessionObj.appPrivKey,"")
-      // profile: profileObj,  ***We will need to be returning the profile object here once we figure it out***
+      gaiaHubConfig: await connectToGaiaHub('https://hub.blockstack.org', sessionObj.appPrivKey,""),
+      profile: sessionObj.profile
     },
   })
   const userSession = new UserSession({
@@ -471,11 +471,11 @@ export function makeProfile(appObj) {
   return profile;
 }
 
-export function updateProfile(name, appObj) {
+export async function updateProfile(name, appObj) {
   //First we look up the profile
   let profile
   try {
-    profile = await lookupProfile(`${name}.id.blockstack`, 'https://core.blockstack.org');
+    profile = await lookupProfile(`${name}.id.blockstack`);
     if (profile) {
       if(appObj.scopes.indexOf("publish_data") > -1) {
         profile.apps[appObj.appOrigin] = ""
@@ -484,7 +484,6 @@ export function updateProfile(name, appObj) {
     return profile;
   }
   catch (error) {
-    console.log("ERROR", error)
     profile = {
       '@type': 'Person',
       '@context': 'http://schema.org',

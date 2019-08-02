@@ -2,13 +2,13 @@ const assert = require('assert');
 const crypto = require('crypto-browserify');
 const CryptoJS = require("crypto-js");
 const { encryptECIES, decryptECIES } = require('blockstack/lib/encryption');
-const { AppConfig, UserSession, getFile, putFile } = require('blockstack');
+//const { AppConfig, UserSession, getFile, putFile } = require('blockstack');
 const auth = require('./authTest');
 const availableName = `username_${Date.now()}`;
 const emailToUse = "justin@graphitedocs.com";
-const takenName = "jehunter5811";
+const takenName = "justin";
 const appObj = { appOrigin: "https://app.graphitedocs.com", scopes: ['store_write', 'publish_data']}
-const credObj = {id: availableName, password: "super secure password", hubUrl: "https://gaia.blockstack.org", email: "justin.edward.hunter@gmail.com"}
+const credObj = {id: availableName, password: "super secure password", hubUrl: "https://gaia.blockstack.org", email: emailToUse}
 const clientTransmitKeys = crypto.createECDH('secp256k1')
 clientTransmitKeys.generateKeys()
 const clientPrivateKey = clientTransmitKeys.getPrivateKey('hex').toString()
@@ -17,9 +17,10 @@ const clientKeyPair = {
     privateKey: clientPrivateKey,
     publicKey: clientPublicKey
 }
-let sampleProfile = require('./sampleProfile.json');
-let signedProfileData;
-// standardized username template: ‘simpleid_${username}_date.now()’
+
+//We'll need to add profile signing and storage tests in the near future
+// let sampleProfile = require('./sampleProfile.json');
+// let signedProfileData;
 
 //Stand alone tests
 let testKeychain
@@ -38,7 +39,6 @@ describe('User session returned', function() {
           id: credObj.id
       }
       const userSession = await auth.makeUserSession(userData);
-
       assert(userSession.message, "user session created");
   })
 });
