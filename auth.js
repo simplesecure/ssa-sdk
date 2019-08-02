@@ -433,7 +433,7 @@ export async function storeMnemonic(username, encryptedMnemonic) {
 }
 
 export function registerSubdomain(name) {
-  const zonefile = `$ORIGIN ${name}\n$TTL 3600\n_http._tcp URI 10 1 "https://gaia.blockstack.org/hub/${idAddress}/profile.json"`
+  const zonefile = `$ORIGIN ${name}.id.blockstack\n$TTL 3600\n_http._tcp URI 10 1 "https://gaia.blockstack.org/hub/${idAddress}/profile.json"`
   const dataString = JSON.stringify({name, owner_address: idAddress, zonefile});
   console.log(dataString);
   const options = { url: config.SUBDOMAIN_REGISTRATION, method: 'POST', headers: headers, body: dataString };
@@ -471,7 +471,7 @@ export function makeProfile(appObj) {
 export function updateProfile(name, appObj) {
   //First we look up the profile
   let profile;
-  profile = lookupProfile(name, 'https://core.blockstack.org');
+  profile = lookupProfile(`${name}.id.blockstack`, 'https://core.blockstack.org');
   if(profile){
     if(appObj.scopes.indexOf("publish_data") > -1) {
       profile.apps[appObj.appOrigin] = ""
