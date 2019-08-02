@@ -492,5 +492,16 @@ module.exports = {
     }
 
     return profile;
+  }, 
+  revealMnemonic: async function(password) {
+    const mnemonicAvailable = await Cookies.get('simple-secure');
+    const cookiePayload = JSON.parse(mnemonicAvailable);
+    if(mnemonicAvailable) {
+      const encryptedKeychain = cookiePayload.userPayload;
+      const bytes  = CryptoJS.AES.decrypt(encryptedKeychain, password);
+      const decryptedMnemonic = bytes.toString(CryptoJS.enc.Utf8);
+      console.log(decryptedMnemonic);
+      return decryptedMnemonic;
+    }
   }
 }
