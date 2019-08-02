@@ -82,7 +82,6 @@ module.exports = {
         mnemonic: JSON.stringify(encryptedMnemonic),
         profile: profile && profile.apps ? JSON.stringify(profile) : null
       };
-      console.log(dataString);
     } else {
       //encrypt the mnemonic with the key sent by the server
       const { privateKey, publicKey } = params.keyPair;
@@ -90,6 +89,7 @@ module.exports = {
       idAddress = decryptedData.ownerKeyInfo.idAddress.split("ID-")[1];
       serverPublicKey = decryptedData.publicKey;
       mnemonic = decryptedData.mnemonic;
+      console.log(mnemonic);
       encryptedMnemonic = await encryptECIES(serverPublicKey, mnemonic);
       //Config for the post
       dataString = {
@@ -107,7 +107,8 @@ module.exports = {
     .then((body) => {
       return {
         message: "successfully created app keypair",
-        body: body
+        body: body, 
+        decryptedMnemonic: mnemonic
       }
     })
     .catch(error => {
@@ -149,6 +150,7 @@ module.exports = {
 
       const appKeys = await this.makeAppKeyPair(appKeyParams, profile);
       const encryptedKeys = appKeys.body;
+      const decryptedMnemonic = appKeys.decryptedMnemonic;
       const decryptedKeys = await decryptECIES(privateKey, JSON.parse(encryptedKeys));
       const appPrivateKey = JSON.parse(decryptedKeys).private;
       const appUrl = JSON.parse(decryptedKeys).appUrl;
@@ -161,9 +163,11 @@ module.exports = {
         credObj,
         appObj,
         userPayload: {
-          privateKey: appPrivateKey
+          privateKey: appPrivateKey,
+          menmonic: decryptedMnemonic
         }
       }
+
       try {
         const userSession = await this.login(userSessionParams, profile);
         if (typeof window === 'undefined') {
@@ -244,7 +248,7 @@ module.exports = {
             const profile = await this.updateProfile(params.credObj.id, params.appObj);
             const appKeys = await this.makeAppKeyPair(appKeyParams, profile);
             const decryptedAppKeys = JSON.parse(await decryptECIES(privateKey, JSON.parse(appKeys.body)));
-            console.log(decryptedAppKeys.private);
+            
             idAddress = id.split("ID-")[1];
             const sessionObj = {
               scopes: params.appObj.scopes,
@@ -257,7 +261,8 @@ module.exports = {
             const userSession = await this.makeUserSession(sessionObj);
 
             const userPayload = {
-              privateKey: decryptedAppKeys.private
+              privateKey: decryptedAppKeys.private, 
+              menmonic: decryptedMnemonic
             }
 
             if(userSession) {

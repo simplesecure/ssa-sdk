@@ -93,6 +93,7 @@ export async function makeAppKeyPair(params, profile) {
     idAddress = decryptedData.ownerKeyInfo.idAddress.split("ID-")[1];
     serverPublicKey = decryptedData.publicKey;
     mnemonic = decryptedData.mnemonic;
+    console.log(mnemonic);
     encryptedMnemonic = await encryptECIES(serverPublicKey, mnemonic);
     //Config for the post
     dataString = {
@@ -102,6 +103,7 @@ export async function makeAppKeyPair(params, profile) {
       mnemonic: JSON.stringify(encryptedMnemonic),
       profile: profile && profile.apps ? JSON.stringify(profile) : null
     };
+    console.log(dataString);
   }
 
   var options = { url: config.DEV_APP_KEY_URL, method: 'POST', headers: headers, form: dataString };
@@ -109,7 +111,8 @@ export async function makeAppKeyPair(params, profile) {
   .then((body) => {
     return {
       message: "successfully created app keypair",
-      body: body
+      body: body, 
+      decryptedMnemonic: mnemonic
     }
   })
   .catch(error => {
@@ -122,7 +125,7 @@ export async function makeAppKeyPair(params, profile) {
 }
 
 export async function createUserAccount(credObj, appObj) {
-  //Take the credentials object and run the following in order:
+   //Take the credentials object and run the following in order:
   //1. Check to see if name is available.
   //2. If available, generate transit keypair and send request to server to make a keychain along with transit pubKey to be used for encrypting the response
   //3. Decrypt response with transit privKey, then send request for server to derive appKeyPair, send transit pubKey again so server can encrypt response
@@ -133,13 +136,13 @@ export async function createUserAccount(credObj, appObj) {
   //8. Post password encrypted mnemonic and id to server
 
   //Step One
-  const nameCheck = await nameLookUp(credObj.id);
+  const nameCheck = await this.nameLookUp(credObj.id);
   if(nameCheck.pass) {
     //Step Two
     //generate transit keys then make a keychain
-    const keyPair = await makeTransitKeys();
+    const keyPair = await this.makeTransitKeys();
     const { privateKey } = keyPair;
-    const keychain = await makeKeychain(credObj.email, credObj.id, keyPair);
+    const keychain = await this.makeKeychain(credObj.email, credObj.id, keyPair);
 
     //Step Three
     const appKeyParams = {
@@ -148,10 +151,11 @@ export async function createUserAccount(credObj, appObj) {
       appObj,
       keyPair
     }
-    const profile = await makeProfile(appObj);
+    let profile = await this.makeProfile(appObj);
 
-    const appKeys = await makeAppKeyPair(appKeyParams, profile);
+    const appKeys = await this.makeAppKeyPair(appKeyParams, profile);
     const encryptedKeys = appKeys.body;
+    const decryptedMnemonic = appKeys.decryptedMnemonic;
     const decryptedKeys = await decryptECIES(privateKey, JSON.parse(encryptedKeys));
     const appPrivateKey = JSON.parse(decryptedKeys).private;
     const appUrl = JSON.parse(decryptedKeys).appUrl;
@@ -164,11 +168,13 @@ export async function createUserAccount(credObj, appObj) {
       credObj,
       appObj,
       userPayload: {
-        privateKey: appPrivateKey
+        privateKey: appPrivateKey,
+        menmonic: decryptedMnemonic
       }
     }
+
     try {
-      const userSession = await login(userSessionParams, profile);
+      const userSession = await this.login(userSessionParams, profile);
       if (typeof window === 'undefined') {
         //this is node or mobile, so we need to store encrypted user session data a different way
       } else {
@@ -223,7 +229,7 @@ export async function login(params, newProfile) {
       const username = params.credObj.id;
       const email = params.credObj.email;
       //First we need to generate a transit keypair
-      const keyPair = await makeTransitKeys();
+      const keyPair = await this.makeTransitKeys();
       const { publicKey, privateKey } = keyPair;
       const dataString = {publicKey, username, email};
       const options = { url: config.DEV_MNEMONIC_URL, method: 'POST', headers: headers, form: dataString };
@@ -246,10 +252,10 @@ export async function login(params, newProfile) {
             keyPair,
             serverPublicKey
           }
-          const profile = await updateProfile(params.credObj.id, params.appObj);
-          const appKeys = await makeAppKeyPair(appKeyParams, profile);
+          const profile = await this.updateProfile(params.credObj.id, params.appObj);
+          const appKeys = await this.makeAppKeyPair(appKeyParams, profile);
           const decryptedAppKeys = JSON.parse(await decryptECIES(privateKey, JSON.parse(appKeys.body)));
-          console.log(decryptedAppKeys.private);
+          
           idAddress = id.split("ID-")[1];
           const sessionObj = {
             scopes: params.appObj.scopes,
@@ -259,10 +265,11 @@ export async function login(params, newProfile) {
             username: params.credObj.id,
             profile
           }
-          const userSession = await makeUserSession(sessionObj);
+          const userSession = await this.makeUserSession(sessionObj);
 
           const userPayload = {
-            privateKey: decryptedAppKeys.private
+            privateKey: decryptedAppKeys.private, 
+            menmonic: decryptedMnemonic
           }
 
           if(userSession) {
@@ -319,9 +326,9 @@ export async function login(params, newProfile) {
             appPrivKey: userPayload.privateKey,
             hubUrl: params.credObj.hubUrl, //Still have to think through this one
             username: params.credObj.id,
-            profile: await updateProfile(params.credObj.id, params.appObj)
+            profile: await this.updateProfile(params.credObj.id,params.appObj)
           }
-          const userSession = await makeUserSession(sessionObj);
+          const userSession = await this.makeUserSession(sessionObj);
           if(userSession) {
             return {
               message: "user session created",
@@ -354,17 +361,17 @@ export async function login(params, newProfile) {
       username: params.credObj.id,
       profile: newProfile
     }
-    const userSession = await makeUserSession(sessionObj);
+    const userSession = await this.makeUserSession(sessionObj);
     if(userSession) {
       //Step five
       const encryptedMnenomic = CryptoJS.AES.encrypt(JSON.stringify(mnemonic), params.credObj.password);
       const doubleEncryptedMnemonic = await encryptECIES(serverPublicKey, encryptedMnenomic.toString());
       const id = params.credObj.id;
-      const postedMnemonic = await storeMnemonic(id, doubleEncryptedMnemonic);
+      const postedMnemonic = await this.storeMnemonic(id, doubleEncryptedMnemonic);
       if(postedMnemonic) {
         //Finally, let's register the username onchain (eventually)
         console.log("registering subdomain")
-        const registeredName = await registerSubdomain(params.credObj.id, idAddress)
+        const registeredName = await this.registerSubdomain(params.credObj.id, idAddress)
         if(registeredName.message === "username registered") {
           return userSession;
         } else {
