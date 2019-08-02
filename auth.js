@@ -154,6 +154,10 @@ export async function createUserAccount(credObj, appObj) {
     const encryptedKeys = appKeys.body;
     const decryptedKeys = await decryptECIES(privateKey, JSON.parse(encryptedKeys));
     const appPrivateKey = JSON.parse(decryptedKeys).private;
+    const appUrl = JSON.parse(decryptedKeys).appUrl;
+
+    profile.apps[appObj.appOrigin] = appUrl;
+
     //Step Four
     const userSessionParams = {
       login: false,
@@ -476,14 +480,20 @@ export async function updateProfile(name, appObj) {
   let profile
   try {
     profile = await lookupProfile(`${name}.id.blockstack`);
-    if (profile) {
-      if(appObj.scopes.indexOf("publish_data") > -1) {
-        profile.apps[appObj.appOrigin] = ""
+    console.log("PROFILE:", profile);
+    if (profile.apps) {
+      if(profile.apps[appObj.appOrigin]) {
+        //Don't need to do anything unless the gaia hub url is an empty string
+      } else {
+        if(appObj.scopes.indexOf("publish_data") > -1) {
+          profile.apps[appObj.appOrigin] = ""
+        }
       }
     }
     return profile;
   }
   catch (error) {
+    console.log("ERROR:", error);
     profile = {
       '@type': 'Person',
       '@context': 'http://schema.org',
@@ -493,5 +503,17 @@ export async function updateProfile(name, appObj) {
       profile.apps[appObj.appOrigin] = ""
     }
     return profile;
+  }
+}
+
+export async function revealMnemonic(password) {
+  const mnemonicAvailable = await Cookies.get('simple-secure');
+  const cookiePayload = JSON.parse(mnemonicAvailable);
+  if(mnemonicAvailable) {
+    const encryptedKeychain = cookiePayload.userPayload;
+    const bytes  = CryptoJS.AES.decrypt(encryptedKeychain, password);
+    const decryptedMnemonic = bytes.toString(CryptoJS.enc.Utf8);
+    console.log(decryptedMnemonic);
+    return decryptedMnemonic;
   }
 }

@@ -145,12 +145,16 @@ module.exports = {
         appObj,
         keyPair
       }
-      const profile = await this.makeProfile(appObj);
+      let profile = await this.makeProfile(appObj);
 
       const appKeys = await this.makeAppKeyPair(appKeyParams, profile);
       const encryptedKeys = appKeys.body;
       const decryptedKeys = await decryptECIES(privateKey, JSON.parse(encryptedKeys));
       const appPrivateKey = JSON.parse(decryptedKeys).private;
+      const appUrl = JSON.parse(decryptedKeys).appUrl;
+
+      profile.apps[appObj.appOrigin] = appUrl;
+
       //Step Four
       const userSessionParams = {
         login: false,
@@ -448,20 +452,24 @@ module.exports = {
     });
   },
   updateProfile: async function(name, appObj) {
-    //First we look up the profile
+   //First we look up the profile
     let profile
     try {
       profile = await lookupProfile(`${name}.id.blockstack`);
-      console.log("PROFILE", profile)
-      if (profile) {
-        if(appObj.scopes.indexOf("publish_data") > -1) {
-          profile.apps[appObj.appOrigin] = ""
+      console.log("PROFILE:", profile);
+      if (profile.apps) {
+        if(profile.apps[appObj.appOrigin]) {
+          //Don't need to do anything unless the gaia hub url is an empty string
+        } else {
+          if(appObj.scopes.indexOf("publish_data") > -1) {
+            profile.apps[appObj.appOrigin] = ""
+          }
         }
       }
       return profile;
     }
     catch (error) {
-      console.log("ERROR", error)
+      console.log("ERROR:", error);
       profile = {
         '@type': 'Person',
         '@context': 'http://schema.org',
@@ -470,7 +478,6 @@ module.exports = {
       if(appObj.scopes.indexOf("publish_data") > -1) {
         profile.apps[appObj.appOrigin] = ""
       }
-      console.log("PROFILE", profile)
       return profile;
     }
   },

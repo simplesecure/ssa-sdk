@@ -105,19 +105,19 @@ describe('CreateAccount', function() {
 
 
 //Log In
-describe('LogIn', function() {
-  this.timeout(10000);
-  it('kick off recovery flow with email, username, and password', async function() {
-    const params = {
-      login: true,
-      credObj,
-      appObj,
-      userPayload: {}
-    }
-    const loggedIn = await auth.login(params);
-    assert(loggedIn.message, "user session created");
-  })
-});
+// describe('LogIn', function() {
+//   this.timeout(10000);
+//   it('kick off recovery flow with email, username, and password', async function() {
+//     const params = {
+//       login: true,
+//       credObj,
+//       appObj,
+//       userPayload: {}
+//     }
+//     const loggedIn = await auth.login(params);
+//     assert(loggedIn.message, "user session created");
+//   })
+// });
 
 //BlockstackJS Operations
 
