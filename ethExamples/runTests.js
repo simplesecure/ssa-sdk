@@ -1,4 +1,4 @@
-const { createWallet, restoreWallet } = require('./createWallet');
+const { createWallet, restoreWallet } = require('./ethWallet');
 const testMnemonic = "day laundry wet frog census letter verify toe try biology love decrease";
 runTests();
 
