@@ -17,13 +17,14 @@ The simple description is users provide a username like they would any other app
 
 Behind the scenes, that user is creating a decentralized identity anchored to the bitcoin blockchain. They are also creating encryption keys that will be used to encrypt all of their data client-side before it ever leaves their computer. 
 
-This is a zero-knowledge SDK, so developers implementing it will not be able to access user keys* and we, the utility providing this SDK, will not be able to access user keys**.
+**SimpleID's Trust Model**  
+There are plenty of trustless solutions in the Web 3.0 space, but SimpleID takes a more custodial approach. End users and app developers need to trust SimpleID, but end users, in turn, do not need to trust each of the apps they use that has SimpleID implemented. 
 
-*It's important to note here that bad actors could develop an app that takes this client-side code and uses it in nefarious ways. We do not claim to prevent that, but we do provide the tools to avoid applications and developers having to store user data on their own servers and databases. 
+Because SimpleID is a custodial solution, the user's keychain is created on a server and encrypted before being stored in a database for later use. This is a conscious decision to help accelerate the adoption of blockchain-based and decentralization-focused applications and technologies. Much like Coinbase is the custodial on-ramp for cryptocurrency exchange, SimpleID is the custodial onramp to decentralized identity and storage.
 
-**We really really can't access the keys. There's nothing in our power that would allow us to act in a nefarious way. That's by design.
+**User Benefits**  
 
-So what does the user get out of this exactly? They get the simple login flow they're used to, but they get the added benefits of encryption, protection against snooping, and security. 
+So what does the user get out of this exactly? They get the simple login flow they're used to, but they get the added benefits of encryption, protection against snooping, and security. The user account is also portable, which is not something traditional Web 3.0 auth providers can say.
 
 ### Quick Start 
 
@@ -59,31 +60,18 @@ Some definitions and notes on the `credObj` and `appObj` parameters:
 `hubUrl` - Should you choose to provide your own storage hub for users, you can supply the hub url here or you can allow users to type in their own hub url. However, if neither of those exists, it's important to send the default hub url: "https://hub.blockstack.org"  
 `appOrigin` - When you register your app and receive your API key, your app origin is also registered. This must match what is sent in the `appObj` parameters. 
 
-When logging in, you'll need to supply a little more info, and that info can vary. Therefore, you'll send a single object with the `login()` function.
+When logging in, you'll need to supply a little more info. Therefore, you'll send a single object with the `login()` function.
 
 Here's a breakdown of what should be included in that object: 
 
 ```
 //If user does not need to go through recovery flow
 const params = {
-    login: true,
     credObj,
     appObj,
-    userPayload: {}
-}
-//If user does need to go through recovery flow
-const params = {
-    login: true,
-    credObj,
-    appObj,
-    userPayload: {}, 
-    email
+    userPayload: {} //This can be left empty
 }
 ```
-
-When your users first sign up, enough information is stored in an encrypted cookie to allow them to easily log in on that same device. Therefore, the user only needs to supply the correct username and password. 
-
-However, if your user has cleared their browser history and cache or if they are using a new device, they will need to supply their email address along with the other parameters in the login function. If your user needs to supply an email and hasn't, you'll receive a response notifying you of such so you can take appropriate action. 
 
 Now, here's how you use them all put together in a nice example: 
 
@@ -105,11 +93,9 @@ const appObj = {
 }
 
 const params = {
-    login: true,
     credObj,
     appObj,
-    userPayload: {}, 
-    email
+    userPayload: {}
 }
 
 //If creating an account for the first time: 
@@ -131,6 +117,16 @@ import { login, createUserAccount } from 'simpleid-js-sdk';
 const appObj = { appOrigin: window.location.origin, scopes: ['store_write', 'publish_data']}
 const appConfig = new AppConfig(appObj.scopes);
 const userSession = new UserSession({ appConfig });
+
+//Note: if you are using Blockstack, you'll need to manually store the results of the user's login
+// to localStorage. You can do that like so: 
+
+const authentication = await login(params);
+localStorage.setItem('blockstack-session', JSON.stringify(authentication.body.store.sessionData));
+
+//Or on account creations: 
+const newAccount = await createUserAccount(credObj, appObj);
+localStorage.setItem('blockstack-session', JSON.stringify(newAccount.body.store.sessionData));
 
 //To check if user is signed in, simply use userSession.isUserSignedIn()
 console.log(userSession.isUserSignedIn()) //prints true or false
@@ -175,3 +171,10 @@ function signOut() {
     signUserOut();
 }
 ```
+
+### Important Notes  
+Because this is a custodial solution, it is important that developers educate their users as much as possible. 
+
+If a user loses their password they lose access to their account. Account recovery, as of now, is not possible without exposing too much private information. While this is a custodial solution, it is still very much focused on protecting as much data as possible, even from us.  
+
+An email is sent on account creation with the user's encrypted seed phrase. That item is password-encrypted. So the user can decrypt it with their password using any number of tools that support AES decryption. Additionally, that item can be used when restoring an account on the Blockstack Browser. 
