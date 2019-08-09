@@ -10,7 +10,7 @@ const appModel = {
     "apiKey": "String",
     "providers": [
         {
-            "providerName": "String", 
+            "providerName": "String", //i.e. Ethereum
             "features": [
                 "Auth", 
                 "Storage"
@@ -37,9 +37,9 @@ const userModel = {
     "email": "String",
     "identities": [
         {
-            "type": "String", 
+            "type": "String", //i.e. Ethereum
             "did": "String", 
-            "encryptedWallet": "String || Object"
+            "encryptedWallet": "String || Object" //Wallet infor will differ slightly, but there should always be a bip39 mnemonic
         }
     ]
 }
