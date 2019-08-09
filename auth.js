@@ -44,13 +44,14 @@ export function nameLookUp(name) {
   });
 }
 
-export async function makeKeychain(email, username, keypair) {
+export async function makeKeychain(credObj, keypair) {
   //Send the username and the passphrase which will be used by the server to encrypt sensitive data
   const { publicKey } = keypair
   const dataString = {
     publicKey,
-    username,
-    email
+    username: credObj.id,
+    email: credObj.email,
+    password: credObj.password
   }
   //This is a simple call to replicate blockstack's make keychain function
   const options = { url: config.DEV_KEYCHAIN_URL, method: 'POST', headers: headers, form: dataString };
@@ -126,14 +127,14 @@ export async function makeAppKeyPair(params, profile) {
 
 export async function createUserAccount(credObj, appObj) {
    //Take the credentials object and run the following in order:
-  //1. Check to see if name is available.
-  //2. If available, generate transit keypair and send request to server to make a keychain along with transit pubKey to be used for encrypting the response
-  //3. Decrypt response with transit privKey, then send request for server to derive appKeyPair, send transit pubKey again so server can encrypt response
-  //4. Verify user session can be created with info now available
-  //5. Encrypt mnemonic with password
-  //6. Post password encrypted mnemonic and id to server
-  //7. Encrypt mnemonic with password
-  //8. Post password encrypted mnemonic and id to server
+
+  //1. Check to see if name is available (this applies to Blockstack and eventually we'll need to support not checking this)
+  //2. If available, generate transit keypair 
+  //3. Make profile obj
+  //4. Send reques tot server for appKeys
+  //5. Decrypt response from the server, which should include id-hash and appPrivateKey
+  //6. Register name
+  //7. Create user session
 
   //Step One
   const nameCheck = await nameLookUp(credObj.id);
@@ -142,27 +143,29 @@ export async function createUserAccount(credObj, appObj) {
     //generate transit keys then make a keychain
     const keyPair = await makeTransitKeys();
     const { privateKey } = keyPair;
-    const keychain = await makeKeychain(credObj.email, credObj.id, keyPair);
 
-    //Step Three
-    const appKeyParams = {
-      username: credObj.id,
-      keychain: keychain.body,
-      appObj,
-      keyPair
-    }
+    //Step three
+    //Make profile
     let profile = await makeProfile(appObj);
 
-    const appKeys = await makeAppKeyPair(appKeyParams, profile);
-    const encryptedKeys = appKeys.body;
-    const decryptedMnemonic = appKeys.decryptedMnemonic;
-    const decryptedKeys = await decryptECIES(privateKey, JSON.parse(encryptedKeys));
-    const appPrivateKey = JSON.parse(decryptedKeys).private;
-    const appUrl = JSON.parse(decryptedKeys).appUrl;
-
+    //Step Four Make Keychain
+    const keychain = await makeKeychain(credObj, keyPair, profile);
+    
+    //Step Five 
+    //Decrypt payload
+    const decryptedData = JSON.parse(await decryptECIES(privateKey, JSON.parse(keychain.body)))
+    const appPrivateKey = decryptedData.privateKey;
+    const appUrl = decryptedData.appUrl;
+    idAddress = decryptedData.idAddress;
     profile.apps[appObj.appOrigin] = appUrl;
 
-    //Step Four
+    //Step Six
+    //Register name (blockstack only)
+    const registeredName = await registerSubdomain(credObj.id, idAddress);
+    console.log(registeredName);
+
+    //Step Seven 
+    //Login/Create User Session
     const userSessionParams = {
       login: false,
       credObj,
@@ -175,18 +178,6 @@ export async function createUserAccount(credObj, appObj) {
 
     try {
       const userSession = await login(userSessionParams, profile);
-      if (typeof window === 'undefined') {
-        //this is node or mobile, so we need to store encrypted user session data a different way
-      } else {
-        const encryptedUserPayload = CryptoJS.AES.encrypt(JSON.stringify(userSessionParams.userPayload), credObj.password);
-        const cookiePayload = {
-          username: credObj.id,
-          idAddress,
-          userPayload: encryptedUserPayload.toString()
-        }
-
-        Cookies.set('simple-secure', JSON.stringify(cookiePayload), { expires: 7 });
-      }
       return {
         message: "successfully created user session",
         body: userSession
@@ -513,14 +504,3 @@ export async function updateProfile(name, appObj) {
   }
 }
 
-export async function revealMnemonic(password) {
-  const mnemonicAvailable = await Cookies.get('simple-secure');
-  const cookiePayload = JSON.parse(mnemonicAvailable);
-  if(mnemonicAvailable) {
-    const encryptedKeychain = cookiePayload.userPayload;
-    const bytes  = CryptoJS.AES.decrypt(encryptedKeychain, password);
-    const decryptedMnemonic = bytes.toString(CryptoJS.enc.Utf8);
-    console.log(decryptedMnemonic);
-    return decryptedMnemonic;
-  }
-}
