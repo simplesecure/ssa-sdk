@@ -172,7 +172,7 @@ function signOut() {
 }
 ```
 
-### Important Notes  
+### Important Notes   
 Because this is a custodial solution, it is important that developers educate their users as much as possible. 
 
 If a user loses their password they lose access to their account. Account recovery, as of now, is not possible without exposing too much private information. While this is a custodial solution, it is still very much focused on protecting as much data as possible, even from us.  
