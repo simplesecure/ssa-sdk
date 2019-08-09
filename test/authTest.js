@@ -182,6 +182,7 @@ module.exports = {
     }
   },
   login: async function(params, newProfile) {
+    console.log(params);
     //params object should include the credentials obj, appObj, (optional) user payload with appKey and mnemonic and (optional) a bool determining whether we need to fetch data from the DB
     //@params fetchFromDB is a bool. Should be false if account was just created
     //@params credObj is simply the username and password
@@ -222,25 +223,34 @@ module.exports = {
         appObj: params.appObj,
         password: params.credObj.password
       }
+      const profile = await this.updateProfile(params.credObj.id, params.appObj);
       try {
-        //Need to update the profile
-        const profile = await this.updateProfile(params.credObj.id, params.appObj);
         const appKeys = await this.makeAppKeyPair(appKeyParams, profile);
         console.log(appKeys);
         if(appKeys) {
           const appPrivateKey = JSON.parse(appKeys.body).private;
           const appUrl = appKeys.body.appUrl;
-          profile.apps[appObj.appOrigin] = appUrl;
+          profile.apps[params.appObj.appOrigin] = appUrl;
           //Now, we login
           try {
             const userSessionParams = {
-              credObj,
-              appObj,
+              credObj: params.credObj,
+              appObj: params.appObj,
               userPayload: {
                 privateKey: appPrivateKey,
               }
             }
-            const userSession = await this.login(userSessionParams, profile);
+            console.log("Logging in....");
+            const userPayload = userSessionParams.userPayload;
+            const sessionObj = {
+              scopes: params.appObj.scopes,
+              appOrigin: params.appObj.appOrigin,
+              appPrivKey: userPayload.privateKey,
+              hubUrl: params.credObj.hubUrl, //Still have to think through this one
+              username: params.credObj.id,
+              profile: newProfile
+            }
+            const userSession = await this.makeUserSession(sessionObj);
             
             if(userSession) {
               return {

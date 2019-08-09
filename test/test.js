@@ -1,23 +1,12 @@
 const assert = require('assert');
 const crypto = require('crypto-browserify');
-const CryptoJS = require("crypto-js");
-const { encryptECIES, decryptECIES } = require('blockstack/lib/encryption');
 //const { AppConfig, UserSession, getFile, putFile } = require('blockstack');
 const auth = require('./authTest');
 const availableName = `username_${Date.now()}`;
 const emailToUse = "justin@graphitedocs.com";
-const takenName = "justin";
 const appObj = { appOrigin: "https://app.graphitedocs.com", scopes: ['store_write', 'publish_data']}
 const credObj = {id: availableName, password: "super secure password", hubUrl: "https://gaia.blockstack.org", email: emailToUse}
-const clientTransmitKeys = crypto.createECDH('secp256k1')
-clientTransmitKeys.generateKeys()
-const clientPrivateKey = clientTransmitKeys.getPrivateKey('hex').toString()
-const clientPublicKey = clientTransmitKeys.getPublicKey('hex', 'compressed').toString()
-const clientKeyPair = {
-    privateKey: clientPrivateKey,
-    publicKey: clientPublicKey
-}
-
+const credObjLogIn = {id: "testing12348572634", password: "this is a test password", hubUrl: "https://gaia.blockstack.org", email: "justin.edward.hunter@gmail.com"}
 //We'll need to add profile signing and storage tests in the near future
 // let sampleProfile = require('./sampleProfile.json');
 // let signedProfileData;
@@ -64,35 +53,6 @@ let testKeychain
 //   })
 // })
 
-// describe('MakeAppKeypair', function() {
-//   this.timeout(10000);
-//   it('should create and an app specific keypair', async function() {
-//     const profile = await auth.makeProfile(appObj);
-//     const appKeyParams = {
-//       login: false,
-//       username: credObj.id,
-//       keychain: testKeychain,
-//       appObj,
-//       keyPair: clientKeyPair
-//     }
-//     const keypair = await auth.makeAppKeyPair(appKeyParams, profile)
-//     assert.equal(keypair.message, 'successfully created app keypair');
-//   })
-// })
-
-// describe('StoreEncryptedMnemonic', function() {
-//   this.timeout(10000);
-//   it('should encrypt the mnemonic with the password and the server transit key', async function() {
-//     const decryptedData = JSON.parse(await decryptECIES(clientKeyPair.privateKey, JSON.parse(testKeychain)))
-//     const serverPublicKey = decryptedData.publicKey;
-//     const mnemonic = decryptedData.mnemonic;
-//     const encryptedMnenomic = CryptoJS.AES.encrypt(JSON.stringify(mnemonic), credObj.password);
-//     const doubleEncryptedMnemonic = await encryptECIES(serverPublicKey, encryptedMnenomic.toString());
-//     const postedMnemonic = await auth.storeMnemonic(credObj.id, doubleEncryptedMnemonic);
-//     assert.equal(postedMnemonic.message, 'successfully stored encrypted mnemonic');
-//   })
-// })
-
 //Account Creation
 describe('CreateAccount', function() {
   this.timeout(10000);
@@ -104,20 +64,20 @@ describe('CreateAccount', function() {
 });
 
 
-// //Log In
-// describe('LogIn', function() {
-//   this.timeout(10000);
-//   it('kick off recovery flow with email, username, and password', async function() {
-//     const params = {
-//       login: true,
-//       credObj,
-//       appObj,
-//       userPayload: {}
-//     }
-//     const loggedIn = await auth.login(params);
-//     assert(loggedIn.message, "user session created");
-//   })
-// });
+//Log In
+describe('LogIn', function() {
+  this.timeout(10000);
+  it('kick off recovery flow with email, username, and password', async function() {
+    const params = {
+      credObj: credObjLogIn,
+      appObj,
+      userPayload: {}
+    }
+    const loggedIn = await auth.login(params);
+    console.log(loggedIn);
+    assert(loggedIn.message, "user session created");
+  })
+});
 
 //BlockstackJS Operations
 

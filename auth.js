@@ -1,18 +1,11 @@
-import { lookup } from 'dns';
 import { lookupProfile } from 'blockstack';
 
 require('dotenv').config()
 const config = require('./config.json');
-const CryptoJS = require("crypto-js");
-const Cookies = require('js-cookie');
 const request = require('request-promise');
-const { createECDH } = require('crypto-browserify');
 const { InstanceDataStore } = require('blockstack/lib/auth/sessionStore');
 const { connectToGaiaHub } = require('blockstack/lib/storage/hub');
 const { AppConfig, UserSession } = require('blockstack');
-const { encryptECIES, decryptECIES } = require('blockstack/lib/encryption');
-let mnemonic;
-let serverPublicKey;
 let idAddress;
 
 const headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
@@ -234,25 +227,33 @@ export async function login(params, newProfile) {
       appObj: params.appObj,
       password: params.credObj.password
     }
+    const profile = await updateProfile(params.credObj.id, params.appObj);
     try {
-      //Need to update the profile
-      const profile = await updateProfile(params.credObj.id, params.appObj);
       const appKeys = await makeAppKeyPair(appKeyParams, profile);
-      console.log(appKeys);
       if(appKeys) {
         const appPrivateKey = JSON.parse(appKeys.body).private;
         const appUrl = appKeys.body.appUrl;
-        profile.apps[appObj.appOrigin] = appUrl;
+        profile.apps[params.appObj.appOrigin] = appUrl;
         //Now, we login
         try {
           const userSessionParams = {
-            credObj,
-            appObj,
+            credObj: params.credObj,
+            appObj: params.appObj,
             userPayload: {
               privateKey: appPrivateKey,
             }
           }
-          const userSession = await login(userSessionParams, profile);
+          console.log("Logging in....");
+          const userPayload = userSessionParams.userPayload;
+          const sessionObj = {
+            scopes: params.appObj.scopes,
+            appOrigin: params.appObj.appOrigin,
+            appPrivKey: userPayload.privateKey,
+            hubUrl: params.credObj.hubUrl, //Still have to think through this one
+            username: params.credObj.id,
+            profile: newProfile
+          }
+          const userSession = await makeUserSession(sessionObj);
           
           if(userSession) {
             return {
