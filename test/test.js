@@ -53,31 +53,80 @@ let testKeychain
 //   })
 // })
 
-//Account Creation
-describe('CreateAccount', function() {
-  this.timeout(10000);
-  it('should return account created message', async function() {
-      const create = await auth.createUserAccount(credObj, appObj);
-      console.log(create)
-      assert.equal(create.message,"user session created")
-  });
-});
+// describe('Make dev keychain', function() {
+//   const config = {
+//     development: true
+//   }
+//   this.timeout(10000);
+//   it('should create and return a keychain for new dev sign ups', async function() {
+//     const keychain = await auth.makeKeychain(credObj, config);
+//     console.log(keychain);
+//     assert.equal(keychain.message, 'successfully created keychain');
+//   })
+// })
 
-
-//Log In
-describe('LogIn', function() {
+describe('Update config', function() {
   this.timeout(10000);
-  it('kick off recovery flow with email, username, and password', async function() {
-    const params = {
-      credObj: credObjLogIn,
-      appObj,
-      userPayload: {}
+  it('should properly update the dev config', async function() {
+    const updates = {
+      userId: "ID-1NVgM7H7axuuBgfc2Hr8TbQV3JfqKBvxji",
+      username: "username_1565723789639",
+      verificationID: "-LmBPGcCWk465gHOBNWB", 
+      config: {
+        accountInfo: {
+          isCurrent: false
+        }, 
+        isUpgraded: false, 
+        isVerified: true
+      },
+      development: true
     }
-    const loggedIn = await auth.login(params);
-    console.log(loggedIn);
-    assert(loggedIn.message, "user session created");
+    const configUpdate = await auth.updateConfig(updates, true);
+    console.log(configUpdate);
+    assert.equal(configUpdate.message, 'updated developer account');
   })
-});
+})
+
+//Account Creation
+// describe('CreateAccount', function() {
+//   this.timeout(10000);
+//   it('should return account created message', async function() {
+//       const create = await auth.createUserAccount(credObj, appObj);
+//       console.log(create)
+//       assert.equal(create.message,"user session created")
+//   });
+// });
+
+// describe('CreateDevAccount', function() {
+//   this.timeout(10000);
+//   const config = {
+//     appOrigin: "https://app.graphitedocs.com", 
+//     scopes: ['store_write', 'publish_data'], 
+//     isDev: true, 
+//     development: true
+//   }
+//   it('should return account created message', async function() {
+//       const create = await auth.createUserAccount(credObj, config);
+//       console.log(create)
+//       assert.equal(create.message,"user session created")
+//   });
+// });
+
+
+// //Log In
+// describe('LogIn', function() {
+//   this.timeout(10000);
+//   it('kick off recovery flow with email, username, and password', async function() {
+//     const params = {
+//       credObj: credObjLogIn,
+//       appObj,
+//       userPayload: {}
+//     }
+//     const loggedIn = await auth.login(params);
+//     console.log(loggedIn);
+//     assert(loggedIn.message, "user session created");
+//   })
+// });
 
 //BlockstackJS Operations
 

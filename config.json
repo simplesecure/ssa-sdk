@@ -1,12 +1,7 @@
 {
-    "DEV_KEYCHAIN_URL":"https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/keychain-dev",
-    "PROD_KEYCHAIN_URL":"https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/keychain-prod",
-    "DEV_APP_KEY_URL":"https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/appkeys-dev",
-    "PROD_APP_KEY_URL":"https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/appkeys-prod",
-    "DEV_ENCRYPTED_KEY_URL":"https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/encryptedKeychain-dev",
-    "PROD_ENCRYPTED_KEY_URL":"https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/encryptedKeychain-prod",
-    "DEV_MNEMONIC_URL":"https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/getMnemonic-dev",
-    "PROD_MNEMONIC_URL":"https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/getMnemonic-prod",
+    "KEYCHAIN_URL":"https://grsj1lmlse.execute-api.us-west-2.amazonaws.com/v1/keychain",
+    "APP_KEY_URL":"https://grsj1lmlse.execute-api.us-west-2.amazonaws.com/v1/appkeys",
+    "UPDATE_CONFIG_URL": "https://grsj1lmlse.execute-api.us-west-2.amazonaws.com/v1/updateConfig",
     "SUBDOMAIN_REGISTRATION":"https://registrar.blockstack.org/register",
     "NAME_LOOKUP_URL":"https://core.blockstack.org/v1/names/"
 }

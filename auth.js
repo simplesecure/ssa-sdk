@@ -37,15 +37,17 @@ export function nameLookUp(name) {
   });
 }
 
-export async function makeKeychain(credObj) {
+export async function makeKeychain(credObj, devConfig) {
   //Send the username and the passphrase which will be used by the server to encrypt sensitive data
   const dataString = {
     username: credObj.id,
     email: credObj.email,
-    password: credObj.password
+    password: credObj.password, 
+    development: devConfig && devConfig.development ? true : false
   }
   //This is a simple call to replicate blockstack's make keychain function
-  const options = { url: config.DEV_KEYCHAIN_URL, method: 'POST', headers: headers, form: dataString };
+  let endpointURL = devConfig.development ? config.DEV_DEVELOPER_KEYCHAIN_URL : config.DEV_KEYCHAIN_URL;
+  const options = { url: endpointURL, method: 'POST', headers: headers, form: dataString };
   return request(options)
   .then(async (body) => {
     // POST succeeded...
@@ -90,23 +92,23 @@ export async function makeAppKeyPair(params, profile) {
   });
 }
 
-export async function createUserAccount(credObj, appObj) {
+export async function createUserAccount(credObj, config) {
   console.log("Checking name...");
   const nameCheck = await nameLookUp(credObj.id);
   if(nameCheck.pass) {
     console.log("Name check passed");
     try {
       console.log("Making keychain...");
-      const keychain = await makeKeychain(credObj);        
+      const keychain = await makeKeychain(credObj, config);        
       if(keychain) {
         console.log("Keychain made")
         idAddress = keychain.body;
         //Now we make the profile
-        let profile = await makeProfile(appObj);
+        let profile = await makeProfile(config);
         
         const appKeyParams = {
           username: credObj.id,
-          appObj,
+          appObj: config,
           password: credObj.password
         }
         
@@ -117,7 +119,7 @@ export async function createUserAccount(credObj, appObj) {
             console.log("App keys created");
             const appPrivateKey = JSON.parse(appKeys.body).private;
             const appUrl = appKeys.body.appUrl;
-            profile.apps[appObj.appOrigin] = appUrl;
+            profile.apps[config.appOrigin] = appUrl;
             //Let's register the name now
             console.log("Registering name...");
             const registeredName = await registerSubdomain(credObj.id, idAddress);
@@ -129,7 +131,7 @@ export async function createUserAccount(credObj, appObj) {
               const userSessionParams = {
                 accountCreation: true,
                 credObj,
-                appObj,
+                appObj: config,
                 userPayload: {
                   privateKey: appPrivateKey,
                 }

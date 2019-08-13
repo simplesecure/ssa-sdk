@@ -74,7 +74,6 @@ async function runTests() {
     //Create Contract
     console.log("Creating contract...");
     const contract = await createContract(testMnemonic, abi, bytecode);
-    console.log(contract);
 
     //Fetch Contract
     console.log("Fetching and executing contract...");

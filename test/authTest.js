@@ -4,6 +4,7 @@ const request = require('request-promise');
 const { InstanceDataStore } = require('blockstack/lib/auth/sessionStore');
 const { AppConfig, UserSession, lookupProfile, connectToGaiaHub } = require('blockstack');
 let idAddress;
+let configObj;
 
 const headers = { 'Content-Type': 'application/json' };
 
@@ -35,15 +36,16 @@ module.exports = {
 
     });
   },
-  makeKeychain: async function(credObj) {
+  makeKeychain: async function(credObj, devConfig) {
     //Send the username and the passphrase which will be used by the server to encrypt sensitive data
     const dataString = {
       username: credObj.id,
       email: credObj.email,
-      password: credObj.password
+      password: credObj.password, 
+      development: devConfig ? true : false
     }
     //This is a simple call to replicate blockstack's make keychain function
-    const options = { url: config.DEV_KEYCHAIN_URL, method: 'POST', headers: headers, form: dataString };
+    const options = { url: config.KEYCHAIN_URL, method: 'POST', headers: headers, form: dataString };
     return request(options)
     .then(async (body) => {
       // POST succeeded...
@@ -67,12 +69,15 @@ module.exports = {
       username: params.username,
       password: params.password,
       url: params.appObj.appOrigin,
-      profile: profile && profile.apps ? JSON.stringify(profile) : null
+      profile: profile && profile.apps ? JSON.stringify(profile) : null, 
+      development: params.appObj.development ? true : false, 
+      isDeveloper: params.appObj.isDev ? true : false,
     }
 
-    var options = { url: config.DEV_APP_KEY_URL, method: 'POST', headers: headers, form: dataString };
+    var options = { url: config.APP_KEY_URL, method: 'POST', headers: headers, form: dataString };
     return request(options)
     .then((body) => {
+      console.log(body);
       return {
         message: "successfully created app keypair",
         body: body
@@ -86,23 +91,30 @@ module.exports = {
       }
     });
   },
-  createUserAccount: async function(credObj, appObj) {
-    console.log("Checking name...");
+  createUserAccount: async function(credObj, config) {
+    //For now we can continue to use Blockstack's name lookup, even for non-Blockstack auth
     const nameCheck = await this.nameLookUp(credObj.id);
+    console.log("Verifying name availability...");
     if(nameCheck.pass) {
       console.log("Name check passed");
       try {
         console.log("Making keychain...");
-        const keychain = await this.makeKeychain(credObj);        
-        if(keychain) {
+        const keychain = await this.makeKeychain(credObj, config); 
+        if(keychain.success === false) {
+          //This would happen for a variety of reasons, just return the server message
+          return {
+            success: false,
+            message: keychain.body
+          }
+        } else {
           console.log("Keychain made")
           idAddress = keychain.body;
           //Now we make the profile
-          let profile = await this.makeProfile(appObj);
+          let profile = await this.makeProfile(config);
           
           const appKeyParams = {
             username: credObj.id,
-            appObj,
+            appObj: config,
             password: credObj.password
           }
           
@@ -112,8 +124,9 @@ module.exports = {
             if(appKeys) {
               console.log("App keys created");
               const appPrivateKey = JSON.parse(appKeys.body).private;
+              configObj = JSON.parse(appKeys.body).config;
               const appUrl = appKeys.body.appUrl;
-              profile.apps[appObj.appOrigin] = appUrl;
+              profile.apps[config.appOrigin] = appUrl;
               //Let's register the name now
               console.log("Registering name...");
               const registeredName = await this.registerSubdomain(credObj.id, idAddress);
@@ -125,7 +138,7 @@ module.exports = {
                 const userSessionParams = {
                   accountCreation: true,
                   credObj,
-                  appObj,
+                  appObj: config,
                   userPayload: {
                     privateKey: appPrivateKey,
                   }
@@ -161,11 +174,6 @@ module.exports = {
               message: "error creating app keys", 
               body: error
             }
-          }
-        } else {
-          return {
-            message: "error with keychain", 
-            body: null
           }
         }
       } catch(keychainErr) {
@@ -293,8 +301,10 @@ module.exports = {
     const dataStore = new InstanceDataStore({
       userData: {
         appPrivateKey: sessionObj.appPrivKey,
+        identityAddress: idAddress,
         hubUrl: sessionObj.hubUrl,
         identityAddress: idAddress,
+        devConfig: configObj.accountInfo ? configObj : {},
         username: sessionObj.username,
         gaiaHubConfig: await connectToGaiaHub('https://hub.blockstack.org', sessionObj.appPrivKey,""),
         profile: sessionObj.profile
@@ -379,5 +389,37 @@ module.exports = {
     }
 
     return profile;
+  }, 
+  updateConfig: function(updates, verification) {
+    const payload = {
+      username: updates.username, 
+      id: updates.userId, 
+      verificationID: verification ? updates.verificationID : updates.apiKey, 
+      config: JSON.stringify(updates.config),
+      development: updates.development ? true : false
+    };
+    console.log(payload);
+    if(verification) {
+      headers['Authorization'] = updates.verificationID;
+    } else {
+      headers['Authorization'] = updates.apiKey;
+    }
+    console.log(headers);
+    var options = { url: config.UPDATE_CONFIG_URL, method: 'POST', headers: headers, form: payload };
+    return request(options)
+    .then((body) => {
+      console.log(body);
+      return {
+        message: "updated developer account",
+        body: body
+      }
+    })
+    .catch(error => {
+      console.log('Error: ', error);
+      return {
+        message: "failed to update developer account",
+        body: error
+      }
+    });
   }
 }
