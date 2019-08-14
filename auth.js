@@ -7,6 +7,7 @@ const { InstanceDataStore } = require('blockstack/lib/auth/sessionStore');
 const { connectToGaiaHub } = require('blockstack/lib/storage/hub');
 const { AppConfig, UserSession } = require('blockstack');
 let idAddress;
+let configObj;
 
 const headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
 
@@ -311,8 +312,10 @@ export async function makeUserSession(sessionObj) {
   const dataStore = new InstanceDataStore({
     userData: {
       appPrivateKey: sessionObj.appPrivKey,
+      identityAddress: idAddress,
       hubUrl: sessionObj.hubUrl,
       identityAddress: idAddress,
+      devConfig: configObj.accountInfo ? configObj : {},
       username: sessionObj.username,
       gaiaHubConfig: await connectToGaiaHub('https://hub.blockstack.org', sessionObj.appPrivKey,""),
       profile: sessionObj.profile
@@ -322,7 +325,6 @@ export async function makeUserSession(sessionObj) {
     appConfig,
     sessionStore: dataStore
   })
-  console.log(userSession);
   try {
 
     return {
