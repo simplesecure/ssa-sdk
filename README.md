@@ -51,6 +51,8 @@ And here's a breakdown of the `appObj`:
 const appObj = { 
     appOrigin: "https://yourappdomain.com", //This is the domain for your app
     scopes: ['store_write', 'publish_data', 'email'] //These are the scopes you are requesting to use
+    apiKey: "YourKey", //Provided when you create a project
+    devId: "YourDevId" //Provided when you create a project
 }
 ```
 
@@ -90,6 +92,8 @@ const credObj = {
 const appObj = { 
     appOrigin: "https://yourappdomain.com", //This is the domain for your app
     scopes: ['store_write', 'publish_data', 'email'] //These are the scopes you are requesting to use
+    apiKey: "YourKey", 
+    devId: "YourDevId" 
 }
 
 const params = {

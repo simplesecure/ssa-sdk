@@ -43,8 +43,12 @@ export async function makeKeychain(credObj, devConfig) {
     username: credObj.id,
     email: credObj.email,
     password: credObj.password, 
-    development: devConfig ? true : false
+    development: devConfig.development ? true : false, 
+    devId: devConfig.devId
   }
+
+  headers['Authorization'] = devConfig.apiKey;
+
   //This is a simple call to replicate blockstack's make keychain function
   const options = { url: config.KEYCHAIN_URL, method: 'POST', headers: headers, form: dataString };
   return request(options)
@@ -74,7 +78,10 @@ export async function makeAppKeyPair(params, profile) {
     profile: profile && profile.apps ? JSON.stringify(profile) : null, 
     development: params.appObj.development ? true : false, 
     isDeveloper: params.appObj.isDev ? true : false,
+    devId: params.appObj.devId
   }
+
+  headers['Authorization'] = params.appObj.apiKey;
 
   var options = { url: config.APP_KEY_URL, method: 'POST', headers: headers, form: dataString };
   return request(options)

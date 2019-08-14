@@ -4,7 +4,12 @@ const crypto = require('crypto-browserify');
 const auth = require('./authTest');
 const availableName = `username_${Date.now()}`;
 const emailToUse = "justin@graphitedocs.com";
-const appObj = { appOrigin: "https://app.graphitedocs.com", scopes: ['store_write', 'publish_data']}
+const appObj = { 
+  appOrigin: "https://app.graphitedocs.com", 
+  scopes: ['store_write', 'publish_data'], 
+  apiKey: "-LmBW1g7xQCtaPGaVN7T", 
+  devId: "ID-13CYqQGJYu13tXSgFTup4sFQY8rSjgqdAQ"
+}
 const credObj = {id: availableName, password: "super secure password", hubUrl: "https://gaia.blockstack.org", email: emailToUse}
 const credObjLogIn = {id: "testing12348572634", password: "this is a test password", hubUrl: "https://gaia.blockstack.org", email: "justin.edward.hunter@gmail.com"}
 //We'll need to add profile signing and storage tests in the near future
@@ -65,37 +70,37 @@ let testKeychain
 //   })
 // })
 
-describe('Update config', function() {
-  this.timeout(10000);
-  it('should properly update the dev config', async function() {
-    const updates = {
-      userId: "ID-1NVgM7H7axuuBgfc2Hr8TbQV3JfqKBvxji",
-      username: "username_1565723789639",
-      verificationID: "-LmBPGcCWk465gHOBNWB", 
-      config: {
-        accountInfo: {
-          isCurrent: false
-        }, 
-        isUpgraded: false, 
-        isVerified: true
-      },
-      development: true
-    }
-    const configUpdate = await auth.updateConfig(updates, true);
-    console.log(configUpdate);
-    assert.equal(configUpdate.message, 'updated developer account');
-  })
-})
+// describe('Update config', function() {
+//   this.timeout(10000);
+//   it('should properly update the dev config', async function() {
+//     const updates = {
+//       userId: "ID-1NVgM7H7axuuBgfc2Hr8TbQV3JfqKBvxji",
+//       username: "username_1565723789639",
+//       verificationID: "-LmBPGcCWk465gHOBNWB", 
+//       config: {
+//         accountInfo: {
+//           isCurrent: false
+//         }, 
+//         isUpgraded: false, 
+//         isVerified: true
+//       },
+//       development: true
+//     }
+//     const configUpdate = await auth.updateConfig(updates, true);
+//     console.log(configUpdate);
+//     assert.equal(configUpdate.message, 'updated developer account');
+//   })
+// })
 
 //Account Creation
-// describe('CreateAccount', function() {
-//   this.timeout(10000);
-//   it('should return account created message', async function() {
-//       const create = await auth.createUserAccount(credObj, appObj);
-//       console.log(create)
-//       assert.equal(create.message,"user session created")
-//   });
-// });
+describe('CreateAccount', function() {
+  this.timeout(10000);
+  it('should return account created message', async function() {
+      const create = await auth.createUserAccount(credObj, appObj);
+      console.log(create)
+      assert.equal(create.message,"user session created")
+  });
+});
 
 // describe('CreateDevAccount', function() {
 //   this.timeout(10000);
