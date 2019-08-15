@@ -209,7 +209,7 @@ module.exports = {
         scopes: params.appObj.scopes,
         appOrigin: params.appObj.appOrigin,
         appPrivKey: userPayload.privateKey,
-        hubUrl: params.credObj.hubUrl, //Still have to think through this one
+        hubUrl: params.credObj.hubUrl ? params.credObj.hubUrl : "https://hub.blockstack.org", //Still have to think through this one
         username: params.credObj.id,
         profile: newProfile
       }
@@ -241,6 +241,7 @@ module.exports = {
       const profile = await this.updateProfile(params.credObj.id, params.appObj);
       try {
         const appKeys = await this.makeAppKeyPair(appKeyParams, profile);
+        configObj = JSON.parse(appKeys.body).config;
         console.log(appKeys);
         if(appKeys) {
           const appPrivateKey = JSON.parse(appKeys.body).private;
@@ -261,7 +262,7 @@ module.exports = {
               scopes: params.appObj.scopes,
               appOrigin: params.appObj.appOrigin,
               appPrivKey: userPayload.privateKey,
-              hubUrl: params.credObj.hubUrl, //Still have to think through this one
+              hubUrl: params.credObj.hubUrl ? params.credObj.hubUrl : "https://hub.blockstack.org", //Still have to think through this one
               username: params.credObj.id,
               profile: newProfile
             }

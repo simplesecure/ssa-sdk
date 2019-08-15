@@ -1,7 +1,7 @@
 {
     "KEYCHAIN_URL":"https://grsj1lmlse.execute-api.us-west-2.amazonaws.com/v1/keychain",
     "APP_KEY_URL":"https://grsj1lmlse.execute-api.us-west-2.amazonaws.com/v1/appkeys",
-    "UPDATE_CONFIG_URL": "https://grsj1lmlse.execute-api.us-west-2.amazonaws.com/v1/updateConfig",
+    "UPDATE_CONFIG_URL": "https://grsj1lmlse.execute-api.us-west-2.amazonaws.com/v1/config",
     "SUBDOMAIN_REGISTRATION":"https://registrar.blockstack.org/register",
     "NAME_LOOKUP_URL":"https://core.blockstack.org/v1/names/"
 }

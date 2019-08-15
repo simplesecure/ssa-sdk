@@ -245,6 +245,8 @@ export async function login(params, newProfile) {
     const profile = await updateProfile(params.credObj.id, params.appObj);
     try {
       const appKeys = await makeAppKeyPair(appKeyParams, profile);
+      configObj = JSON.parse(appKeys.body).config;
+
       if(appKeys) {
         const appPrivateKey = JSON.parse(appKeys.body).private;
         const appUrl = appKeys.body.appUrl;

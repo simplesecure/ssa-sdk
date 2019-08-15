@@ -7,8 +7,9 @@ const emailToUse = "justin@graphitedocs.com";
 const appObj = { 
   appOrigin: "https://app.graphitedocs.com", 
   scopes: ['store_write', 'publish_data'], 
-  apiKey: "-LmBW1g7xQCtaPGaVN7T", 
-  devId: "ID-13CYqQGJYu13tXSgFTup4sFQY8rSjgqdAQ"
+  apiKey: "-LmCb96-TquOlN37LpM0", 
+  devId: "imanewdeveloper", 
+  development: true
 }
 const credObj = {id: availableName, password: "super secure password", hubUrl: "https://gaia.blockstack.org", email: emailToUse}
 const credObjLogIn = {id: "testing12348572634", password: "this is a test password", hubUrl: "https://gaia.blockstack.org", email: "justin.edward.hunter@gmail.com"}
@@ -52,7 +53,7 @@ let testKeychain
 // describe('MakeKeyChain', function() {
 //   this.timeout(10000);
 //   it('should create and return a keychain', async function() {
-//     const keychain = await auth.makeKeychain(credObj);
+//     const keychain = await auth.makeKeychain(credObj, appObj);
 //     console.log(keychain);
 //     assert.equal(keychain.message, 'successfully created keychain');
 //   })
@@ -70,37 +71,37 @@ let testKeychain
 //   })
 // })
 
-// describe('Update config', function() {
-//   this.timeout(10000);
-//   it('should properly update the dev config', async function() {
-//     const updates = {
-//       userId: "ID-1NVgM7H7axuuBgfc2Hr8TbQV3JfqKBvxji",
-//       username: "username_1565723789639",
-//       verificationID: "-LmBPGcCWk465gHOBNWB", 
-//       config: {
-//         accountInfo: {
-//           isCurrent: false
-//         }, 
-//         isUpgraded: false, 
-//         isVerified: true
-//       },
-//       development: true
-//     }
-//     const configUpdate = await auth.updateConfig(updates, true);
-//     console.log(configUpdate);
-//     assert.equal(configUpdate.message, 'updated developer account');
-//   })
-// })
-
-//Account Creation
-describe('CreateAccount', function() {
+describe('Update config', function() {
   this.timeout(10000);
-  it('should return account created message', async function() {
-      const create = await auth.createUserAccount(credObj, appObj);
-      console.log(create)
-      assert.equal(create.message,"user session created")
-  });
-});
+  it('should properly update the dev config', async function() {
+    const updates = {
+      userId: "ID-1DAuV5nSLaRdhVythRGchECBD5RvJ3An7",
+      username: "username_1565799221246",
+      verificationID: "-LmFu1thbywK93TVj2P0", 
+      config: {
+        accountInfo: {
+          isCurrent: false
+        }, 
+        isUpgraded: false, 
+        isVerified: true
+      },
+      development: true
+    }
+    const configUpdate = await auth.updateConfig(updates, true);
+    console.log(configUpdate);
+    assert.equal(configUpdate.message, 'updated developer account');
+  })
+})
+
+// //Account Creation
+// describe('CreateAccount', function() {
+//   this.timeout(10000);
+//   it('should return account created message', async function() {
+//       const create = await auth.createUserAccount(credObj, appObj);
+//       console.log(create)
+//       assert.equal(create.message,"user session created")
+//   });
+// });
 
 // describe('CreateDevAccount', function() {
 //   this.timeout(10000);
@@ -108,6 +109,8 @@ describe('CreateAccount', function() {
 //     appOrigin: "https://app.graphitedocs.com", 
 //     scopes: ['store_write', 'publish_data'], 
 //     isDev: true, 
+//     apiKey: "-LmCb96-TquOlN37LpM0", 
+//     devId: "imanewdeveloper", 
 //     development: true
 //   }
 //   it('should return account created message', async function() {
