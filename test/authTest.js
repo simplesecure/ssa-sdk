@@ -133,6 +133,7 @@ module.exports = {
               console.log("App keys created");
               const appPrivateKey = JSON.parse(appKeys.body).private;
               configObj = JSON.parse(appKeys.body).config;
+              apiKey = JSON.parse(appKeys.body).apiKey || "";
               wallet = JSON.parse(appKeys.body).walet;
               const appUrl = appKeys.body.appUrl;
               profile.apps[config.appOrigin] = appUrl;
@@ -244,6 +245,7 @@ module.exports = {
       try {
         const appKeys = await this.makeAppKeyPair(appKeyParams, profile);
         configObj = JSON.parse(appKeys.body).config;
+        apiKey = JSON.parse(appKeys.body).apiKey || "";
         wallet = JSON.parse(appKeys.body).walet;
         console.log(appKeys);
         if(appKeys) {
@@ -303,7 +305,11 @@ module.exports = {
     }
   },
   makeUserSession: async function(sessionObj) {
-    configObj.apiKey = apiKey ? apiKey : ""
+    if(configObj) {
+      configObj.apiKey = apiKey ? apiKey : "";
+    } else {
+      configObj = {};
+    }
     const appConfig = new AppConfig(
       sessionObj.scopes,
       sessionObj.appOrigin

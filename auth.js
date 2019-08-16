@@ -138,6 +138,7 @@ export async function createUserAccount(credObj, config) {
             console.log("App keys created");
             const appPrivateKey = JSON.parse(appKeys.body).private;
             configObj = JSON.parse(appKeys.body).config;
+            apiKey = JSON.parse(appKeys.body).apiKey || "";
             wallet = JSON.parse(appKeys.body).walet;
             const appUrl = appKeys.body.appUrl;
             profile.apps[config.appOrigin] = appUrl;
@@ -249,7 +250,7 @@ export async function login(params, newProfile) {
     try {
       const appKeys = await makeAppKeyPair(appKeyParams, profile);
       configObj = JSON.parse(appKeys.body).config;
-      apiKey = JSON.parse(appKeys.body).apiKey;
+      apiKey = JSON.parse(appKeys.body).apiKey || "";
       wallet = JSON.parse(appKeys.body).walet;
       if(appKeys) {
         const appPrivateKey = JSON.parse(appKeys.body).private;
@@ -309,7 +310,11 @@ export async function login(params, newProfile) {
 }
 
 export async function makeUserSession(sessionObj) {
-  configObj.apiKey = apiKey ? apiKey : "";
+  if(configObj) {
+    configObj.apiKey = apiKey ? apiKey : "";
+  } else {
+    configObj = {};
+  }
   const appConfig = new AppConfig(
     sessionObj.scopes,
     sessionObj.appOrigin
