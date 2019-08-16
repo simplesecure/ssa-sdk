@@ -8,6 +8,7 @@ const { connectToGaiaHub } = require('blockstack/lib/storage/hub');
 const { AppConfig, UserSession } = require('blockstack');
 let idAddress;
 let configObj;
+let apiKey;
 
 const headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
 
@@ -246,7 +247,7 @@ export async function login(params, newProfile) {
     try {
       const appKeys = await makeAppKeyPair(appKeyParams, profile);
       configObj = JSON.parse(appKeys.body).config;
-
+      apiKey = JSON.parse(appKeys.body).apiKey;
       if(appKeys) {
         const appPrivateKey = JSON.parse(appKeys.body).private;
         const appUrl = appKeys.body.appUrl;
@@ -305,8 +306,7 @@ export async function login(params, newProfile) {
 }
 
 export async function makeUserSession(sessionObj) {
-  //TODO need to fetch the profile if it's an existing user, or build up a profile if it's a new user
-  // const profile = await lookupProfile(sessionObj.username);
+  configObj.apiKey = apiKey;
   const appConfig = new AppConfig(
     sessionObj.scopes,
     sessionObj.appOrigin
@@ -410,9 +410,7 @@ export async function updateProfile(name, appObj) {
 
 export function updateConfig(updates, verification) {
   const payload = {
-    username: updates.username, 
-    id: updates.userId, 
-    verificationID: verification ? updates.verificationID : updates.apiKey, 
+    devId: updates.username, 
     config: JSON.stringify(updates.config),
     development: updates.development ? true : false
   };
