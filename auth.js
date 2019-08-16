@@ -9,6 +9,7 @@ const { AppConfig, UserSession } = require('blockstack');
 let idAddress;
 let configObj;
 let apiKey;
+let wallet;
 
 const headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
 
@@ -137,6 +138,7 @@ export async function createUserAccount(credObj, config) {
             console.log("App keys created");
             const appPrivateKey = JSON.parse(appKeys.body).private;
             configObj = JSON.parse(appKeys.body).config;
+            wallet = JSON.parse(appKeys.body).walet;
             const appUrl = appKeys.body.appUrl;
             profile.apps[config.appOrigin] = appUrl;
             //Let's register the name now
@@ -248,6 +250,7 @@ export async function login(params, newProfile) {
       const appKeys = await makeAppKeyPair(appKeyParams, profile);
       configObj = JSON.parse(appKeys.body).config;
       apiKey = JSON.parse(appKeys.body).apiKey;
+      wallet = JSON.parse(appKeys.body).walet;
       if(appKeys) {
         const appPrivateKey = JSON.parse(appKeys.body).private;
         const appUrl = appKeys.body.appUrl;
@@ -306,7 +309,7 @@ export async function login(params, newProfile) {
 }
 
 export async function makeUserSession(sessionObj) {
-  configObj.apiKey = apiKey;
+  configObj.apiKey = apiKey ? apiKey : "";
   const appConfig = new AppConfig(
     sessionObj.scopes,
     sessionObj.appOrigin
@@ -320,7 +323,8 @@ export async function makeUserSession(sessionObj) {
       devConfig: configObj.accountInfo ? configObj : {},
       username: sessionObj.username,
       gaiaHubConfig: await connectToGaiaHub('https://hub.blockstack.org', sessionObj.appPrivKey,""),
-      profile: sessionObj.profile
+      profile: sessionObj.profile, 
+      wallet: wallet ? wallet : {}
     },
   })
   const userSession = new UserSession({
@@ -434,6 +438,60 @@ export function updateConfig(updates, verification) {
     console.log('Error: ', error);
     return {
       message: "failed to update developer account",
+      body: error
+    }
+  });
+}
+
+export function createContract(params) {
+  const payload = {
+    devId: params.devId, 
+    password: params.password, 
+    username: params.username, 
+    abi: JSON.stringify(params.abi), 
+    bytecode: params.bytecode, 
+    development: params.development ? true : false
+  }
+  headers['Authorization'] = params.apiKey;
+  var options = { url: config.CREATE_CONTRACT_URL, method: 'POST', headers: headers, form: payload };
+  return request(options)
+  .then((body) => {
+    console.log(body);
+    return {
+      message: "contract created and deployed",
+      body: body
+    }
+  })
+  .catch(error => {
+    console.log('Error: ', error);
+    return {
+      message: "failed to create contract",
+      body: error
+    }
+  });
+}
+
+export function fetchContract(params) {
+  const payload = {
+    devId: params.devId, 
+    contractAddress: params.contractAddress,
+    abi: JSON.stringify(params.abi),  
+    development: params.development ? true : false
+  }
+  headers['Authorization'] = params.apiKey;
+  var options = { url: config.FETCH_CONTRACT_URL, method: 'POST', headers: headers, form: payload };
+  return request(options)
+  .then((body) => {
+    console.log(body);
+    return {
+      message: "retreived contract and executed",
+      body: body
+    }
+  })
+  .catch(error => {
+    console.log('Error: ', error);
+    return {
+      message: "failed to retreive contract",
       body: error
     }
   });
