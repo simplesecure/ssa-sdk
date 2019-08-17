@@ -9,7 +9,9 @@ const appObj = {
   scopes: ['store_write', 'publish_data'], 
   apiKey: "-LmCb96-TquOlN37LpM0", 
   devId: "imanewdeveloper", 
-  development: true
+  development: true, 
+  storageModules: ['blockstack'], 
+  authModules: ['blockstack', 'textile']
 }
 const credObj = {id: availableName, password: "super secure password", hubUrl: "https://gaia.blockstack.org", email: emailToUse}
 const credObjLogIn = {id: "testing12348572634", password: "this is a test password", hubUrl: "https://gaia.blockstack.org", email: "justin.edward.hunter@gmail.com"}
