@@ -144,21 +144,21 @@ let testKeychain
 //   })
 // })
 
-describe('Fetch Contract', function() {
-  this.timeout(10000);
-  it('should fetch and execute a contract', async function() {
-    const params = {
-      development: true,
-      devId: appObj.devId,
-      apiKey: appObj.apiKey,
-      contractAddress,
-      abi
-    }
-    const contract = await auth.fetchContract(params);
-    console.log(contract);
-    assert.equal(contract.message, 'retreived contract and executed');
-  })
-})
+// describe('Fetch Contract', function() {
+//   this.timeout(10000);
+//   it('should fetch and execute a contract', async function() {
+//     const params = {
+//       development: true,
+//       devId: appObj.devId,
+//       apiKey: appObj.apiKey,
+//       contractAddress,
+//       abi
+//     }
+//     const contract = await auth.fetchContract(params);
+//     console.log(contract);
+//     assert.equal(contract.message, 'retreived contract and executed');
+//   })
+// })
 
 // describe('Update config', function() {
 //   this.timeout(10000);
@@ -182,15 +182,15 @@ describe('Fetch Contract', function() {
 //   })
 // })
 
-// //Account Creation
-// describe('CreateAccount', function() {
-//   this.timeout(10000);
-//   it('should return account created message', async function() {
-//       const create = await auth.createUserAccount(credObj, appObj);
-//       console.log(create)
-//       assert.equal(create.message,"user session created")
-//   });
-// });
+//Account Creation
+describe('CreateAccount', function() {
+  this.timeout(10000);
+  it('should return account created message', async function() {
+      const create = await auth.createUserAccount(credObj, appObj);
+      console.log(create)
+      assert.equal(create.message,"user session created")
+  });
+});
 
 // describe('CreateDevAccount', function() {
 //   this.timeout(10000);
