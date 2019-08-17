@@ -6,6 +6,7 @@ const { AppConfig, UserSession, lookupProfile, connectToGaiaHub } = require('blo
 let idAddress;
 let configObj;
 let wallet;
+let textile;
 
 const headers = { 'Content-Type': 'application/json' };
 
@@ -135,11 +136,16 @@ module.exports = {
             const appKeys = await this.makeAppKeyPair(appKeyParams, profile);            
             if(appKeys) {
               console.log("App keys created");
-              const appPrivateKey = JSON.parse(appKeys.body).private;
-              configObj = JSON.parse(appKeys.body).config;
+              const appPrivateKey = JSON.parse(appKeys.body).blockstack ? JSON.parse(appKeys.body).blockstack.private : "";
+              configObj = JSON.parse(appKeys.body).config || {};
               apiKey = JSON.parse(appKeys.body).apiKey || "";
               wallet = JSON.parse(appKeys.body).walet;
-              const appUrl = appKeys.body.appUrl;
+              if(config.authModules && config.authModules.indexOf('textile') > -1) {
+                textile = JSON.parse(appKeys.body).textile;
+              } else {
+                textile = null;
+              }
+            const appUrl = JSON.parse(appKeys.body).blockstack.appUrl || "";
               profile.apps[config.appOrigin] = appUrl;
               //Let's register the name now
               console.log("Registering name...");
@@ -248,13 +254,17 @@ module.exports = {
       const profile = await this.updateProfile(params.credObj.id, params.appObj);
       try {
         const appKeys = await this.makeAppKeyPair(appKeyParams, profile);
-        configObj = JSON.parse(appKeys.body).config;
-        apiKey = JSON.parse(appKeys.body).apiKey || "";
-        wallet = JSON.parse(appKeys.body).walet;
-        console.log(appKeys);
         if(appKeys) {
-          const appPrivateKey = JSON.parse(appKeys.body).private;
-          const appUrl = appKeys.body.appUrl;
+          const appPrivateKey = JSON.parse(appKeys.body).blockstack ? JSON.parse(appKeys.body).blockstack.private : "";
+          const appUrl = JSON.parse(appKeys.body).blockstack.appUrl || "";
+          configObj = JSON.parse(appKeys.body).config;
+          apiKey = JSON.parse(appKeys.body).apiKey || "";
+          wallet = JSON.parse(appKeys.body).walet;
+          if(params.appObj.authModules && params.appObj.authModules.indexOf('textile') > -1) {
+            textile = JSON.parse(appKeys.body).textile;
+          } else {
+            textile = null;
+          }
           profile.apps[params.appObj.appOrigin] = appUrl;
           //Now, we login
           try {
@@ -327,8 +337,9 @@ module.exports = {
         devConfig: configObj.accountInfo ? configObj : {},
         username: sessionObj.username,
         gaiaHubConfig: await connectToGaiaHub('https://hub.blockstack.org', sessionObj.appPrivKey,""),
-        profile: sessionObj.profile,
-        wallet: wallet ? wallet : {}
+        profile: sessionObj.profile, 
+        wallet: wallet ? wallet : {}, 
+        textile
       },
     })
     const userSession = new UserSession({
