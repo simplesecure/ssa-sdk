@@ -47,7 +47,9 @@ export async function makeKeychain(credObj, devConfig) {
     email: credObj.email,
     password: credObj.password, 
     development: devConfig.development ? true : false, 
-    devId: devConfig.devId
+    devId: devConfig.devId, 
+    storageModules: devConfig.storageModules, 
+    authModules: devConfig.authModules
   }
 
   headers['Authorization'] = devConfig.apiKey;
@@ -81,7 +83,9 @@ export async function makeAppKeyPair(params, profile) {
     profile: profile && profile.apps ? JSON.stringify(profile) : null, 
     development: params.appObj.development ? true : false, 
     isDeveloper: params.appObj.isDev ? true : false,
-    devId: params.appObj.devId
+    devId: params.appObj.devId, 
+    storageModules: params.appObj.storageModules, 
+    authModules: params.appObj.authModules
   }
 
   headers['Authorization'] = params.appObj.apiKey;
