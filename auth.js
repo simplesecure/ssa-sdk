@@ -518,3 +518,53 @@ export function fetchContract(params) {
   });
 }
 
+export function pinContent(params) {
+  const payload = {
+    devId: params.devId, 
+    username: params.username,
+    devSuppliedIdentifier: params.id,  
+    contentToPin: JSON.stringify(params.content),
+    development: params.development ? true : false
+  }
+  headers['Authorization'] = params.apiKey;
+  var options = { url: config.PIN_CONTENT_URL, method: 'POST', headers: headers, form: payload };
+  return request(options)
+  .then((body) => {
+    return {
+      message: "content successfully pinned",
+      body: body
+    }
+  })
+  .catch(error => {
+    console.log('Error: ', error);
+    return {
+      message: "failed to pin content",
+      body: error
+    }
+  });
+}
+
+export function fetchPinnedContent(params) {
+  const payload = {
+    devId: params.devId, 
+    username: params.username,
+    devSuppliedIdentifier: params.id,  
+    development: params.development ? true : false
+  }
+  headers['Authorization'] = params.apiKey;
+  var options = { url: config.FETCH_PINNED_CONTENT_URL, method: 'POST', headers: headers, form: payload };
+  return request(options)
+  .then((body) => {
+    return {
+      message: "Found pinned content",
+      body: body
+    }
+  })
+  .catch(error => {
+    console.log('Error: ', error);
+    return {
+      message: "failed to find pinned content",
+      body: error
+    }
+  });
+}
