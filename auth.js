@@ -433,6 +433,32 @@ export async function updateProfile(name, appObj) {
   }
 }
 
+export function getConfig(params) {
+  const payload = {
+    devId: params.devId,
+    development: params.development ? true : false
+  };
+  headers['Authorization'] = params.apiKey;
+  console.log(payload);
+  console.log(headers);
+  var options = { url: config.GET_CONFIG_URL, method: 'POST', headers: headers, form: payload };
+  return request(options)
+  .then((body) => {
+    console.log(body);
+    return {
+      message: "get developer account config",
+      body: body
+    }
+  })
+  .catch(error => {
+    console.log('Error: ', error);
+    return {
+      message: "failed to get developer account",
+      body: error
+    }
+  });
+}
+
 export function updateConfig(updates, verification) {
   const payload = {
     devId: updates.username,
@@ -522,7 +548,7 @@ export function pinContent(params) {
   const payload = {
     devId: params.devId,
     username: params.username,
-    devSuppliedIdentifier: params.id,  
+    devSuppliedIdentifier: params.id,
     contentToPin: JSON.stringify(params.content),
     development: params.development ? true : false
   }

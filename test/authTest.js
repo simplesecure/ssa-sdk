@@ -43,10 +43,10 @@ module.exports = {
     const dataString = {
       username: credObj.id,
       email: credObj.email,
-      password: credObj.password, 
-      development: devConfig.development ? true : false, 
-      devId: devConfig.devId, 
-      storageModules: devConfig.storageModules, 
+      password: credObj.password,
+      development: devConfig.development ? true : false,
+      devId: devConfig.devId,
+      storageModules: devConfig.storageModules,
       authModules: devConfig.authModules
     }
 
@@ -77,11 +77,11 @@ module.exports = {
       username: params.username,
       password: params.password,
       url: params.appObj.appOrigin,
-      profile: profile && profile.apps ? JSON.stringify(profile) : null, 
-      development: params.appObj.development ? true : false, 
+      profile: profile && profile.apps ? JSON.stringify(profile) : null,
+      development: params.appObj.development ? true : false,
       isDeveloper: params.appObj.isDev ? true : false,
-      devId: params.appObj.devId, 
-      storageModules: params.appObj.storageModules, 
+      devId: params.appObj.devId,
+      storageModules: params.appObj.storageModules,
       authModules: params.appObj.authModules
     }
 
@@ -112,7 +112,7 @@ module.exports = {
       console.log("Name check passed");
       try {
         console.log("Making keychain...");
-        const keychain = await this.makeKeychain(credObj, config); 
+        const keychain = await this.makeKeychain(credObj, config);
         if(keychain.success === false) {
           //This would happen for a variety of reasons, just return the server message
           return {
@@ -124,16 +124,16 @@ module.exports = {
           idAddress = keychain.body;
           //Now we make the profile
           let profile = await this.makeProfile(config);
-          
+
           const appKeyParams = {
             username: credObj.id,
             appObj: config,
             password: credObj.password
           }
-          
+
           try {
             console.log("Making app keys...");
-            const appKeys = await this.makeAppKeyPair(appKeyParams, profile);            
+            const appKeys = await this.makeAppKeyPair(appKeyParams, profile);
             if(appKeys) {
               console.log("App keys created");
               const appPrivateKey = JSON.parse(appKeys.body).blockstack ? JSON.parse(appKeys.body).blockstack.private : "";
@@ -168,30 +168,30 @@ module.exports = {
                 if(userSession) {
                   console.log("Logged in");
                   return {
-                    message: "user session created", 
+                    message: "user session created",
                     body: userSession.body
                   }
                 } else {
                   return {
-                    message: "trouble creating user session", 
+                    message: "trouble creating user session",
                     body: null
                   }
                 }
               } catch (loginErr) {
                 return {
-                  message: "trouble logging in", 
+                  message: "trouble logging in",
                   body: loginErr
                 }
-              }              
+              }
             } else {
               return {
-                message: "error creating app keys", 
+                message: "error creating app keys",
                 body: null
               }
             }
           } catch(error) {
             return {
-              message: "error creating app keys", 
+              message: "error creating app keys",
               body: error
             }
           }
@@ -230,18 +230,18 @@ module.exports = {
         const userSession = await this.makeUserSession(sessionObj);
         if(userSession) {
           return {
-            message: "user session created", 
+            message: "user session created",
             body: userSession.body
           }
         } else {
           return {
-            message: "error creating user session", 
+            message: "error creating user session",
             body: null
           }
         }
       } catch (userSessErr) {
         return {
-          message: "error creating user session", 
+          message: "error creating user session",
           body: userSessErr
         }
       }
@@ -286,33 +286,33 @@ module.exports = {
               profile: newProfile
             }
             const userSession = await this.makeUserSession(sessionObj);
-            
+
             if(userSession) {
               return {
-                message: "user session created", 
+                message: "user session created",
                 body: userSession.body
               }
             } else {
               return {
-                message: "trouble creating user session", 
+                message: "trouble creating user session",
                 body: null
               }
             }
           } catch (loginErr) {
             return {
-              message: "trouble logging in", 
+              message: "trouble logging in",
               body: loginErr
             }
-          }              
+          }
         } else {
           return {
-            message: "error creating app keys", 
+            message: "error creating app keys",
             body: null
           }
         }
       } catch(error) {
         return {
-          message: "error creating app keys", 
+          message: "error creating app keys",
           body: error
         }
       }
@@ -337,8 +337,8 @@ module.exports = {
         devConfig: configObj.accountInfo ? configObj : {},
         username: sessionObj.username,
         gaiaHubConfig: await connectToGaiaHub('https://hub.blockstack.org', sessionObj.appPrivKey,""),
-        profile: sessionObj.profile, 
-        wallet: wallet ? wallet : {}, 
+        profile: sessionObj.profile,
+        wallet: wallet ? wallet : {},
         textile
       },
     })
@@ -421,10 +421,35 @@ module.exports = {
     }
 
     return profile;
-  }, 
+  },
+  getConfig: function(params) {
+    const payload = {
+      devId: params.devId,
+      development: params.development ? true : false
+    };
+    headers['Authorization'] = params.apiKey;
+    console.log(payload);
+    console.log(headers);
+    var options = { url: config.GET_CONFIG_URL, method: 'POST', headers: headers, form: payload };
+    return request(options)
+    .then((body) => {
+      console.log(body);
+      return {
+        message: "get developer account config",
+        body: body
+      }
+    })
+    .catch(error => {
+      console.log('Error: ', error);
+      return {
+        message: "failed to get developer account",
+        body: error
+      }
+    });
+  },
   updateConfig: function(updates, verification) {
     const payload = {
-      devId: updates.username, 
+      devId: updates.username,
       config: JSON.stringify(updates.config),
       development: updates.development ? true : false
     };
@@ -451,14 +476,14 @@ module.exports = {
         body: error
       }
     });
-  }, 
+  },
   createContract: function(params) {
     const payload = {
-      devId: params.devId, 
-      password: params.password, 
-      username: params.username, 
-      abi: JSON.stringify(params.abi), 
-      bytecode: params.bytecode, 
+      devId: params.devId,
+      password: params.password,
+      username: params.username,
+      abi: JSON.stringify(params.abi),
+      bytecode: params.bytecode,
       development: params.development ? true : false
     }
     headers['Authorization'] = params.apiKey;
@@ -478,12 +503,12 @@ module.exports = {
         body: error
       }
     });
-  }, 
+  },
   fetchContract: function(params) {
     const payload = {
-      devId: params.devId, 
+      devId: params.devId,
       contractAddress: params.contractAddress,
-      abi: JSON.stringify(params.abi),  
+      abi: JSON.stringify(params.abi),
       development: params.development ? true : false
     }
     headers['Authorization'] = params.apiKey;
@@ -503,12 +528,12 @@ module.exports = {
         body: error
       }
     });
-  }, 
+  },
   pinContent: function(params) {
     const payload = {
-      devId: params.devId, 
+      devId: params.devId,
       username: params.username,
-      devSuppliedIdentifier: params.id,  
+      devSuppliedIdentifier: params.id,
       contentToPin: JSON.stringify(params.content),
       development: params.development ? true : false
     }
@@ -528,12 +553,12 @@ module.exports = {
         body: error
       }
     });
-  }, 
+  },
   fetchPinnedContent: function(params) {
     const payload = {
-      devId: params.devId, 
+      devId: params.devId,
       username: params.username,
-      devSuppliedIdentifier: params.id,  
+      devSuppliedIdentifier: params.id,
       development: params.development ? true : false
     }
     headers['Authorization'] = params.apiKey;

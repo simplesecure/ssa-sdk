@@ -10,7 +10,7 @@ const appObj = {
   apiKey: "-LmCb96-TquOlN37LpM0",
   devId: "imanewdeveloper",
   development: true,
-  storageModules: ['blockstack'],
+  storageModules: ['blockstack', 'pinata'],
   authModules: ['blockstack', 'textile']
 }
 const credObj = {id: availableName, password: "super secure password", hubUrl: "https://gaia.blockstack.org", email: emailToUse}
@@ -167,40 +167,40 @@ let testKeychain
 //   })
 // })
 
-describe('Pin Content', function() {
-  this.timeout(10000);
-  it('should pin content to IPFS and return a hash', async function() {
-    const params = {
-      devId: "imanewdeveloper",
-      username: "graphite",
-      id: "12345",
-      content: pinBody,
-      apiKey: "-LmCb96-TquOlN37LpM0",
-      development: true
-    }
-
-    const pinnedContent = await auth.pinContent(params);
-    console.log(pinnedContent);
-    assert.equal(pinnedContent.message, 'content successfully pinned');
-  })
-});
-
-describe('Fetch Pinned Content', function() {
-  this.timeout(10000);
-  it('should fetch content from IPFS', async function() {
-    const params = {
-      devId: "imanewdeveloper",
-      username: "graphite",
-      id: "12345",
-      apiKey: "-LmCb96-TquOlN37LpM0",
-      development: true
-    }
-
-    const pinnedContent = await auth.fetchPinnedContent(params);
-    console.log(pinnedContent);
-    assert.equal(pinnedContent.message, 'Found pinned content');
-  })
-});
+// describe('Pin Content', function() {
+//   this.timeout(10000);
+//   it('should pin content to IPFS and return a hash', async function() {
+//     const params = {
+//       devId: "imanewdeveloper",
+//       username: "graphite",
+//       id: "12345",
+//       content: pinBody,
+//       apiKey: "-LmCb96-TquOlN37LpM0",
+//       development: true
+//     }
+//
+//     const pinnedContent = await auth.pinContent(params);
+//     console.log(pinnedContent);
+//     assert.equal(pinnedContent.message, 'content successfully pinned');
+//   })
+// });
+//
+// describe('Fetch Pinned Content', function() {
+//   this.timeout(10000);
+//   it('should fetch content from IPFS', async function() {
+//     const params = {
+//       devId: "imanewdeveloper",
+//       username: "graphite",
+//       id: "12345",
+//       apiKey: "-LmCb96-TquOlN37LpM0",
+//       development: true
+//     }
+//
+//     const pinnedContent = await auth.fetchPinnedContent(params);
+//     console.log(pinnedContent);
+//     assert.equal(pinnedContent.message, 'Found pinned content');
+//   })
+// });
 
 
 
@@ -225,6 +225,20 @@ describe('Fetch Pinned Content', function() {
 //     assert.equal(configUpdate.message, 'updated developer account');
 //   })
 // })
+
+describe('Get config', function() {
+  this.timeout(10000);
+  it('should properly get the dev config', async function() {
+    const params = {
+      devId: "imanewdeveloper",
+      development: true,
+      apiKey: "-LmCb96-TquOlN37LpM0"
+    }
+    const getConfig = await auth.getConfig(params);
+    console.log(getConfig);
+    assert.equal(getConfig.message, 'get developer account config');
+  })
+})
 
 // //Account Creation
 // describe('CreateAccount', function() {
