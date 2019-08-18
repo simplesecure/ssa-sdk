@@ -46,10 +46,10 @@ export async function makeKeychain(credObj, devConfig) {
   const dataString = {
     username: credObj.id,
     email: credObj.email,
-    password: credObj.password, 
-    development: devConfig.development ? true : false, 
-    devId: devConfig.devId, 
-    storageModules: devConfig.storageModules, 
+    password: credObj.password,
+    development: devConfig.development ? true : false,
+    devId: devConfig.devId,
+    storageModules: devConfig.storageModules,
     authModules: devConfig.authModules
   }
 
@@ -81,11 +81,11 @@ export async function makeAppKeyPair(params, profile) {
     username: params.username,
     password: params.password,
     url: params.appObj.appOrigin,
-    profile: profile && profile.apps ? JSON.stringify(profile) : null, 
-    development: params.appObj.development ? true : false, 
+    profile: profile && profile.apps ? JSON.stringify(profile) : null,
+    development: params.appObj.development ? true : false,
     isDeveloper: params.appObj.isDev ? true : false,
-    devId: params.appObj.devId, 
-    storageModules: params.appObj.storageModules, 
+    devId: params.appObj.devId,
+    storageModules: params.appObj.storageModules,
     authModules: params.appObj.authModules
   }
 
@@ -117,7 +117,7 @@ export async function createUserAccount(credObj, config) {
     console.log("Name check passed");
     try {
       console.log("Making keychain...");
-      const keychain = await makeKeychain(credObj, config); 
+      const keychain = await makeKeychain(credObj, config);
       if(keychain.success === false) {
         //This would happen for a variety of reasons, just return the server message
         return {
@@ -129,16 +129,16 @@ export async function createUserAccount(credObj, config) {
         idAddress = keychain.body;
         //Now we make the profile
         let profile = await makeProfile(config);
-        
+
         const appKeyParams = {
           username: credObj.id,
           appObj: config,
           password: credObj.password
         }
-        
+
         try {
           console.log("Making app keys...");
-          const appKeys = await makeAppKeyPair(appKeyParams, profile);            
+          const appKeys = await makeAppKeyPair(appKeyParams, profile);
           if(appKeys) {
             console.log("App keys created");
             const appPrivateKey = JSON.parse(appKeys.body).blockstack ? JSON.parse(appKeys.body).blockstack.private : "";
@@ -173,30 +173,30 @@ export async function createUserAccount(credObj, config) {
               if(userSession) {
                 console.log("Logged in");
                 return {
-                  message: "user session created", 
+                  message: "user session created",
                   body: userSession.body
                 }
               } else {
                 return {
-                  message: "trouble creating user session", 
+                  message: "trouble creating user session",
                   body: null
                 }
               }
             } catch (loginErr) {
               return {
-                message: "trouble logging in", 
+                message: "trouble logging in",
                 body: loginErr
               }
-            }              
+            }
           } else {
             return {
-              message: "error creating app keys", 
+              message: "error creating app keys",
               body: null
             }
           }
         } catch(error) {
           return {
-            message: "error creating app keys", 
+            message: "error creating app keys",
             body: error
           }
         }
@@ -235,18 +235,18 @@ export async function login(params, newProfile) {
       const userSession = await makeUserSession(sessionObj);
       if(userSession) {
         return {
-          message: "user session created", 
+          message: "user session created",
           body: userSession.body
         }
       } else {
         return {
-          message: "error creating user session", 
+          message: "error creating user session",
           body: null
         }
       }
     } catch (userSessErr) {
       return {
-        message: "error creating user session", 
+        message: "error creating user session",
         body: userSessErr
       }
     }
@@ -291,33 +291,33 @@ export async function login(params, newProfile) {
             profile: newProfile
           }
           const userSession = await makeUserSession(sessionObj);
-          
+
           if(userSession) {
             return {
-              message: "user session created", 
+              message: "user session created",
               body: userSession.body
             }
           } else {
             return {
-              message: "trouble creating user session", 
+              message: "trouble creating user session",
               body: null
             }
           }
         } catch (loginErr) {
           return {
-            message: "trouble logging in", 
+            message: "trouble logging in",
             body: loginErr
           }
-        }              
+        }
       } else {
         return {
-          message: "error creating app keys", 
+          message: "error creating app keys",
           body: null
         }
       }
     } catch(error) {
       return {
-        message: "error creating app keys", 
+        message: "error creating app keys",
         body: error
       }
     }
@@ -343,8 +343,8 @@ export async function makeUserSession(sessionObj) {
       devConfig: configObj.accountInfo ? configObj : {},
       username: sessionObj.username,
       gaiaHubConfig: await connectToGaiaHub('https://hub.blockstack.org', sessionObj.appPrivKey,""),
-      profile: sessionObj.profile, 
-      wallet: wallet ? wallet : {}, 
+      profile: sessionObj.profile,
+      wallet: wallet ? wallet : {},
       textile
     },
   })
@@ -435,7 +435,7 @@ export async function updateProfile(name, appObj) {
 
 export function updateConfig(updates, verification) {
   const payload = {
-    devId: updates.username, 
+    devId: updates.username,
     config: JSON.stringify(updates.config),
     development: updates.development ? true : false
   };
@@ -466,11 +466,11 @@ export function updateConfig(updates, verification) {
 
 export function createContract(params) {
   const payload = {
-    devId: params.devId, 
-    password: params.password, 
-    username: params.username, 
-    abi: JSON.stringify(params.abi), 
-    bytecode: params.bytecode, 
+    devId: params.devId,
+    password: params.password,
+    username: params.username,
+    abi: JSON.stringify(params.abi),
+    bytecode: params.bytecode,
     development: params.development ? true : false
   }
   headers['Authorization'] = params.apiKey;
@@ -494,9 +494,9 @@ export function createContract(params) {
 
 export function fetchContract(params) {
   const payload = {
-    devId: params.devId, 
+    devId: params.devId,
     contractAddress: params.contractAddress,
-    abi: JSON.stringify(params.abi),  
+    abi: JSON.stringify(params.abi),
     development: params.development ? true : false
   }
   headers['Authorization'] = params.apiKey;
@@ -520,7 +520,7 @@ export function fetchContract(params) {
 
 export function pinContent(params) {
   const payload = {
-    devId: params.devId, 
+    devId: params.devId,
     username: params.username,
     devSuppliedIdentifier: params.id,  
     contentToPin: JSON.stringify(params.content),
@@ -546,9 +546,9 @@ export function pinContent(params) {
 
 export function fetchPinnedContent(params) {
   const payload = {
-    devId: params.devId, 
+    devId: params.devId,
     username: params.username,
-    devSuppliedIdentifier: params.id,  
+    devSuppliedIdentifier: params.id,
     development: params.development ? true : false
   }
   headers['Authorization'] = params.apiKey;

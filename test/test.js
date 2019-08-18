@@ -4,13 +4,13 @@ const crypto = require('crypto-browserify');
 const auth = require('./authTest');
 const availableName = `username_${Date.now()}`;
 const emailToUse = "justin@graphitedocs.com";
-const appObj = { 
-  appOrigin: "https://app.graphitedocs.com", 
-  scopes: ['store_write', 'publish_data'], 
-  apiKey: "-LmCb96-TquOlN37LpM0", 
-  devId: "imanewdeveloper", 
-  development: true, 
-  storageModules: ['blockstack'], 
+const appObj = {
+  appOrigin: "https://app.graphitedocs.com",
+  scopes: ['store_write', 'publish_data'],
+  apiKey: "-LmCb96-TquOlN37LpM0",
+  devId: "imanewdeveloper",
+  development: true,
+  storageModules: ['blockstack'],
   authModules: ['blockstack', 'textile']
 }
 const credObj = {id: availableName, password: "super secure password", hubUrl: "https://gaia.blockstack.org", email: emailToUse}
@@ -72,8 +72,8 @@ const bytecode = "0x608060405234801561001057600080fd5b506040516105bd3803806105bd
 
 //For Pinata
 const pinBody = {
-  id: "12345", 
-  title: "This is another test", 
+  id: "12345",
+  title: "This is another test",
   content: "Heyo heyo heyo heyo"
 }
 //Stand alone tests
@@ -138,7 +138,7 @@ let testKeychain
 //   it('should create a contract and return the contract hash and address', async function() {
 //     const params = {
 //       development: true,
-//       username: "username_1565978003511", 
+//       username: "username_1565978003511",
 //       password: credObj.password, //your user's password
 //       devId: appObj.devId, //available in your dev account user interface
 //       apiKey: appObj.apiKey, //available in your dev account user iterface
@@ -171,11 +171,12 @@ describe('Pin Content', function() {
   this.timeout(10000);
   it('should pin content to IPFS and return a hash', async function() {
     const params = {
-      devId: "imanewdeveloper", 
-      username: "graphite", 
-      devSuppliedIdentifier: "12345", 
-      body: pinBody,
-      apiKey: "-LmCb96-TquOlN37LpM0"
+      devId: "imanewdeveloper",
+      username: "graphite",
+      id: "12345",
+      content: pinBody,
+      apiKey: "-LmCb96-TquOlN37LpM0",
+      development: true
     }
 
     const pinnedContent = await auth.pinContent(params);
@@ -188,10 +189,11 @@ describe('Fetch Pinned Content', function() {
   this.timeout(10000);
   it('should fetch content from IPFS', async function() {
     const params = {
-      devId: "imanewdeveloper", 
-      username: "graphite", 
-      devSuppliedIdentifier: "12345", 
-      apiKey: "-LmCb96-TquOlN37LpM0"
+      devId: "imanewdeveloper",
+      username: "graphite",
+      id: "12345",
+      apiKey: "-LmCb96-TquOlN37LpM0",
+      development: true
     }
 
     const pinnedContent = await auth.fetchPinnedContent(params);
@@ -208,12 +210,12 @@ describe('Fetch Pinned Content', function() {
 //     const updates = {
 //       userId: "ID-1DAuV5nSLaRdhVythRGchECBD5RvJ3An7",
 //       username: "username_1565799221246",
-//       verificationID: "-LmFu1thbywK93TVj2P0", 
+//       verificationID: "-LmFu1thbywK93TVj2P0",
 //       config: {
 //         accountInfo: {
 //           isCurrent: false
-//         }, 
-//         isUpgraded: false, 
+//         },
+//         isUpgraded: false,
 //         isVerified: true
 //       },
 //       development: true
@@ -237,11 +239,11 @@ describe('Fetch Pinned Content', function() {
 // describe('CreateDevAccount', function() {
 //   this.timeout(10000);
 //   const config = {
-//     appOrigin: "https://app.graphitedocs.com", 
-//     scopes: ['store_write', 'publish_data'], 
-//     isDev: true, 
-//     apiKey: "-LmCb96-TquOlN37LpM0", 
-//     devId: "imanewdeveloper", 
+//     appOrigin: "https://app.graphitedocs.com",
+//     scopes: ['store_write', 'publish_data'],
+//     isDev: true,
+//     apiKey: "-LmCb96-TquOlN37LpM0",
+//     devId: "imanewdeveloper",
 //     development: true
 //   }
 //   it('should return account created message', async function() {
