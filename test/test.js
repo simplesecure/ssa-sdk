@@ -15,7 +15,7 @@ const appObj = {
 }
 const credObj = {id: availableName, password: "super secure password", hubUrl: "https://gaia.blockstack.org", email: emailToUse}
 const credObjLogIn = {id: "testing12348572634", password: "this is a test password", hubUrl: "https://gaia.blockstack.org", email: "justin.edward.hunter@gmail.com"}
-
+//For Ethereum
 const contractAddress = "0x4f7DE17889C29c9F2482B017d467a481cE3376C0";
 const abi = [
   "event ValueChanged(address indexed author, string oldValue, string newValue)",
@@ -69,6 +69,13 @@ const bytecode = "0x608060405234801561001057600080fd5b506040516105bd3803806105bd
 "01019061034b565b50610372929150610376565b5090565b6101c991905b8082" +
 "1115610372576000815560010161037c5600a165627a7a723058202225a35c50" +
 "7b31ac6df494f4be31057c7202b5084c592bdb9b29f232407abeac0029";
+
+//For Pinata
+const pinBody = {
+  id: "12345", 
+  title: "This is another test", 
+  content: "Heyo heyo heyo heyo"
+}
 //Stand alone tests
 let testKeychain
 
@@ -160,6 +167,41 @@ let testKeychain
 //   })
 // })
 
+describe('Pin Content', function() {
+  this.timeout(10000);
+  it('should pin content to IPFS and return a hash', async function() {
+    const params = {
+      devId: "imanewdeveloper", 
+      username: "graphite", 
+      devSuppliedIdentifier: "12345", 
+      body: pinBody,
+      apiKey: "-LmCb96-TquOlN37LpM0"
+    }
+
+    const pinnedContent = await auth.pinContent(params);
+    console.log(pinnedContent);
+    assert.equal(pinnedContent.message, 'content successfully pinned');
+  })
+});
+
+describe('Fetch Pinned Content', function() {
+  this.timeout(10000);
+  it('should fetch content from IPFS', async function() {
+    const params = {
+      devId: "imanewdeveloper", 
+      username: "graphite", 
+      devSuppliedIdentifier: "12345", 
+      apiKey: "-LmCb96-TquOlN37LpM0"
+    }
+
+    const pinnedContent = await auth.fetchPinnedContent(params);
+    console.log(pinnedContent);
+    assert.equal(pinnedContent.message, 'Found pinned content');
+  })
+});
+
+
+
 // describe('Update config', function() {
 //   this.timeout(10000);
 //   it('should properly update the dev config', async function() {
@@ -182,15 +224,15 @@ let testKeychain
 //   })
 // })
 
-//Account Creation
-describe('CreateAccount', function() {
-  this.timeout(10000);
-  it('should return account created message', async function() {
-      const create = await auth.createUserAccount(credObj, appObj);
-      console.log(create)
-      assert.equal(create.message,"user session created")
-  });
-});
+// //Account Creation
+// describe('CreateAccount', function() {
+//   this.timeout(10000);
+//   it('should return account created message', async function() {
+//       const create = await auth.createUserAccount(credObj, appObj);
+//       console.log(create)
+//       assert.equal(create.message,"user session created")
+//   });
+// });
 
 // describe('CreateDevAccount', function() {
 //   this.timeout(10000);
