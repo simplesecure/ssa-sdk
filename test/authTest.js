@@ -8,7 +8,7 @@ let configObj;
 let wallet;
 let textile;
 
-const headers = { 'Content-Type': 'application/json' };
+let headers = { 'Content-Type': 'application/json' };
 
 module.exports = {
   nameLookUp: function(name) {
@@ -319,11 +319,9 @@ module.exports = {
     }
   },
   makeUserSession: async function(sessionObj) {
-    if(configObj) {
-      configObj.apiKey = apiKey ? apiKey : "";
-    } else {
+    if(!configObj) {
       configObj = {};
-    }
+    } 
     const appConfig = new AppConfig(
       sessionObj.scopes,
       sessionObj.appOrigin
@@ -334,7 +332,7 @@ module.exports = {
         identityAddress: idAddress,
         hubUrl: sessionObj.hubUrl,
         identityAddress: idAddress,
-        devConfig: configObj.accountInfo ? configObj : {},
+        devConfig: configObj,
         username: sessionObj.username,
         gaiaHubConfig: await connectToGaiaHub('https://hub.blockstack.org', sessionObj.appPrivKey,""),
         profile: sessionObj.profile,
@@ -347,7 +345,7 @@ module.exports = {
       sessionStore: dataStore
     })
     try {
-
+  
       return {
           message: "user session created",
           body: userSession
@@ -453,7 +451,7 @@ module.exports = {
       config: JSON.stringify(updates.config),
       development: updates.development ? true : false
     };
-    console.log(payload);
+    console.log(payload.config);
     if(verification) {
       headers['Authorization'] = updates.verificationID;
     } else {

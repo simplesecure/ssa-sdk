@@ -12,7 +12,7 @@ let apiKey;
 let wallet;
 let textile;
 
-const headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
+let headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
 
 export function nameLookUp(name) {
   //Note: if we want to support other names spaces and other root id, we will need a different approach.
@@ -325,11 +325,9 @@ export async function login(params, newProfile) {
 }
 
 export async function makeUserSession(sessionObj) {
-  if(configObj) {
-    configObj.apiKey = apiKey ? apiKey : "";
-  } else {
+  if(!configObj) {
     configObj = {};
-  }
+  } 
   const appConfig = new AppConfig(
     sessionObj.scopes,
     sessionObj.appOrigin
@@ -340,7 +338,7 @@ export async function makeUserSession(sessionObj) {
       identityAddress: idAddress,
       hubUrl: sessionObj.hubUrl,
       identityAddress: idAddress,
-      devConfig: configObj.accountInfo ? configObj : {},
+      devConfig: configObj,
       username: sessionObj.username,
       gaiaHubConfig: await connectToGaiaHub('https://hub.blockstack.org', sessionObj.appPrivKey,""),
       profile: sessionObj.profile,
