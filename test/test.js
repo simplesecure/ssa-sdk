@@ -96,7 +96,7 @@ let testKeychain
 //       assert(userSession.message, "user session created");
 //   })
 // });
-
+//
 // describe("NameLookUp", function() {
 //   this.timeout(7000);
 //   it("name should be available", async function() {
@@ -108,7 +108,7 @@ let testKeychain
 //     assert.equal(takenResponse.message, 'name taken');
 //   })
 // })
-
+//
 // describe('MakeKeyChain', function() {
 //   this.timeout(10000);
 //   it('should create and return a keychain', async function() {
@@ -150,7 +150,7 @@ let testKeychain
 //     assert.equal(contract.message, 'contract created and deployed');
 //   })
 // })
-
+//
 // describe('Fetch Contract', function() {
 //   this.timeout(10000);
 //   it('should fetch and execute a contract', async function() {
@@ -166,7 +166,7 @@ let testKeychain
 //     assert.equal(contract.message, 'retreived contract and executed');
 //   })
 // })
-
+//
 // describe('Pin Content', function() {
 //   this.timeout(10000);
 //   it('should pin content to IPFS and return a hash', async function() {
@@ -178,13 +178,13 @@ let testKeychain
 //       apiKey: "-LmCb96-TquOlN37LpM0",
 //       development: true
 //     }
-
+//
 //     const pinnedContent = await auth.pinContent(params);
 //     console.log(pinnedContent);
 //     assert.equal(pinnedContent.message, 'content successfully pinned');
 //   })
 // });
-
+//
 // describe('Fetch Pinned Content', function() {
 //   this.timeout(10000);
 //   it('should fetch content from IPFS', async function() {
@@ -195,7 +195,7 @@ let testKeychain
 //       apiKey: "-LmCb96-TquOlN37LpM0",
 //       development: true
 //     }
-
+//
 //     const pinnedContent = await auth.fetchPinnedContent(params);
 //     console.log(pinnedContent);
 //     assert.equal(pinnedContent.message, 'Found pinned content');
@@ -204,24 +204,24 @@ let testKeychain
 
 
 
-describe('Update config', function() {
-  this.timeout(10000);
-  it('should properly update the dev config', async function() {
-    const updates = {
-      username: "imanewdeveloper",
-      apiKey: "-LmCb96-TquOlN37LpM0",
-      verificationID: "-LmCb96-TquOlN37LpM0",
-      config: {
-        isUpgraded: false,
-        isVerified: true
-      },
-      development: true
-    }
-    const configUpdate = await auth.updateConfig(updates, true);
-    console.log(configUpdate);
-    assert.equal(configUpdate.message, 'updated developer account');
-  })
-})
+// describe('Update config', function() {
+//   this.timeout(10000);
+//   it('should properly update the dev config', async function() {
+//     const updates = {
+//       username: "imanewdeveloper",
+//       apiKey: "-LmCb96-TquOlN37LpM0",
+//       verificationID: "-LmCb96-TquOlN37LpM0",
+//       config: {
+//         isUpgraded: false,
+//         isVerified: true
+//       },
+//       development: true
+//     }
+//     const configUpdate = await auth.updateConfig(updates, true);
+//     console.log(configUpdate);
+//     assert.equal(configUpdate.message, 'updated developer account');
+//   })
+// })
 
 // describe('Get config', function() {
 //   this.timeout(10000);
@@ -237,7 +237,7 @@ describe('Update config', function() {
 //   })
 // })
 
-// //Account Creation
+//Account Creation
 // describe('CreateAccount', function() {
 //   this.timeout(10000);
 //   it('should return account created message', async function() {
@@ -265,7 +265,7 @@ describe('Update config', function() {
 // });
 
 
-// //Log In
+//Log In
 // describe('LogIn', function() {
 //   this.timeout(10000);
 //   it('kick off recovery flow with email, username, and password', async function() {
