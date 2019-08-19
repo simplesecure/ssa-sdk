@@ -337,7 +337,8 @@ module.exports = {
         gaiaHubConfig: await connectToGaiaHub('https://hub.blockstack.org', sessionObj.appPrivKey,""),
         profile: sessionObj.profile,
         wallet: wallet ? wallet : {},
-        textile
+        textile, 
+        apiKey
       },
     })
     const userSession = new UserSession({
