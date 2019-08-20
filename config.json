@@ -1,12 +1,12 @@
 {
-    "KEYCHAIN_URL":"https://grsj1lmlse.execute-api.us-west-2.amazonaws.com/v1/keychain",
-    "APP_KEY_URL":"https://grsj1lmlse.execute-api.us-west-2.amazonaws.com/v1/appkeys",
-    "GET_CONFIG_URL": "https://grsj1lmlse.execute-api.us-west-2.amazonaws.com/v1/getConfig",
-    "UPDATE_CONFIG_URL": "https://grsj1lmlse.execute-api.us-west-2.amazonaws.com/v1/updateConfig",
-    "CREATE_CONTRACT_URL": "https://grsj1lmlse.execute-api.us-west-2.amazonaws.com/v1/createContract",
-    "FETCH_CONTRACT_URL": "https://grsj1lmlse.execute-api.us-west-2.amazonaws.com/v1/fetchContract",
-    "PIN_CONTENT_URL": "https://grsj1lmlse.execute-api.us-west-2.amazonaws.com/v1/pinContent",
-    "FETCH_PINNED_CONTENT_URL": "https://grsj1lmlse.execute-api.us-west-2.amazonaws.com/v1/fetchContent",
+    "KEYCHAIN_URL":"https://api.simpleid.xyz/keychain",
+    "APP_KEY_URL":"https://api.simpleid.xyz/appkeys",
+    "GET_CONFIG_URL": "https://api.simpleid.xyz/getConfig",
+    "UPDATE_CONFIG_URL": "https://api.simpleid.xyz/updateConfig",
+    "CREATE_CONTRACT_URL": "https://api.simpleid.xyz/createContract",
+    "FETCH_CONTRACT_URL": "https://api.simpleid.xyz/fetchContract",
+    "PIN_CONTENT_URL": "https://api.simpleid.xyz/pinContent",
+    "FETCH_PINNED_CONTENT_URL": "https://api.simpleid.xyz/fetchContent",
     "SUBDOMAIN_REGISTRATION":"https://registrar.blockstack.org/register",
     "NAME_LOOKUP_URL":"https://core.blockstack.org/v1/names/"
 }
