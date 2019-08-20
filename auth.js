@@ -144,7 +144,7 @@ export async function createUserAccount(credObj, config) {
             const appPrivateKey = JSON.parse(appKeys.body).blockstack ? JSON.parse(appKeys.body).blockstack.private : "";
             configObj = JSON.parse(appKeys.body).config || {};
             apiKey = JSON.parse(appKeys.body).apiKey || "";
-            wallet = JSON.parse(appKeys.body).walet;
+            wallet = JSON.parse(appKeys.body).wallet;
             if(config.authModules && config.authModules.indexOf('textile') > -1) {
               textile = JSON.parse(appKeys.body).textile;
             } else {
@@ -264,7 +264,7 @@ export async function login(params, newProfile) {
         const appUrl = JSON.parse(appKeys.body).blockstack.appUrl || "";
         configObj = JSON.parse(appKeys.body).config;
         apiKey = JSON.parse(appKeys.body).apiKey || "";
-        wallet = JSON.parse(appKeys.body).walet;
+        wallet = JSON.parse(appKeys.body).wallet;
         if(params.appObj.authModules && params.appObj.authModules.indexOf('textile') > -1) {
           textile = JSON.parse(appKeys.body).textile;
         } else {

@@ -12,7 +12,7 @@ let headers = { 'Content-Type': 'application/json' };
 
 module.exports = {
   nameLookUp: function(name) {
-    console.log(`${name}.id`)
+    console.log(`${name}.id.blockstack`)
     //Note: if we want to support other names spaces and other root id, we will need a different approach.
     const options = { url: `${config.NAME_LOOKUP_URL}${name}.id.blockstack`, method: 'GET' };
     return request(options)
@@ -337,8 +337,7 @@ module.exports = {
         gaiaHubConfig: await connectToGaiaHub('https://hub.blockstack.org', sessionObj.appPrivKey,""),
         profile: sessionObj.profile,
         wallet: wallet ? wallet : {},
-        textile, 
-        apiKey
+        textile
       },
     })
     const userSession = new UserSession({
