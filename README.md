@@ -2,15 +2,6 @@
 
 This is the JavaScript SDK for SimpleID, a framework for allowing users to authenticate into your app in a far more secure way than traditional usernames and passwords while still giving them the convenience of that same flow.
 
----
-To test:
-
-1. Clone the repo  
-2. `cd client-sdk`  
-3. `npm install`  
-4. `npm test` 
----
-
 ### How's it work?
 
 The simple description is users provide a username like they would any other app. That username's availability is checked. If available, the user can create the account with a password. So far, this is exactly like every other traditional authentication method. But here's comes the difference. 
