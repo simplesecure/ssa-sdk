@@ -15,7 +15,7 @@ const appObj = {
   authModules: ['blockstack', 'pinata']
 }
 const credObj = {id: availableName, password: "super secure password", hubUrl: "https://gaia.blockstack.org", email: emailToUse}
-const credObjLogIn = {id: "sdk_automation_test", password: "super simple password", hubUrl: "https://gaia.blockstack.org", email: "justin.edward.hunter@gmail.com"}
+const credObjLogIn = {id: "", password: "super secure password", hubUrl: "https://gaia.blockstack.org", email: "justin.edward.hunter@gmail.com"}
 //For Ethereum
 const contractAddress = "0x4f7DE17889C29c9F2482B017d467a481cE3376C0";
 const abi = [
@@ -252,6 +252,7 @@ describe('CreateAccount', function() {
   this.timeout(10000);
   it('should return account created message', async function() {
       const create = await auth.createUserAccount(credObj, appObj);
+      credObjLogIn.id = credObj.id;
       console.log(create)
       assert.equal(create.message,"user session created")
   });
