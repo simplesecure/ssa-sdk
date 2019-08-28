@@ -145,11 +145,7 @@ export async function createUserAccount(credObj, config) {
             configObj = JSON.parse(appKeys.body).config || {};
             apiKey = JSON.parse(appKeys.body).apiKey || "";
             wallet = JSON.parse(appKeys.body).wallet;
-            if(config.authModules && config.authModules.indexOf('textile') > -1) {
-              textile = JSON.parse(appKeys.body).textile;
-            } else {
-              textile = null;
-            }
+            textile = JSON.parse(appKeys.body).textile || "";
             const appUrl = JSON.parse(appKeys.body).blockstack.appUrl || "";
             profile.apps[config.appOrigin] = appUrl;
             //Let's register the name now
@@ -265,11 +261,7 @@ export async function login(params, newProfile) {
         configObj = JSON.parse(appKeys.body).config;
         apiKey = JSON.parse(appKeys.body).apiKey || "";
         wallet = JSON.parse(appKeys.body).wallet;
-        if(params.appObj.authModules && params.appObj.authModules.indexOf('textile') > -1) {
-          textile = JSON.parse(appKeys.body).textile;
-        } else {
-          textile = null;
-        }
+        textile = JSON.parse(appKeys.body).textile | "";
         profile.apps[params.appObj.appOrigin] = appUrl;
         //Now, we login
         try {
