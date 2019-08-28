@@ -61,6 +61,7 @@ export async function makeKeychain(credObj, devConfig) {
   .then(async (body) => {
     // POST succeeded...
     return {
+      success: true,
       message: "successfully created keychain",
       body: body
     }
@@ -69,6 +70,7 @@ export async function makeKeychain(credObj, devConfig) {
     // POST failed...
     console.log('ERROR: ', error)
     return {
+      success: false,
       message: "failed to create keychain",
       body: error
     }
@@ -111,8 +113,8 @@ export async function makeAppKeyPair(params, profile) {
 
 export async function createUserAccount(credObj, config) {
   //For now we can continue to use Blockstack's name lookup, even for non-Blockstack auth
-  const nameCheck = await nameLookUp(credObj.id);
   console.log("Verifying name availability...");
+  const nameCheck = await nameLookUp(credObj.id);
   if(nameCheck.pass) {
     console.log("Name check passed");
     try {
@@ -128,7 +130,7 @@ export async function createUserAccount(credObj, config) {
         console.log("Keychain made")
         idAddress = keychain.body;
         //Now we make the profile
-        let profile = await makeProfile(config);
+        let profile = makeProfile(config);
 
         const appKeyParams = {
           username: credObj.id,
