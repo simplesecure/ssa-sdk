@@ -58,6 +58,7 @@ module.exports = {
     .then(async (body) => {
       // POST succeeded...
       return {
+        success: true,
         message: "successfully created keychain",
         body: body
       }
@@ -66,6 +67,7 @@ module.exports = {
       // POST failed...
       console.log('ERROR: ', error)
       return {
+        success: false,
         message: "failed to create keychain",
         body: error
       }
@@ -123,7 +125,7 @@ module.exports = {
           console.log("Keychain made")
           idAddress = keychain.body;
           //Now we make the profile
-          let profile = await this.makeProfile(config);
+          let profile = this.makeProfile(config);
 
           const appKeyParams = {
             username: credObj.id,
@@ -140,8 +142,13 @@ module.exports = {
               configObj = JSON.parse(appKeys.body).config || {};
               apiKey = JSON.parse(appKeys.body).apiKey || "";
               wallet = JSON.parse(appKeys.body).walet;
+              // if(config.authModules && config.authModules.indexOf('textile') > -1) {
+              //   textile = JSON.parse(appKeys.body).textile;
+              // } else {
+              //   textile = null;
+              // }
               textile = JSON.parse(appKeys.body).textile || "";
-              const appUrl = JSON.parse(appKeys.body).blockstack.appUrl || "";
+            const appUrl = JSON.parse(appKeys.body).blockstack.appUrl || "";
               profile.apps[config.appOrigin] = appUrl;
               //Let's register the name now
               console.log("*************Registering name...");
@@ -257,7 +264,6 @@ module.exports = {
           apiKey = JSON.parse(appKeys.body).apiKey || "";
           wallet = JSON.parse(appKeys.body).walet;
           textile = JSON.parse(appKeys.body).textile || "";
-
           profile.apps[params.appObj.appOrigin] = appUrl;
           //Now, we login
           try {
