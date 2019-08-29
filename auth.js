@@ -321,7 +321,7 @@ export async function login(params, newProfile) {
 export async function makeUserSession(sessionObj) {
   if(!configObj) {
     configObj = {};
-  } 
+  }
   const appConfig = new AppConfig(
     sessionObj.scopes,
     sessionObj.appOrigin
@@ -337,7 +337,7 @@ export async function makeUserSession(sessionObj) {
       gaiaHubConfig: await connectToGaiaHub('https://hub.blockstack.org', sessionObj.appPrivKey,""),
       profile: sessionObj.profile,
       wallet: wallet ? wallet : {},
-      textile, 
+      textile,
       apiKey
     },
   })
@@ -360,13 +360,24 @@ export async function makeUserSession(sessionObj) {
 }
 
 export function registerSubdomain(name) {
-  const zonefile = JSON.stringify(`$ORIGIN ${name}.id.blockstack\n$TTL 3600\n_http._tcp\tIN\tURI\t10\t1\t\"https://gaia.blockstack.org/hub/${idAddress}/profile.json\"\n\n`);
-  const dataString = JSON.stringify({name, owner_address: idAddress, zonefile});
+  const newId = idAddress.split('ID-')[1]
+  const zonefile = `$ORIGIN ${name}\n$TTL 3600\n_https._tcp URI 10 1 \"https://gaia.blockstack.org/hub/${newId}/profile.json\"\n`;
+  const dataString = JSON.stringify({zonefile, name, owner_address: newId})
   console.log(dataString);
-  const options = { url: config.SUBDOMAIN_REGISTRATION, method: 'POST', headers: headers, body: dataString };
+  const options = {
+    url: config.SUBDOMAIN_REGISTRATION,
+    method: 'POST',
+    headers: {
+      'cache-control': 'no-cache,no-cache',
+      'Content-Type': 'application/json',
+      'Authorization': 'bearer API-KEY-IF-USED'
+    },
+    body: dataString
+  };
   return request(options)
   .then(async (body) => {
     // POST succeeded...
+    console.log('success username registered')
     return {
       message: "username registered",
       body: body
