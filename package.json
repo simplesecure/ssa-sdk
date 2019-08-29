@@ -1,6 +1,6 @@
 {
   "name": "simpleid-js-sdk",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "",
   "main": "auth.js",
   "scripts": {

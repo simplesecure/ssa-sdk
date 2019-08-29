@@ -405,7 +405,9 @@ module.exports = {
     let profile = {
       '@type': 'Person',
       '@context': 'http://schema.org',
-      'apps': {}
+      'apps': {
+        'https://thisisnew.com' : ''
+      }
     }
     if(appObj.scopes.indexOf("publish_data") > -1) {
       profile.apps[appObj.appOrigin] = ""
