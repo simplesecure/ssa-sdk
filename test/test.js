@@ -80,46 +80,46 @@ const pinBody = {
 //Stand alone tests
 let testKeychain
 
-// describe('User session returned', function() {
-//   this.timeout(7000);
-//   it('should return a valid user session', async function() {
-//       const appPrivKey = '8681e1cdaa96c5caf0c5da4e3a49c587b6b468fce89f71bef0525d28ce5450fc';
-//       const hubUrl = 'https://hub.blockstack.org';
-//       const scopes = ['store_write'];
-//       const appOrigin = 'helloblockstack.com'
-//       const userData = {
-//           appPrivKey,
-//           hubUrl,
-//           scopes,
-//           appOrigin,
-//           id: credObj.id
-//       }
-//       const userSession = await auth.makeUserSession(userData);
-//       console.log(userSession);
-//       assert(userSession.message, "user session created");
-//   })
-// });
+describe('User session returned', function() {
+  this.timeout(10000);
+  it('should return a valid user session', async function() {
+      const appPrivKey = '8681e1cdaa96c5caf0c5da4e3a49c587b6b468fce89f71bef0525d28ce5450fc';
+      const hubUrl = 'https://hub.blockstack.org';
+      const scopes = ['store_write'];
+      const appOrigin = 'helloblockstack.com'
+      const userData = {
+          appPrivKey,
+          hubUrl,
+          scopes,
+          appOrigin,
+          id: credObj.id
+      }
+      const userSession = await auth.makeUserSession(userData);
+      console.log(userSession);
+      assert(userSession.message, "user session created");
+  })
+});
 
-// describe("NameLookUp", function() {
-//   this.timeout(7000);
-//   it("name should be available", async function() {
-//     const nameResponse = await auth.nameLookUp(availableName);
-//     assert.equal(nameResponse.message, 'name available');
-//   })
-//   it("name should be taken", async function() {
-//     const takenResponse = await auth.nameLookUp(takenName);
-//     assert.equal(takenResponse.message, 'name taken');
-//   })
-// })
-//
-// describe('MakeKeyChain', function() {
-//   this.timeout(10000);
-//   it('should create and return a keychain', async function() {
-//     const keychain = await auth.makeKeychain(credObj, appObj);
-//     console.log(keychain);
-//     assert.equal(keychain.message, 'successfully created keychain');
-//   })
-// })
+describe("NameLookUp", function() {
+  this.timeout(10000);
+  it("name should be available", async function() {
+    const nameResponse = await auth.nameLookUp(availableName);
+    assert.equal(nameResponse.message, 'name available');
+  })
+  it("name should be taken", async function() {
+    const takenResponse = await auth.nameLookUp(takenName);
+    assert.equal(takenResponse.message, 'name taken');
+  })
+})
+
+describe('MakeKeyChain', function() {
+  this.timeout(10000);
+  it('should create and return a keychain', async function() {
+    const keychain = await auth.makeKeychain(credObj, appObj);
+    console.log(keychain);
+    assert.equal(keychain.message, 'successfully created keychain');
+  })
+})
 
 //NOTE: As of now, this will never work from automated tests
 //since it requires an origin to be received by the server
@@ -160,56 +160,56 @@ let testKeychain
 //   })
 // })
 
-// describe('Fetch Contract', function() {
-//   this.timeout(10000);
-//   it('should fetch and execute a contract', async function() {
-//     const params = {
-//       development: true,
-//       devId: appObj.devId,
-//       apiKey: appObj.apiKey,
-//       contractAddress,
-//       abi
-//     }
-//     const contract = await auth.fetchContract(params);
-//     console.log(contract);
-//     assert.equal(contract.message, 'retreived contract and executed');
-//   })
-// })
-//
-// describe('Pin Content', function() {
-//   this.timeout(10000);
-//   it('should pin content to IPFS and return a hash', async function() {
-//     const params = {
-//       devId: appObj.devId,
-//       username: "graphite",
-//       id: "12345",
-//       content: pinBody,
-//       apiKey: appObj.apiKey,
-//       development: true
-//     }
-//
-//     const pinnedContent = await auth.pinContent(params);
-//     console.log(pinnedContent);
-//     assert.equal(pinnedContent.message, 'content successfully pinned');
-//   })
-// });
-//
-// describe('Fetch Pinned Content', function() {
-//   this.timeout(10000);
-//   it('should fetch content from IPFS', async function() {
-//     const params = {
-//       devId: appObj.devId,
-//       username: "graphite",
-//       id: "12345",
-//       apiKey: appObj.apiKey,
-//       development: true
-//     }
-//
-//     const pinnedContent = await auth.fetchPinnedContent(params);
-//     console.log(pinnedContent);
-//     assert.equal(pinnedContent.message, 'Found pinned content');
-//   })
-// });
+describe('Fetch Contract', function() {
+  this.timeout(10000);
+  it('should fetch and execute a contract', async function() {
+    const params = {
+      development: true,
+      devId: appObj.devId,
+      apiKey: appObj.apiKey,
+      contractAddress,
+      abi
+    }
+    const contract = await auth.fetchContract(params);
+    console.log(contract);
+    assert.equal(contract.message, 'retreived contract and executed');
+  })
+})
+
+describe('Pin Content', function() {
+  this.timeout(10000);
+  it('should pin content to IPFS and return a hash', async function() {
+    const params = {
+      devId: appObj.devId,
+      username: "graphite",
+      id: "12345",
+      content: pinBody,
+      apiKey: appObj.apiKey,
+      development: true
+    }
+
+    const pinnedContent = await auth.pinContent(params);
+    console.log(pinnedContent);
+    assert.equal(pinnedContent.message, 'content successfully pinned');
+  })
+});
+
+describe('Fetch Pinned Content', function() {
+  this.timeout(10000);
+  it('should fetch content from IPFS', async function() {
+    const params = {
+      devId: appObj.devId,
+      username: "graphite",
+      id: "12345",
+      apiKey: appObj.apiKey,
+      development: true
+    }
+
+    const pinnedContent = await auth.fetchPinnedContent(params);
+    console.log(pinnedContent);
+    assert.equal(pinnedContent.message, 'Found pinned content');
+  })
+});
 
 
 //NOTE: This cannot be run from the automated tests since the server expects an origin
@@ -251,6 +251,7 @@ let testKeychain
 describe('CreateAccount', function() {
   this.timeout(10000);
   it('should return account created message', async function() {
+      credObj.id = `username_${Date.now()}`;
       const create = await auth.createUserAccount(credObj, appObj);
       credObjLogIn.id = credObj.id;
       console.log(create)
@@ -278,19 +279,19 @@ describe('CreateAccount', function() {
 
 
 //Log In
-// describe('LogIn', function() {
-//   this.timeout(10000);
-//   it('kick off recovery flow with email, username, and password', async function() {
-//     const params = {
-//       credObj: credObjLogIn,
-//       appObj,
-//       userPayload: {}
-//     }
-//     const loggedIn = await auth.login(params);
-//     console.log(loggedIn);
-//     assert(loggedIn.message, "user session created");
-//   })
-// });
+describe('LogIn', function() {
+  this.timeout(10000);
+  it('kick off recovery flow with email, username, and password', async function() {
+    const params = {
+      credObj: credObjLogIn,
+      appObj,
+      userPayload: {}
+    }
+    const loggedIn = await auth.login(params);
+    console.log(loggedIn);
+    assert(loggedIn.message, "user session created");
+  })
+});
 
 //BlockstackJS Operations
 

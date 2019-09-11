@@ -106,14 +106,23 @@ module.exports = {
       }
     });
   },
-  createUserAccount: async function(credObj, config) {
+  createUserAccount: async function(credObj, config, options={}) {
+    const statusCallbackFn = options.hasOwnProperty('statusCallbackFn') ?
+      options['statusCallbackFn'] : undefined
+
     //For now we can continue to use Blockstack's name lookup, even for non-Blockstack auth
-    const nameCheck = await this.nameLookUp(credObj.id);
     console.log("Verifying name availability...");
+    if (statusCallbackFn) {
+      statusCallbackFn("Verifying name availability...")
+    }
+    const nameCheck = await this.nameLookUp(credObj.id);
     if(nameCheck.pass) {
       console.log("Name check passed");
       try {
         console.log("Making keychain...");
+        if (statusCallbackFn) {
+          statusCallbackFn("Making keychain...")
+        }
         const keychain = await this.makeKeychain(credObj, config);
         if(keychain.success === false) {
           //This would happen for a variety of reasons, just return the server message
@@ -135,27 +144,28 @@ module.exports = {
 
           try {
             console.log("Making app keys...");
+            if (statusCallbackFn) {
+              statusCallbackFn("Making app keys...")
+            }
             const appKeys = await this.makeAppKeyPair(appKeyParams, profile);
             if(appKeys) {
               console.log("App keys created");
               const appPrivateKey = JSON.parse(appKeys.body).blockstack ? JSON.parse(appKeys.body).blockstack.private : "";
               configObj = JSON.parse(appKeys.body).config || {};
               apiKey = JSON.parse(appKeys.body).apiKey || "";
-              wallet = JSON.parse(appKeys.body).walet;
-              // if(config.authModules && config.authModules.indexOf('textile') > -1) {
-              //   textile = JSON.parse(appKeys.body).textile;
-              // } else {
-              //   textile = null;
-              // }
+              wallet = JSON.parse(appKeys.body).wallet;
               textile = JSON.parse(appKeys.body).textile || "";
-            const appUrl = JSON.parse(appKeys.body).blockstack.appUrl || "";
+              const appUrl = JSON.parse(appKeys.body).blockstack.appUrl || "";
               profile.apps[config.appOrigin] = appUrl;
               //Let's register the name now
-              console.log("*************Registering name...");
+              console.log("Registering name...");
+              if (statusCallbackFn) {
+                statusCallbackFn("Registering name...")
+              }
               const registeredName = await this.registerSubdomain(credObj.id, idAddress);
-              // if(registeredName) {
+              if(registeredName) {
                 console.log("Name registered");
-              // }
+              }
               //Now, we login
               try {
                 const userSessionParams = {
@@ -167,6 +177,9 @@ module.exports = {
                   }
                 }
                 console.log("Logging in...");
+                if (statusCallbackFn) {
+                  statusCallbackFn("Logging in...")
+                }
                 const userSession = await this.login(userSessionParams, profile);
                 if(userSession) {
                   console.log("Logged in");
