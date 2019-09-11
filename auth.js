@@ -111,14 +111,23 @@ export async function makeAppKeyPair(params, profile) {
   });
 }
 
-export async function createUserAccount(credObj, config) {
+export async function createUserAccount(credObj, config, options={}) {
+  const statusCallbackFn = options.hasOwnProperty('statusCallbackFn') ?
+      options['statusCallbackFn'] : undefined
+
   //For now we can continue to use Blockstack's name lookup, even for non-Blockstack auth
   console.log("Verifying name availability...");
+  if (statusCallbackFn) {
+    statusCallbackFn("Verifying name availability...")
+  }
   const nameCheck = await nameLookUp(credObj.id);
   if(nameCheck.pass) {
     console.log("Name check passed");
     try {
       console.log("Making keychain...");
+      if (statusCallbackFn) {
+        statusCallbackFn("Making keychain...")
+      }
       const keychain = await makeKeychain(credObj, config);
       if(keychain.success === false) {
         //This would happen for a variety of reasons, just return the server message
@@ -140,6 +149,9 @@ export async function createUserAccount(credObj, config) {
 
         try {
           console.log("Making app keys...");
+          if (statusCallbackFn) {
+            statusCallbackFn("Making app keys...")
+          }
           const appKeys = await makeAppKeyPair(appKeyParams, profile);
           if(appKeys) {
             console.log("App keys created");
@@ -152,6 +164,9 @@ export async function createUserAccount(credObj, config) {
             profile.apps[config.appOrigin] = appUrl;
             //Let's register the name now
             console.log("Registering name...");
+            if (statusCallbackFn) {
+              statusCallbackFn("Registering name...")
+            }
             const registeredName = await registerSubdomain(credObj.id, idAddress);
             if(registeredName) {
               console.log("Name registered");
@@ -167,6 +182,9 @@ export async function createUserAccount(credObj, config) {
                 }
               }
               console.log("Logging in...");
+              if (statusCallbackFn) {
+                statusCallbackFn("Logging in...")
+              }
               const userSession = await login(userSessionParams, profile);
               if(userSession) {
                 console.log("Logged in");
