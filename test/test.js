@@ -293,6 +293,21 @@ describe('LogIn', function() {
   })
 });
 
+//User doesn't exist log in
+describe('Log in with invalid user', function() {
+  this.timeout(20000);
+  it('Attempt to log in with invalid user', async function() {
+    credObjLogIn.id = "jhsfjksadhfjhsjfh";
+    const params = {
+      credObj: credObjLogIn,
+      appObj,
+      userPayload: {}
+    }
+    const loggedIn = await auth.login(params);
+    assert(loggedIn.body, `404 - "GENERATE_APP_KEYS ERROR (3): Username does not exist"`);
+  })
+});
+
 //BlockstackJS Operations
 
 // describe("Storage, putFile", function() {

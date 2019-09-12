@@ -78,8 +78,8 @@ export async function makeKeychain(credObj, devConfig) {
 }
 
 export async function makeAppKeyPair(params, profile) {
-  //Need to determine if this call is being made on account registration or not
-  const dataString = {
+   //Need to determine if this call is being made on account registration or not
+   const dataString = {
     username: params.username,
     password: params.password,
     url: params.appObj.appOrigin,
@@ -96,17 +96,18 @@ export async function makeAppKeyPair(params, profile) {
   var options = { url: config.APP_KEY_URL, method: 'POST', headers: headers, form: dataString };
   return request(options)
   .then((body) => {
-    console.log(body);
     return {
+      success: true,
       message: "successfully created app keypair",
       body: body
     }
   })
-  .catch(error => {
-    console.log('Error: ', error);
+  .catch((error) => {
+    console.log('Error: ', error.message);
     return {
+      success: false,
       message: "failed to created app keypair",
-      body: error
+      body: error.message
     }
   });
 }
@@ -243,7 +244,7 @@ export async function login(params, newProfile) {
       scopes: params.appObj.scopes,
       appOrigin: params.appObj.appOrigin,
       appPrivKey: userPayload.privateKey,
-      hubUrl: params.credObj.hubUrl, //Still have to think through this one
+      hubUrl: params.credObj.hubUrl ? params.credObj.hubUrl : "https://hub.blockstack.org", //Still have to think through this one
       username: params.credObj.id,
       profile: newProfile
     }
@@ -275,13 +276,14 @@ export async function login(params, newProfile) {
     const profile = await updateProfile(params.credObj.id, params.appObj);
     try {
       const appKeys = await makeAppKeyPair(appKeyParams, profile);
-      if(appKeys) {
+      if(appKeys.success) {
         const appPrivateKey = JSON.parse(appKeys.body).blockstack ? JSON.parse(appKeys.body).blockstack.private : "";
         const appUrl = JSON.parse(appKeys.body).blockstack.appUrl || "";
         configObj = JSON.parse(appKeys.body).config;
         apiKey = JSON.parse(appKeys.body).apiKey || "";
         wallet = JSON.parse(appKeys.body).wallet;
-        textile = JSON.parse(appKeys.body).textile | "";
+        textile = JSON.parse(appKeys.body).textile || "";
+        
         profile.apps[params.appObj.appOrigin] = appUrl;
         //Now, we login
         try {
@@ -292,13 +294,12 @@ export async function login(params, newProfile) {
               privateKey: appPrivateKey,
             }
           }
-          console.log("Logging in....");
           const userPayload = userSessionParams.userPayload;
           const sessionObj = {
             scopes: params.appObj.scopes,
             appOrigin: params.appObj.appOrigin,
             appPrivKey: userPayload.privateKey,
-            hubUrl: params.credObj.hubUrl, //Still have to think through this one
+            hubUrl: params.credObj.hubUrl ? params.credObj.hubUrl : "https://hub.blockstack.org", //Still have to think through this one
             username: params.credObj.id,
             profile: newProfile
           }
@@ -324,13 +325,13 @@ export async function login(params, newProfile) {
       } else {
         return {
           message: "error creating app keys",
-          body: null
+          body: appKeys.body
         }
       }
     } catch(error) {
       return {
         message: "error creating app keys",
-        body: error
+        body: appKeys.body ? appKeys.body : error
       }
     }
   }

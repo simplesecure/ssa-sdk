@@ -74,7 +74,7 @@ module.exports = {
     });
   },
   makeAppKeyPair: async function(params, profile) {
-   //Need to determine if this call is being made on account registration or not
+    //Need to determine if this call is being made on account registration or not
     const dataString = {
       username: params.username,
       password: params.password,
@@ -92,17 +92,18 @@ module.exports = {
     var options = { url: config.APP_KEY_URL, method: 'POST', headers: headers, form: dataString };
     return request(options)
     .then((body) => {
-      console.log(body);
       return {
+        success: true,
         message: "successfully created app keypair",
         body: body
       }
     })
-    .catch(error => {
-      console.log('Error: ', error);
+    .catch((error) => {
+      console.log('Error: ', error.message);
       return {
+        success: false,
         message: "failed to created app keypair",
-        body: error
+        body: error.message
       }
     });
   },
@@ -226,7 +227,6 @@ module.exports = {
     }
   },
   login: async function(params, newProfile) {
-    console.log(params);
     //params object should include the credentials obj, appObj, (optional) user payload with appKey and mnemonic and (optional) a bool determining whether we need to fetch data from the DB
     //@params fetchFromDB is a bool. Should be false if account was just created
     //@params credObj is simply the username and password
@@ -270,13 +270,14 @@ module.exports = {
       const profile = await this.updateProfile(params.credObj.id, params.appObj);
       try {
         const appKeys = await this.makeAppKeyPair(appKeyParams, profile);
-        if(appKeys) {
+        if(appKeys.success) {
           const appPrivateKey = JSON.parse(appKeys.body).blockstack ? JSON.parse(appKeys.body).blockstack.private : "";
           const appUrl = JSON.parse(appKeys.body).blockstack.appUrl || "";
           configObj = JSON.parse(appKeys.body).config;
           apiKey = JSON.parse(appKeys.body).apiKey || "";
-          wallet = JSON.parse(appKeys.body).walet;
+          wallet = JSON.parse(appKeys.body).wallet;
           textile = JSON.parse(appKeys.body).textile || "";
+          
           profile.apps[params.appObj.appOrigin] = appUrl;
           //Now, we login
           try {
@@ -287,7 +288,6 @@ module.exports = {
                 privateKey: appPrivateKey,
               }
             }
-            console.log("Logging in....");
             const userPayload = userSessionParams.userPayload;
             const sessionObj = {
               scopes: params.appObj.scopes,
@@ -319,13 +319,13 @@ module.exports = {
         } else {
           return {
             message: "error creating app keys",
-            body: null
+            body: appKeys.body
           }
         }
       } catch(error) {
         return {
           message: "error creating app keys",
-          body: error
+          body: appKeys.body ? appKeys.body : error
         }
       }
     }
