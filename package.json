@@ -2,7 +2,7 @@
   "name": "simpleid-js-sdk",
   "version": "0.4.8",
   "description": "",
-  "main": "auth.js",
+  "main": "simple.js",
   "scripts": {
     "test": "mocha",
     "ethTests": "node ethExamples/runTests.js",
