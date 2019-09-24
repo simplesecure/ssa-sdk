@@ -1,6 +1,11 @@
 import { makeKeychain, makeAppKeyPair, makeProfile, updateProfile } from './simpleidapi/actions';
 import { nameLookUp, registerSubdomain, makeUserSession } from './blockstack/actions';
-const request = require('request-promise');
+export const request = require('request-promise');
+let network = "local";
+const infuraKey = "b8c67a1f996e4d5493d5ba3ae3abfb03";
+const Web3 = require('web3');
+const provider = new Web3.providers.HttpProvider(network === "local" ? 'http://localhost:7545' : `https://${network}.infura.io/v3/${config.INFURA_KEY}`);
+var web3 = new Web3(provider);
 const config = require('./config.json');
 let headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
 let idAddress;
@@ -349,34 +354,6 @@ export function createContract(params) {
   });
 }
 
-export function fetchContract(params) {
-  const payload = JSON.stringify({
-    devId: params.devId,
-    contractAddress: params.contractAddress,
-    abi: params.abi,
-    development: params.development ? true : false
-  })
-  headers['Authorization'] = params.apiKey;
-  var options = { url: config.FETCH_CONTRACT_URL, method: 'POST', headers: headers, body: payload };
-  return request(options)
-  .then((body) => {
-    console.log(body);
-    return {
-      success: true,
-      message: "retreived contract and executed",
-      body: body
-    }
-  })
-  .catch(error => {
-    console.log('Error: ', error);
-    return {
-      success: false, 
-      message: "failed to retreive contract",
-      body: error
-    }
-  });
-}
-
 export function pinContent(params) {
   const payload = JSON.stringify({
     devId: params.devId,
@@ -430,4 +407,83 @@ export function fetchPinnedContent(params) {
       body: error
     }
   });
+}
+
+export async function generateApproval(params) {
+  const { username, apiKey, fromEmail, network, devId, development, txObject } = params;
+  
+  const estimate = await web3.eth.estimateGas(txObject);
+  const approvalObj = JSON.stringify({
+    username,
+    fromEmail,
+    gasEst: estimate, 
+    tx: txObject, 
+    network, 
+    devId, 
+    development
+  });
+  
+  headers['Authorization'] = apiKey;
+  var options = { url: config.SEND_TX_APPROVAL, method: 'POST', headers: headers, body: approvalObj };
+  return request(options)
+  .then((body) => {
+    if(body.success) {
+      return {
+        success: true, 
+        message: "Trouble submitting transaction for approval",
+        body
+      }
+    } else {
+      return {
+        success: false, 
+        message: "Transaction submitted for approval",
+        body: body.message
+      }
+    }
+  })
+  .catch(error => {
+    console.log('Error: ', error);
+    return {
+      success: false,
+      message: "Trouble submitting transaction for approval",
+      body: error
+    }
+  });
+}
+
+export async function signTransaction(payload) {
+  headers['Authorization'] = apiKey;
+  var options = { url: config.SIGN_TX, method: 'POST', headers: headers, body: JSON.stringify(payload) };
+  return request(options)
+  .then((body) => {
+    if(JSON.parse(body).success) {
+      return {
+        success: true, 
+        message: "Sent transaction for approval",
+        body: JSON.parse(body)
+      }
+    } else {
+      return { 
+        success: false, 
+        message: "Trouble sending transaction for approval", 
+        body: JSON.parse(body).message
+      }
+    }
+  })
+  .catch(error => {
+    console.log('Error: ', error);
+    return {
+      success: false,
+      message: "Trouble sending transaction for approval",
+      body: error
+    }
+  });
+}
+
+export class SimpleIDProvider {
+  constructor(params) {
+    this.network = params.network;
+    this.provider = new Web3.providers.HttpProvider(this.network === "local" ? 'http://localhost:7545' : `https://${this.network}.infura.io/v3/${infuraKey}`);
+    return this.provider;
+  }
 }

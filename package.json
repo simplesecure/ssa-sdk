@@ -18,7 +18,8 @@
     "ethers": "^4.0.33",
     "request": "^2.88.0",
     "request-promise": "^4.2.4",
-    "safer-pass": "^1.0.3"
+    "safer-pass": "^1.0.3",
+    "web3": "^1.2.1"
   },
   "devDependencies": {
     "mocha": "^6.1.4"

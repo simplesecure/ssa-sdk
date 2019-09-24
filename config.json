@@ -1,4 +1,7 @@
 {
+    "SUBDOMAIN_REGISTRATION":"https://registrar.blockstack.org/register",
+    "NAME_LOOKUP_URL":"https://core.blockstack.org/v1/names/",
+    "INFURA_KEY": "b8c67a1f996e4d5493d5ba3ae3abfb03",
     "KEYCHAIN_URL":"https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/keychain",
     "APP_KEY_URL":"https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/appkeys",
     "GET_CONFIG_URL": "https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/getConfig",
@@ -6,7 +9,7 @@
     "CREATE_CONTRACT_URL": "https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/createContract",
     "FETCH_CONTRACT_URL": "https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/fetchContract",
     "PIN_CONTENT_URL": "https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/pinContent",
-    "FETCH_PINNED_CONTENT_URL": "https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/fetchContent",
-    "SUBDOMAIN_REGISTRATION":"https://registrar.blockstack.org/register",
-    "NAME_LOOKUP_URL":"https://core.blockstack.org/v1/names/"
+    "FETCH_PINNED_CONTENT_URL": "https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/fetchContent", 
+    "SEND_TX_APPROVAL": "http://localhost:5000/v1/sendTxApproval", 
+    "SIGN_TX": "http://localhost:5000/v1/signTx"
 }
