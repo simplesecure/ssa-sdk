@@ -1,3 +1,11 @@
+const SimpleID = require('../simple');
+const simple = new SimpleID({
+  appOrigin: "https://app.graphitedocs.com",
+  scopes: ['store_write', 'publish_data'],
+  apiKey: "-LmCb96-TquOlN37LpM0",
+  devId: "imanewdeveloper",
+  development: true
+});
 const assert = require('assert');
 const crypto = require('crypto-browserify');
 //const { AppConfig, UserSession, getFile, putFile } = require('blockstack');
@@ -80,233 +88,242 @@ const pinBody = {
 //Stand alone tests
 let testKeychain
 
-describe('User session returned', function() {
+describe('Generates an authentication approval', function() {
   this.timeout(10000);
-  it('should return a valid user session', async function() {
-      const appPrivKey = '8681e1cdaa96c5caf0c5da4e3a49c587b6b468fce89f71bef0525d28ce5450fc';
-      const hubUrl = 'https://hub.blockstack.org';
-      const scopes = ['store_write'];
-      const appOrigin = 'helloblockstack.com'
-      const userData = {
-          appPrivKey,
-          hubUrl,
-          scopes,
-          appOrigin,
-          id: credObj.id
-      }
-      const userSession = await auth.makeUserSession(userData);
-      console.log(userSession);
-      assert(userSession.message, "user session created");
-  })
-});
-
-describe("NameLookUp", function() {
-  this.timeout(10000);
-  it("name should be available", async function() {
-    const nameResponse = await auth.nameLookUp(availableName);
-    assert.equal(nameResponse.message, 'name available');
-  })
-  it("name should be taken", async function() {
-    const takenResponse = await auth.nameLookUp(takenName);
-    assert.equal(takenResponse.message, 'name taken');
-  })
+  it('should generate an auth token and email it', async function() {
+    const payload = { email: "justin.edward.hunter@gmail.com"};
+    const account = await simple.authenticate(payload);
+    console.log(account);
+  });
 })
 
-describe('MakeKeyChain', function() {
-  this.timeout(10000);
-  it('should create and return a keychain', async function() {
-    const keychain = await auth.makeKeychain(credObj, appObj);
-    console.log(keychain);
-    assert.equal(keychain.message, 'successfully created keychain');
-  })
-})
-
-//NOTE: As of now, this will never work from automated tests
-//since it requires an origin to be received by the server
-
-// describe('Make dev keychain', function() {
-//   const config = {
-//     development: true
-//   }
+// describe('User session returned', function() {
 //   this.timeout(10000);
-//   it('should create and return a keychain for new dev sign ups', async function() {
-//     const keychain = await auth.makeKeychain(credObj, config);
+//   it('should return a valid user session', async function() {
+//       const appPrivKey = '8681e1cdaa96c5caf0c5da4e3a49c587b6b468fce89f71bef0525d28ce5450fc';
+//       const hubUrl = 'https://hub.blockstack.org';
+//       const scopes = ['store_write'];
+//       const appOrigin = 'helloblockstack.com'
+//       const userData = {
+//           appPrivKey,
+//           hubUrl,
+//           scopes,
+//           appOrigin,
+//           id: credObj.id
+//       }
+//       const userSession = await auth.makeUserSession(userData);
+//       console.log(userSession);
+//       assert(userSession.message, "user session created");
+//   })
+// });
+
+// describe("NameLookUp", function() {
+//   this.timeout(10000);
+//   it("name should be available", async function() {
+//     const nameResponse = await auth.nameLookUp(availableName);
+//     assert.equal(nameResponse.message, 'name available');
+//   })
+//   it("name should be taken", async function() {
+//     const takenResponse = await auth.nameLookUp(takenName);
+//     assert.equal(takenResponse.message, 'name taken');
+//   })
+// })
+
+// describe('MakeKeyChain', function() {
+//   this.timeout(10000);
+//   it('should create and return a keychain', async function() {
+//     const keychain = await auth.makeKeychain(credObj, appObj);
 //     console.log(keychain);
 //     assert.equal(keychain.message, 'successfully created keychain');
 //   })
 // })
 
-//NOTE: Need to explore ways to automate the testing of this since the address we test
-//with here won't have ether yet
+// //NOTE: As of now, this will never work from automated tests
+// //since it requires an origin to be received by the server
 
-// describe('Create Contract', function() {
-//   const config = {
-//     development: true
-//   }
+// // describe('Make dev keychain', function() {
+// //   const config = {
+// //     development: true
+// //   }
+// //   this.timeout(10000);
+// //   it('should create and return a keychain for new dev sign ups', async function() {
+// //     const keychain = await auth.makeKeychain(credObj, config);
+// //     console.log(keychain);
+// //     assert.equal(keychain.message, 'successfully created keychain');
+// //   })
+// // })
+
+// //NOTE: Need to explore ways to automate the testing of this since the address we test
+// //with here won't have ether yet
+
+// // describe('Create Contract', function() {
+// //   const config = {
+// //     development: true
+// //   }
+// //   this.timeout(10000);
+// //   it('should create a contract and return the contract hash and address', async function() {
+// //     const params = {
+// //       development: true,
+// //       username: "username_1565978003511",
+// //       password: credObj.password, //your user's password
+// //       devId: appObj.devId, //available in your dev account user interface
+// //       apiKey: appObj.apiKey, //available in your dev account user iterface
+// //       abi, //the abi you/your user created in building the smart contract
+// //       bytecode //the compiled bytecode from solidity
+// //     }
+// //     const contract = await auth.createContract(params);
+// //     console.log(contract);
+// //     assert.equal(contract.message, 'contract created and deployed');
+// //   })
+// // })
+
+// describe('Fetch Contract', function() {
 //   this.timeout(10000);
-//   it('should create a contract and return the contract hash and address', async function() {
+//   it('should fetch and execute a contract', async function() {
 //     const params = {
 //       development: true,
-//       username: "username_1565978003511",
-//       password: credObj.password, //your user's password
-//       devId: appObj.devId, //available in your dev account user interface
-//       apiKey: appObj.apiKey, //available in your dev account user iterface
-//       abi, //the abi you/your user created in building the smart contract
-//       bytecode //the compiled bytecode from solidity
+//       devId: appObj.devId,
+//       apiKey: appObj.apiKey,
+//       contractAddress,
+//       abi
 //     }
-//     const contract = await auth.createContract(params);
+//     const contract = await auth.fetchContract(params);
 //     console.log(contract);
-//     assert.equal(contract.message, 'contract created and deployed');
+//     assert.equal(contract.message, 'retreived contract and executed');
 //   })
 // })
 
-describe('Fetch Contract', function() {
-  this.timeout(10000);
-  it('should fetch and execute a contract', async function() {
-    const params = {
-      development: true,
-      devId: appObj.devId,
-      apiKey: appObj.apiKey,
-      contractAddress,
-      abi
-    }
-    const contract = await auth.fetchContract(params);
-    console.log(contract);
-    assert.equal(contract.message, 'retreived contract and executed');
-  })
-})
-
-describe('Pin Content', function() {
-  this.timeout(10000);
-  it('should pin content to IPFS and return a hash', async function() {
-    const params = {
-      devId: appObj.devId,
-      username: "graphite",
-      id: "12345",
-      content: pinBody,
-      apiKey: appObj.apiKey,
-      development: true
-    }
-
-    const pinnedContent = await auth.pinContent(params);
-    console.log(pinnedContent);
-    assert.equal(pinnedContent.message, 'content successfully pinned');
-  })
-});
-
-describe('Fetch Pinned Content', function() {
-  this.timeout(10000);
-  it('should fetch content from IPFS', async function() {
-    const params = {
-      devId: appObj.devId,
-      username: "graphite",
-      id: "12345",
-      apiKey: appObj.apiKey,
-      development: true
-    }
-
-    const pinnedContent = await auth.fetchPinnedContent(params);
-    console.log(pinnedContent);
-    assert.equal(pinnedContent.message, 'Found pinned content');
-  })
-});
-
-
-//NOTE: This cannot be run from the automated tests since the server expects an origin
-// describe('Update config', function() {
+// describe('Pin Content', function() {
 //   this.timeout(10000);
-//   it('should properly update the dev config', async function() {
-//     const updates = {
-//       username: "imanewdeveloper",
-//       apiKey: "-LmCb96-TquOlN37LpM0",
-//       verificationID: "-LmCb96-TquOlN37LpM0",
-//       config: {
-//         isUpgraded: false,
-//         isVerified: true
-//       },
+//   it('should pin content to IPFS and return a hash', async function() {
+//     const params = {
+//       devId: appObj.devId,
+//       username: "graphite",
+//       id: "12345",
+//       content: pinBody,
+//       apiKey: appObj.apiKey,
 //       development: true
 //     }
-//     const configUpdate = await auth.updateConfig(updates, true);
-//     console.log(configUpdate);
-//     assert.equal(configUpdate.message, 'updated developer account');
-//   })
-// })
 
-//NOTE: This cannot be run from the automated tests since the server expects an origin
-// describe('Get config', function() {
+//     const pinnedContent = await auth.pinContent(params);
+//     console.log(pinnedContent);
+//     assert.equal(pinnedContent.message, 'content successfully pinned');
+//   })
+// });
+
+// describe('Fetch Pinned Content', function() {
 //   this.timeout(10000);
-//   it('should properly get the dev config', async function() {
+//   it('should fetch content from IPFS', async function() {
 //     const params = {
-//       devId: "imanewdeveloper",
-//       development: true,
-//       apiKey: "-LmCb96-TquOlN37LpM0"
+//       devId: appObj.devId,
+//       username: "graphite",
+//       id: "12345",
+//       apiKey: appObj.apiKey,
+//       development: true
 //     }
-//     const getConfig = await auth.getConfig(params);
-//     console.log(getConfig);
-//     assert.equal(getConfig.message, 'get developer account config');
+
+//     const pinnedContent = await auth.fetchPinnedContent(params);
+//     console.log(pinnedContent);
+//     assert.equal(pinnedContent.message, 'Found pinned content');
 //   })
-// })
+// });
 
-//Account Creation
-describe('CreateAccount', function() {
-  this.timeout(10000);
-  it('should return account created message', async function() {
-      credObj.id = `username_${Date.now()}`;
-      const create = await auth.createUserAccount(credObj, appObj);
-      credObjLogIn.id = credObj.id;
-      console.log(create)
-      assert.equal(create.message,"user session created")
-  });
-});
 
-//NOTE: This cannot be run from the automated tests since the server expects an origin
-// describe('CreateDevAccount', function() {
+// //NOTE: This cannot be run from the automated tests since the server expects an origin
+// // describe('Update config', function() {
+// //   this.timeout(10000);
+// //   it('should properly update the dev config', async function() {
+// //     const updates = {
+// //       username: "imanewdeveloper",
+// //       apiKey: "-LmCb96-TquOlN37LpM0",
+// //       verificationID: "-LmCb96-TquOlN37LpM0",
+// //       config: {
+// //         isUpgraded: false,
+// //         isVerified: true
+// //       },
+// //       development: true
+// //     }
+// //     const configUpdate = await auth.updateConfig(updates, true);
+// //     console.log(configUpdate);
+// //     assert.equal(configUpdate.message, 'updated developer account');
+// //   })
+// // })
+
+// //NOTE: This cannot be run from the automated tests since the server expects an origin
+// // describe('Get config', function() {
+// //   this.timeout(10000);
+// //   it('should properly get the dev config', async function() {
+// //     const params = {
+// //       devId: "imanewdeveloper",
+// //       development: true,
+// //       apiKey: "-LmCb96-TquOlN37LpM0"
+// //     }
+// //     const getConfig = await auth.getConfig(params);
+// //     console.log(getConfig);
+// //     assert.equal(getConfig.message, 'get developer account config');
+// //   })
+// // })
+
+// //Account Creation
+// describe('CreateAccount', function() {
 //   this.timeout(10000);
-//   const config = {
-//     appOrigin: "https://app.graphitedocs.com",
-//     scopes: ['store_write', 'publish_data'],
-//     isDev: true,
-//     apiKey: "-LmCb96-TquOlN37LpM0",
-//     devId: "imanewdeveloper",
-//     development: true
-//   }
 //   it('should return account created message', async function() {
-//       const create = await auth.createUserAccount(credObj, config);
+//       credObj.id = `username_${Date.now()}`;
+//       const create = await auth.createUserAccount(credObj, appObj);
+//       credObjLogIn.id = credObj.id;
 //       console.log(create)
 //       assert.equal(create.message,"user session created")
 //   });
 // });
 
+// //NOTE: This cannot be run from the automated tests since the server expects an origin
+// // describe('CreateDevAccount', function() {
+// //   this.timeout(10000);
+// //   const config = {
+// //     appOrigin: "https://app.graphitedocs.com",
+// //     scopes: ['store_write', 'publish_data'],
+// //     isDev: true,
+// //     apiKey: "-LmCb96-TquOlN37LpM0",
+// //     devId: "imanewdeveloper",
+// //     development: true
+// //   }
+// //   it('should return account created message', async function() {
+// //       const create = await auth.createUserAccount(credObj, config);
+// //       console.log(create)
+// //       assert.equal(create.message,"user session created")
+// //   });
+// // });
 
-//Log In
-describe('LogIn', function() {
-  this.timeout(10000);
-  it('kick off recovery flow with email, username, and password', async function() {
-    const params = {
-      credObj: credObjLogIn,
-      appObj,
-      userPayload: {}
-    }
-    const loggedIn = await auth.login(params);
-    console.log(loggedIn);
-    assert(loggedIn.message, "user session created");
-  })
-});
 
-//User doesn't exist log in
-describe('Log in with invalid user', function() {
-  this.timeout(20000);
-  it('Attempt to log in with invalid user', async function() {
-    credObjLogIn.id = "jhsfjksadhfjhsjfh";
-    const params = {
-      credObj: credObjLogIn,
-      appObj,
-      userPayload: {}
-    }
-    const loggedIn = await auth.login(params);
-    assert(loggedIn.body, `404 - "GENERATE_APP_KEYS ERROR (3): Username does not exist"`);
-  })
-});
+// //Log In
+// describe('LogIn', function() {
+//   this.timeout(10000);
+//   it('kick off recovery flow with email, username, and password', async function() {
+//     const params = {
+//       credObj: credObjLogIn,
+//       appObj,
+//       userPayload: {}
+//     }
+//     const loggedIn = await auth.login(params);
+//     console.log(loggedIn);
+//     assert(loggedIn.message, "user session created");
+//   })
+// });
+
+// //User doesn't exist log in
+// describe('Log in with invalid user', function() {
+//   this.timeout(20000);
+//   it('Attempt to log in with invalid user', async function() {
+//     credObjLogIn.id = "jhsfjksadhfjhsjfh";
+//     const params = {
+//       credObj: credObjLogIn,
+//       appObj,
+//       userPayload: {}
+//     }
+//     const loggedIn = await auth.login(params);
+//     assert(loggedIn.body, `404 - "GENERATE_APP_KEYS ERROR (3): Username does not exist"`);
+//   })
+// });
 
 //BlockstackJS Operations
 

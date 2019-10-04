@@ -3,7 +3,24 @@ const config = require('../config.json');
 const request = require('request-promise');
 let headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
 
-export async function makeKeychain(credObj, devConfig) {
+export function handleAuth(payload) {
+  headers['Authorization'] = payload.config.apiKey;
+  const dataString = JSON.stringify(payload)
+  const options = { url: config.AUTHENTICATION_URL, method: 'POST', headers: headers, body: dataString };
+  return request(options)
+  .then(async (body) => {
+    return JSON.parse(body)
+  })
+  .catch(error => {
+    // POST failed...
+    console.log('ERROR: ', error)
+    return {
+      success: false, 
+      body: JSON.parse(error.error).message
+    }
+  });
+}
+export function makeKeychain(credObj, devConfig) {
   //Send the username and the passphrase which will be used by the server to encrypt sensitive data
   const dataString = JSON.stringify({
     username: credObj.id,
@@ -39,7 +56,7 @@ export async function makeKeychain(credObj, devConfig) {
   });
 }
 
-export async function makeAppKeyPair(params, profile) {
+export function makeAppKeyPair(params, profile) {
   //Need to determine if this call is being made on account registration or not
   const dataString = JSON.stringify({
    username: params.username,

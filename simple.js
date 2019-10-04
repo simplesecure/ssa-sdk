@@ -1,489 +1,263 @@
-import { makeKeychain, makeAppKeyPair, makeProfile, updateProfile } from './simpleidapi/actions';
+import { updateProfile, handleAuth } from './simpleidapi/actions';
 import { nameLookUp, registerSubdomain, makeUserSession } from './blockstack/actions';
-export const request = require('request-promise');
-let network = "local";
-const infuraKey = "b8c67a1f996e4d5493d5ba3ae3abfb03";
-const Web3 = require('web3');
-const provider = new Web3.providers.HttpProvider(network === "local" ? 'http://localhost:7545' : `https://${network}.infura.io/v3/${config.INFURA_KEY}`);
-var web3 = new Web3(provider);
+const request = require('request-promise');
 const config = require('./config.json');
+const keys = require('./keys.json');
+const infuraKey = keys.INFURA_KEY;
+const Web3 = require('web3');
 let headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
-let idAddress;
-let configObj;
-let apiKey;
-let wallet;
-let textile;
-
-export async function createUserAccount(credObj, config, options={}) {
-  const statusCallbackFn = options.hasOwnProperty('statusCallbackFn') ? options['statusCallbackFn'] : undefined
-
-  console.log("Verifying name availability...");
-  if (statusCallbackFn) {
-    statusCallbackFn("Verifying name availability...")
-  }
-  const nameCheck = await nameLookUp(credObj.id);
-  if(nameCheck.pass) {
-    console.log("Name check passed");
-    try {
-      console.log("Making keychain...");
-      if (statusCallbackFn) {
-        statusCallbackFn("Making keychain...")
-      }
-      const keychain = await makeKeychain(credObj, config);
-      if(keychain.success === false) {
-        return {
-          success: false,
-          message: keychain.body
-        }
-      } else {
-        console.log("Keychain made")
-        idAddress = keychain.body;
-        //Now we make the profile
-        let profile = makeProfile(config);
-
-        const appKeyParams = {
-          username: credObj.id,
-          appObj: config,
-          password: credObj.password
-        }
-
-        try {
-          console.log("Making app keys...");
-          if (statusCallbackFn) {
-            statusCallbackFn("Making app keys...")
-          }
-          const appKeys = await makeAppKeyPair(appKeyParams, profile);
-          if(appKeys) {
-            console.log("App keys created");
-            const appPrivateKey = JSON.parse(appKeys.body).blockstack ? JSON.parse(appKeys.body).blockstack.private : "";
-            configObj = JSON.parse(appKeys.body).config || {};
-            apiKey = JSON.parse(appKeys.body).apiKey || "";
-            wallet = JSON.parse(appKeys.body).wallet;
-            textile = JSON.parse(appKeys.body).textile || "";
-            const appUrl = JSON.parse(appKeys.body).blockstack.appUrl || "";
-            profile.apps[config.appOrigin] = appUrl;
-            //Let's register the name now
-            console.log("Registering name...");
-            if (statusCallbackFn) {
-              statusCallbackFn("Registering name...")
-            }
-            //If we want to prevent continuation after a name registration failure
-            //we need to wrap this in a try/catch
-            const registeredName = await registerSubdomain(credObj.id, idAddress);
-            if(registeredName) {
-              console.log("Name registered");
-            } 
-            console.log(registeredName);
-            //Now, we login
-            const userSessionParams = {
-              accountCreation: true,
-              credObj,
-              appObj: config,
-              userPayload: {
-                privateKey: appPrivateKey,
-              }
-            }
-            console.log("Logging in...");
-            if (statusCallbackFn) {
-              statusCallbackFn("Logging in...")
-            }
-            const userSession = await login(userSessionParams, profile);
-            if(userSession) {
-              console.log("Logged in");
-              console.log(userSession);
-              //Setting the usersession so the dev doesn't have to manually
-              localStorage.setItem('blockstack-session', JSON.stringify(userSession.body.store.sessionData));
-              return {
-                success: true,
-                message: "user session created",
-                body: userSession.body
-              }
-            } else {
-              console.log(userSession);
-              return {
-                success: false,
-                message: "trouble creating user session",
-                body: null
-              }
-            }
-          } else {
-            console.log(appKeys);
-            return {
-              success: false, 
-              message: "error creating app keys",
-              body: null
-            }
-          }
-        } catch(error) {
-          console.log(error);
-          return {
-            success: false,
-            message: "error creating app keys",
-            body: error
-          }
-        }
-      }
-    } catch(keychainErr) {
-      console.log(keychainErr);
+let web3;
+function postToApi(options) {
+  return request(options)
+    .then((body) => {
       return {
-        success: false, 
-        message: "Failed to create keychain",
-        body: keychainErr
-      }
-    }
-  } else {
-    return {
-      success: false, 
-      message: nameCheck.message,
-      body: null
-    }
-  }
-}
-
-export async function login(params, newProfile) {
-  //params object should include the credentials obj, appObj, (optional) user payload with appKey and mnemonic and (optional) a bool determining whether we need to fetch data from the DB
-  //@params fetchFromDB is a bool. Should be false if account was just created
-  //@params credObj is simply the username and password
-  //@params appObj is provided by the developer and is an object containing app scopes and app origin
-  //@params userPayload object that includes the app key and the mnemonic
-  if(params.accountCreation) {
-    console.log("Logging in from account creation...")
-    const userPayload = params.userPayload;
-    const sessionObj = {
-      scopes: params.appObj.scopes,
-      appOrigin: params.appObj.appOrigin,
-      appPrivKey: userPayload.privateKey,
-      hubUrl: params.credObj.hubUrl ? params.credObj.hubUrl : "https://hub.blockstack.org", //Still have to think through this one
-      username: params.credObj.id,
-      profile: newProfile, 
-      wallet, 
-      apiKey, 
-      textile, 
-      configObj
-    }
-    try {
-      const userSession = await makeUserSession(sessionObj, idAddress);
-      if(userSession) {
-        return {
-          success: true,
-          message: "user session created",
-          body: userSession.body
-        }
-      } else {
-        return {
-          success: false, 
-          message: "error creating user session",
-          body: null
-        }
-      }
-    } catch (userSessErr) {
-      return {
-        success: false, 
-        message: "error creating user session",
-        body: userSessErr
-      }
-    }
-  } else {
-    const appKeyParams = {
-      username: params.credObj.id,
-      appObj: params.appObj,
-      password: params.credObj.password
-    }
-    const profile = await updateProfile(params.credObj.id, params.appObj);
-    try {
-      const appKeys = await makeAppKeyPair(appKeyParams, profile);
-      if(appKeys.success) {
-        const appPrivateKey = JSON.parse(appKeys.body).blockstack ? JSON.parse(appKeys.body).blockstack.private : "";
-        const appUrl = JSON.parse(appKeys.body).blockstack.appUrl || "";
-        configObj = JSON.parse(appKeys.body).config;
-        apiKey = JSON.parse(appKeys.body).apiKey || "";
-        wallet = JSON.parse(appKeys.body).wallet;
-        textile = JSON.parse(appKeys.body).textile || "";
-        
-        profile.apps[params.appObj.appOrigin] = appUrl;
-        //Now, we login
-        try {
-          const userSessionParams = {
-            credObj: params.credObj,
-            appObj: params.appObj,
-            userPayload: {
-              privateKey: appPrivateKey,
-            }
-          }
-          const userPayload = userSessionParams.userPayload;
-          const sessionObj = {
-            scopes: params.appObj.scopes,
-            appOrigin: params.appObj.appOrigin,
-            appPrivKey: userPayload.privateKey,
-            hubUrl: params.credObj.hubUrl ? params.credObj.hubUrl : "https://hub.blockstack.org", //Still have to think through this one
-            username: params.credObj.id,
-            profile: newProfile, 
-            wallet, 
-            apiKey, 
-            textile, 
-            configObj
-          }
-          const userSession = await makeUserSession(sessionObj, idAddress);
-
-          if(userSession) {
-            console.log("Logged in")
-            //Setting the usersession so the dev doesn't have to manually
-            localStorage.setItem('blockstack-session', JSON.stringify(userSession.body.store.sessionData));
-            return {
-              success: true,
-              message: "user session created",
-              body: userSession.body
-            }
-          } else {
-            return {
-              success: false,
-              message: "trouble creating user session",
-              body: null
-            }
-          }
-        } catch (loginErr) {
-          return {
-            success: false,
-            message: "trouble logging in",
-            body: loginErr
-          }
-        }
-      } else {
-        return {
-          success: false,
-          message: "error creating app keys",
-          body: appKeys.body
-        }
-      }
-    } catch(error) {
-      return {
-        success: false,
-        message: "error creating app keys",
-        body: appKeys.body ? appKeys.body : error
-      }
-    }
-  }
-}
-
-export function getConfig(params) {
-  const payload = JSON.stringify({
-    devId: params.devId,
-    development: params.development ? true : false
-  });
-  headers['Authorization'] = params.apiKey;
-  var options = { url: config.GET_CONFIG_URL, method: 'POST', headers: headers, body: payload };
-  return request(options)
-  .then((body) => {
-    console.log(body);
-    return {
-      success: true,
-      message: "get developer account config",
-      body: body
-    }
-  })
-  .catch(error => {
-    console.log('Error: ', error);
-    return {
-      success: false,
-      message: "failed to get developer account",
-      body: error
-    }
-  });
-}
-
-export function updateConfig(updates, verification) {
-  const payload = JSON.stringify({
-    devId: updates.username,
-    config: updates.config,
-    development: updates.development ? true : false
-  });
-  console.log(payload);
-  if(verification) {
-    headers['Authorization'] = updates.verificationID;
-  } else {
-    headers['Authorization'] = updates.apiKey;
-  }
-  console.log(headers);
-  var options = { url: config.UPDATE_CONFIG_URL, method: 'POST', headers: headers, body: payload };
-  return request(options)
-  .then((body) => {
-    console.log(body);
-    return {
-      success: true,
-      message: "updated developer account",
-      body: body
-    }
-  })
-  .catch(error => {
-    console.log('Error: ', error);
-    return {
-      success: false,
-      message: "failed to update developer account",
-      body: error
-    }
-  });
-}
-
-export function createContract(params) {
-  const payload = JSON.stringify({
-    devId: params.devId,
-    password: params.password,
-    username: params.username,
-    abi: params.abi,
-    bytecode: params.bytecode,
-    development: params.development ? true : false
-  });
-  headers['Authorization'] = params.apiKey;
-  var options = { url: config.CREATE_CONTRACT_URL, method: 'POST', headers: headers, body: payload };
-  return request(options)
-  .then((body) => {
-    console.log(body);
-    return {
-      success: true,
-      message: "contract created and deployed",
-      body: body
-    }
-  })
-  .catch(error => {
-    console.log('Error: ', error);
-    return {
-      success: false,
-      message: "failed to create contract",
-      body: error
-    }
-  });
-}
-
-export function pinContent(params) {
-  const payload = JSON.stringify({
-    devId: params.devId,
-    username: params.username,
-    devSuppliedIdentifier: params.id,
-    contentToPin: params.content,
-    development: params.development ? true : false
-  })
-  headers['Authorization'] = params.apiKey;
-  var options = { url: config.PIN_CONTENT_URL, method: 'POST', headers: headers, body: payload };
-  return request(options)
-  .then((body) => {
-    return {
-      success: true,
-      message: "content successfully pinned",
-      body: body
-    }
-  })
-  .catch(error => {
-    console.log('Error: ', error);
-    return {
-      success: false, 
-      message: "failed to pin content",
-      body: error
-    }
-  });
-}
-
-export function fetchPinnedContent(params) {
-  const payload = JSON.stringify({
-    devId: params.devId,
-    username: params.username,
-    devSuppliedIdentifier: params.id,
-    development: params.development ? true : false
-  })
-  headers['Authorization'] = params.apiKey;
-  var options = { url: config.FETCH_PINNED_CONTENT_URL, method: 'POST', headers: headers, body: payload };
-  return request(options)
-  .then((body) => {
-    return {
-      success: true, 
-      message: "Found pinned content",
-      body: body
-    }
-  })
-  .catch(error => {
-    console.log('Error: ', error);
-    return {
-      success: false,
-      message: "failed to find pinned content",
-      body: error
-    }
-  });
-}
-
-export async function generateApproval(params) {
-  const { username, apiKey, fromEmail, network, devId, development, txObject } = params;
-  
-  const estimate = await web3.eth.estimateGas(txObject);
-  const approvalObj = JSON.stringify({
-    username,
-    fromEmail,
-    gasEst: estimate, 
-    tx: txObject, 
-    network, 
-    devId, 
-    development
-  });
-  
-  headers['Authorization'] = apiKey;
-  var options = { url: config.SEND_TX_APPROVAL, method: 'POST', headers: headers, body: approvalObj };
-  return request(options)
-  .then((body) => {
-    if(body.success) {
-      return {
-        success: true, 
-        message: "Trouble submitting transaction for approval",
-        body
-      }
-    } else {
-      return {
-        success: false, 
-        message: "Transaction submitted for approval",
-        body: body.message
-      }
-    }
-  })
-  .catch(error => {
-    console.log('Error: ', error);
-    return {
-      success: false,
-      message: "Trouble submitting transaction for approval",
-      body: error
-    }
-  });
-}
-
-export async function signTransaction(payload) {
-  headers['Authorization'] = apiKey;
-  var options = { url: config.SIGN_TX, method: 'POST', headers: headers, body: JSON.stringify(payload) };
-  return request(options)
-  .then((body) => {
-    if(JSON.parse(body).success) {
-      return {
-        success: true, 
-        message: "Sent transaction for approval",
+        success: true,
         body: JSON.parse(body)
       }
-    } else {
-      return { 
-        success: false, 
-        message: "Trouble sending transaction for approval", 
-        body: JSON.parse(body).message
+    })
+    .catch(error => {
+      console.log('Error: ', error);
+      return {
+        success: false,
+        body: error
       }
-    }
-  })
-  .catch(error => {
-    console.log('Error: ', error);
-    return {
-      success: false,
-      message: "Trouble sending transaction for approval",
-      body: error
-    }
-  });
+    });
 }
 
-export class SimpleIDProvider {
+export default class SimpleID {
   constructor(params) {
+    this.config = params;
     this.network = params.network;
+    this.apiKey = params.apiKey;
+    this.devId = params.devId;
+    this.scopes = params.scopes;
+    this.appOrigin = params.appOrigin;
     this.provider = new Web3.providers.HttpProvider(this.network === "local" ? 'http://localhost:7545' : `https://${this.network}.infura.io/v3/${infuraKey}`);
+  }
+  getProvider() {
     return this.provider;
+  }
+  getUserData() {
+    return JSON.parse(localStorage.getItem('SimpleID-User-Session'));
+  }
+
+  async authenticate(payload, options={}) {
+    payload.config = this.config;
+    const statusCallbackFn = options.hasOwnProperty('statusCallbackFn') ? options['statusCallbackFn'] : undefined
+  
+    if (statusCallbackFn) {
+      statusCallbackFn("Checking email address...");
+    }
+  
+    const account = await handleAuth(payload);
+    if(account.body) {
+      //Set local storage to ensure user session exists
+      localStorage.setItem('SimpleID-User-Session', JSON.stringify(account.body.wallet));
+    }
+    return account;
+  }
+
+  async createContract(account, bytecode) {
+    web3 = new Web3(this.getProvider());
+    let txObject;
+    await web3.eth.getTransactionCount(account, async (err, txCount) => {
+      try {
+        // Build the transaction
+        txObject = {
+          from: account,
+          nonce:    web3.utils.toHex(txCount),
+          value:    web3.utils.toHex(web3.utils.toWei('0', 'ether')),
+          gasLimit: web3.utils.toHex(2100000),
+          gasPrice: web3.utils.toHex(web3.utils.toWei('6', 'gwei')),
+          data: bytecode  
+        }
+      } catch (error) {
+        console.log(error);
+        return {success: false, body: error};
+      }
+    });
+    return {success: true, body: txObject};
+  }
+
+  async deployContract(params) {
+    const { devId, development, network } = this.config;
+    const { email, abi, bytecode, code, constructor } = params;
+    const payload = JSON.stringify({
+      devId,
+      email, 
+      network,
+      abi,
+      bytecode,
+      code,
+      constructor, 
+      development: development ? true : false
+    });
+    headers['Authorization'] = this.apiKey;
+    var options = { url: config.CREATE_CONTRACT_URL, method: 'POST', headers: headers, body: payload };
+    try {
+      const postData = await postToApi(options);
+      return postData.body;
+    } catch(error) {
+      return { success: false, body: error }
+    }
+  }
+
+  async signTransaction(payload) {
+    headers['Authorization'] = payload.apiKey;
+    var options = { url: config.SIGN_TX, method: 'POST', headers: headers, body: JSON.stringify(payload) };
+    try {
+      const postData = await postToApi(options);
+      return postData;
+    } catch(error) {
+      return { success: false, body: error }
+    }
+  }
+
+  async generateApproval(params) {
+    const { email, fromEmail, txObject } = params;
+    const { devId, development, network } = this.config;
+    const estimate = await web3.eth.estimateGas(txObject);
+    const approvalObj = JSON.stringify({
+      email,
+      fromEmail,
+      gasEst: estimate, 
+      tx: txObject, 
+      network, 
+      devId, 
+      development
+    });
+    
+    headers['Authorization'] = this.apiKey;
+    var options = { url: config.SEND_TX_APPROVAL, method: 'POST', headers: headers, body: approvalObj };
+    try {
+      const postData = await postToApi(options);
+      return postData.body;
+    } catch(error) {
+      return { success: false, body: error }
+    }
+  }
+
+  async pollForStatus(tx) {
+    const status = await web3.eth.getTransaction(tx);
+    if(status.blockNumber) {
+      return "Mined";
+    } else {
+      return "Not mined"
+    }
+  }
+
+  async pinContent(params) {
+    const payload = JSON.stringify({
+      devId: params.devId,
+      username: params.username,
+      devSuppliedIdentifier: params.id,
+      contentToPin: params.content,
+      development: params.development ? true : false
+    })
+    headers['Authorization'] = params.apiKey;
+    var options = { url: config.PIN_CONTENT_URL, method: 'POST', headers: headers, body: payload };
+    try {
+      const postData = await postToApi(options);
+      return postData;
+    } catch(error) {
+      return { success: false, body: error }
+    }
+  }
+
+  async fetchPinnedContent(params) {
+    const payload = JSON.stringify({
+      devId: params.devId,
+      username: params.username,
+      devSuppliedIdentifier: params.id,
+      development: params.development ? true : false
+    })
+    headers['Authorization'] = params.apiKey;
+    var options = { url: config.FETCH_PINNED_CONTENT_URL, method: 'POST', headers: headers, body: payload };
+    try {
+      const postData = await postToApi(options);
+      return postData;
+    } catch(error) {
+      return { success: false, body: error }
+    }
+  }
+
+  async getConfig(params) {
+    const payload = JSON.stringify({
+      devId: params.devId,
+      development: params.development ? true : false
+    });
+    headers['Authorization'] = params.apiKey;
+    var options = { url: config.GET_CONFIG_URL, method: 'POST', headers: headers, body: payload };
+    try {
+      const postData = await postToApi(options);
+      return postData;
+    } catch(error) {
+      return { success: false, body: error }
+    }
+  }
+
+  async updateConfig(updates, verification) {
+    const payload = JSON.stringify({
+      devId: updates.username,
+      config: updates.config,
+      development: updates.development ? true : false
+    });
+    if(verification) {
+      headers['Authorization'] = updates.verificationID;
+    } else {
+      headers['Authorization'] = updates.apiKey;
+    }
+    var options = { url: config.UPDATE_CONFIG_URL, method: 'POST', headers: headers, body: payload };
+    try {
+      const postData = await postToApi(options);
+      return postData;
+    } catch(error) {
+      return { success: false, body: error }
+    }
+  }
+    
+  async blockstackNameCheck(name) {
+    const nameAvailable = await nameLookUp(name);
+    return nameAvailable;
+  }
+
+  async registerBlockstackSubdomain(name, idAddress) {
+    try {
+      const registered = await registerSubdomain(name, idAddress);
+      return registered;
+    } catch(error) {
+      return {
+        success: false, body: error
+      }
+    }
+  }
+
+  async createBlockstackSession(params) {
+    const appObj = {
+      scopes: this.scopes, 
+      appOrigin: this.appOrigin, 
+      apiKey: this.apiKey, 
+      devId: this.devId, 
+      development: params.development ? params.development : false
+    }
+    const profile = await updateProfile(params.name, appObj);
+
+    const sessionObj = {
+      scopes: this.scopes,
+      appOrigin: this.appOrigin,
+      appPrivKey: params.privateKey,
+      hubUrl: params.hubUrl ? params.hubUrl : "https://hub.blockstack.org",
+      username: params.username,
+      profile, 
+      apiKey: this.apiKey, 
+      configObj
+    }
+
+    try {
+      const userSession = await makeUserSession(sessionObj, idAddress);
+      return userSession;
+    } catch(error) {
+      return {success: false, body: error}
+    }
   }
 }

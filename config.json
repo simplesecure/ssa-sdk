@@ -6,10 +6,11 @@
     "APP_KEY_URL":"https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/appkeys",
     "GET_CONFIG_URL": "https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/getConfig",
     "UPDATE_CONFIG_URL": "https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/updateConfig",
-    "CREATE_CONTRACT_URL": "https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/createContract",
+    "CREATE_CONTRACT_URL": "http://localhost:5000/v1/createContract",
     "FETCH_CONTRACT_URL": "https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/fetchContract",
     "PIN_CONTENT_URL": "https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/pinContent",
     "FETCH_PINNED_CONTENT_URL": "https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/fetchContent", 
     "SEND_TX_APPROVAL": "http://localhost:5000/v1/sendTxApproval", 
-    "SIGN_TX": "http://localhost:5000/v1/signTx"
+    "SIGN_TX": "http://localhost:5000/v1/signTx", 
+    "AUTHENTICATION_URL": "http://localhost:5000/v1/authenticate"
 }
