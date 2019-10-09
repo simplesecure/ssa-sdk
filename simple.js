@@ -47,6 +47,7 @@ export default class SimpleID {
     this.simple = ethers;
   }
 
+  //If a developer wants to use the ethers.js library manually in-app, they can access it with this function
   simpleWeb3() {
     return this.simple;
   }
@@ -54,10 +55,16 @@ export default class SimpleID {
   getProvider() {
     return this.provider;
   }
+
+  //This returns the wallet info for the SimpleID user
   getUserData() {
     return JSON.parse(localStorage.getItem(SIMPLEID_USER_SESSION));
   }
 
+  //This returns the blockstack-specific user-session. Example usage in-app: 
+  //const userSession = simple.getBlockstackSession();
+  //userSession.putFile(FILE_NAME, FILE_CONTENT);
+  
   getBlockstackSession() {
     const appConfig = new AppConfig(this.scopes);
     const userSession = new UserSession({ appConfig });
@@ -67,7 +74,15 @@ export default class SimpleID {
   async authenticate(payload, options={}) {
     const { email } = payload;
     payload.config = this.config;
-    const statusCallbackFn = options.hasOwnProperty('statusCallbackFn') ? options['statusCallbackFn'] : undefined
+
+    //The statusCallbackFn is a hook for developers to give visibility about what our API is doing to users. 
+    //It's a function the developer defines that changes the state on a component forcing a re-render with the message that we pass back. 
+    let statusCallbackFn;
+    try {
+      statusCallbackFn = options.hasOwnProperty('statusCallbackFn') ? options['statusCallbackFn'] : undefined
+    } catch(e) {
+      console.log(e);
+    }
   
     if (statusCallbackFn) {
       statusCallbackFn("Checking email address...");
@@ -109,6 +124,7 @@ export default class SimpleID {
 
         if(userSession) {
           console.log("Blockstack session created");
+          //Setting the blockstack user session to local storage so the dev doesn't manually have to
           localStorage.setItem(BLOCKSTACK_SESSION, JSON.stringify(userSession.body.store.sessionData));
           return {
             message: "user session created",
@@ -133,7 +149,6 @@ export default class SimpleID {
 
   async fetchContract(abi, address) {
     const provider = new ethers.providers.Web3Provider(this.provider);
-    //const contract = await new web3.eth.Contract(abi, address);
     let contract = new ethers.Contract(address, abi, provider);
     return contract;
   }
@@ -286,6 +301,7 @@ export default class SimpleID {
   }
 
   async pollForStatus(tx) {
+    //Need to convert this to the ethers.js equivalent
     const status = await web3.eth.getTransaction(tx);
     console.log(status);
     if(status && status.blockNumber) {
@@ -295,6 +311,7 @@ export default class SimpleID {
     }
   }
 
+  //TODO: Pinata support needs significant upgrades
   async pinContent(params) {
     const payload = JSON.stringify({
       devId: params.devId,
@@ -330,6 +347,7 @@ export default class SimpleID {
     }
   }
 
+  //***Dev App Specific Functions***//
   async getConfig(params) {
     const payload = JSON.stringify({
       devId: params.devId,
@@ -364,6 +382,7 @@ export default class SimpleID {
       return { success: false, body: error }
     }
   }
+  //*******//
     
   async blockstackNameCheck(name) {
     const nameAvailable = await nameLookUp(name);
