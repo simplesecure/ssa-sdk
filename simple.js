@@ -5,6 +5,7 @@ const request = require('request-promise');
 const config = require('./config.json');
 const keys = require('./keys.json');
 const INFURA_KEY = keys.INFURA_KEY;
+const LAYER2_RPC_SERVER = 'https://testnet2.matic.network';
 const SIMPLEID_USER_SESSION = 'SimpleID-User-Session';
 const BLOCKSTACK_DEFAULT_HUB = "https://hub.blockstack.org";
 const BLOCKSTACK_SESSION = 'blockstack-session';
@@ -26,7 +27,7 @@ function postToApi(options) {
       console.log('Error: ', error);
       return {
         success: false,
-        body: JSON.parse(error.error)
+        body: JSON.parse(error)
       }
     });
 }
@@ -41,7 +42,7 @@ export default class SimpleID {
     this.scopes = params.scopes;
     this.appOrigin = params.appOrigin;
     this.development = params.development ? params.development : false;
-    this.provider = new Web3.providers.HttpProvider(this.network === "local" ? this.localRPCServer : `https://${this.network}.infura.io/v3/${INFURA_KEY}`);
+    this.provider = new Web3.providers.HttpProvider(this.network === "local" ? this.localRPCServer : this.network === "layer2" ? LAYER2_RPC_SERVER : `https://${this.network}.infura.io/v3/${INFURA_KEY}`);
     web3 = new Web3(this.provider);
     headers['Authorization'] = this.apiKey;
     this.simple = ethers;
@@ -74,7 +75,8 @@ export default class SimpleID {
   async authenticate(payload, options={}) {
     const { email } = payload;
     payload.config = this.config;
-
+    payload.url = this.appOrigin;
+    const blockstackName = `${email.split('@')[0].split('.').join('_')}_simple`;
     //The statusCallbackFn is a hook for developers to give visibility about what our API is doing to users. 
     //It's a function the developer defines that changes the state on a component forcing a re-render with the message that we pass back. 
     let statusCallbackFn;
@@ -94,14 +96,16 @@ export default class SimpleID {
       devId: this.devId, 
       development: this.development
     }
-    const profile = await updateProfile(payload.email, appObj);
+    const profile = await updateProfile(blockstackName, appObj);
     payload.profile = profile;
     const account = await handleAuth(payload);
     console.log(account);
-    if(account.body) {
-      const appPrivateKey = account.body.wallet ? account.body.wallet.blockstack ? account.body.wallet.blockstack.private : "" : "";
+    if(!account.success) {
+      const appPrivateKey = account.blockstack ? account.blockstack.private : "";
       //Set local storage to ensure simpleid user session exists
-      localStorage.setItem(SIMPLEID_USER_SESSION, JSON.stringify(account.body.wallet));
+      console.log("Setting local storage...");
+      localStorage.setItem(SIMPLEID_USER_SESSION, JSON.stringify(account));
+      console.log("Local storage should be set now")
       //Make blockstack user session and set it to local storage
       try {
         const userSessionParams = {
@@ -116,10 +120,10 @@ export default class SimpleID {
           appOrigin: appObj.appOrigin,
           appPrivKey: userPayload.privateKey,
           hubUrl: this.hubUrl ? this.hubUrl : BLOCKSTACK_DEFAULT_HUB,
-          username: `${email.split('@')[0].split('.').join('_')}_simple`, //need to account for blockstack's name restrictions
+          username: blockstackName, //need to account for blockstack's name restrictions
           profile
         }
-        const idAddress = account.body.wallet ? account.body.wallet.blockstack.idAddress ? account.body.wallet.blockstack.idAddress : "" : "";
+        const idAddress = account.blockstack.idAddress ? account.blockstack.idAddress : "";
         const userSession = await makeUserSession(sessionObj, idAddress);
 
         if(userSession) {
@@ -221,8 +225,8 @@ export default class SimpleID {
       devId,
       email, 
       network,
-      abi: tx.abi, //transaction stored in memory
-      bytecode: tx.data, //transaction stored in memory
+      // abi: tx.abi, //transaction stored in memory
+      // bytecode: tx.data, //transaction stored in memory
       code,
       constructor, //When deploying a contract it's possible that a constructor value may be passed
       development: development ? true : false
@@ -237,38 +241,26 @@ export default class SimpleID {
     }
   }
 
-  async signTransaction(params) {
+  async broadcastTransaction(params) {
     const { devId, development, network } = this.config;
-    const { email, code, threeBox, txObject, contractTx } = params;
+    const { email, code, threeBox, contractTx } = params;
     const provider = new ethers.providers.Web3Provider(this.provider);
     const payload = {
       devId,
       email, 
       network,
-      txObject,
+      contractTx,
       code,
       threeBox,
       development: development ? true : false
     }
     headers['Authorization'] = this.apiKey;
-    var options = { url: config.SIGN_TX, method: 'POST', headers: headers, body: JSON.stringify(payload) };
+    var options = { url: config.BROADCAST_TX, method: 'POST', headers: headers, body: JSON.stringify(payload) };
     try {
       const postData = await postToApi(options);
-      console.log(postData.body.body);
-      const broadcast = await provider.sendTransaction(postData.body.body);
-      console.log(broadcast);
-      //const sendingTx = await web3.eth.sendSignedTransaction(postData.body.body);
-      //console.log(sendingTx);
-      if(broadcast.hash) {
-        return { 
-          success: true, 
-          body: broadcast
-        }
-      } else {
-        return { 
-          success: false, 
-          body: broadcast
-        }
+      return {
+        success: true, 
+        body: postData.body
       }
     } catch(error) {
       return { success: false, body: error }
@@ -289,7 +281,6 @@ export default class SimpleID {
       devId, 
       development
     });
-    
     headers['Authorization'] = this.apiKey;
     var options = { url: config.SEND_TX_APPROVAL, method: 'POST', headers: headers, body: approvalObj };
     try {
@@ -314,13 +305,13 @@ export default class SimpleID {
   //TODO: Pinata support needs significant upgrades
   async pinContent(params) {
     const payload = JSON.stringify({
-      devId: params.devId,
-      username: params.username,
+      devId: this.devId,
+      email: params.email,
       devSuppliedIdentifier: params.id,
       contentToPin: params.content,
-      development: params.development ? true : false
+      development: this.development ? true : false
     })
-    headers['Authorization'] = params.apiKey;
+    headers['Authorization'] = this.apiKey;
     var options = { url: config.PIN_CONTENT_URL, method: 'POST', headers: headers, body: payload };
     try {
       const postData = await postToApi(options);
@@ -332,12 +323,12 @@ export default class SimpleID {
 
   async fetchPinnedContent(params) {
     const payload = JSON.stringify({
-      devId: params.devId,
-      username: params.username,
+      devId: this.devId,
+      email: params.email,
       devSuppliedIdentifier: params.id,
-      development: params.development ? true : false
+      development: this.development ? true : false
     })
-    headers['Authorization'] = params.apiKey;
+    headers['Authorization'] = this.apiKey;
     var options = { url: config.FETCH_PINNED_CONTENT_URL, method: 'POST', headers: headers, body: payload };
     try {
       const postData = await postToApi(options);

@@ -106,6 +106,7 @@ export function makeProfile(appObj) {
 
 export async function updateProfile(name, appObj) {
   //First we look up the profile
+  console.log(`${name}.id.blockstack`);
   let profile
   try {
     profile = await lookupProfile(`${name}.id.blockstack`);
