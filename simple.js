@@ -9,7 +9,7 @@ const LAYER2_RPC_SERVER = 'https://testnet2.matic.network';
 const SIMPLEID_USER_SESSION = 'SimpleID-User-Session';
 const BLOCKSTACK_DEFAULT_HUB = "https://hub.blockstack.org";
 const BLOCKSTACK_SESSION = 'blockstack-session';
-const Web3 = require('web3');
+const Web3 = require('web3'); //TODO: remove web3 dependency
 const ethers = require('ethers');
 let headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
 let web3;
@@ -151,6 +151,45 @@ export default class SimpleID {
     return account;
   }
 
+  signOut() {
+    localStorage.removeItem('blockstack-session');
+    localStorage.removeItem(SIMPLEID_USER_SESSION);
+    window.location.reload();
+  }
+
+  buyCrypto(params) {
+    const moonEnv = params.env === "test" ? "buy-staging" : "buy";
+    const apiKey = params.env === "test" ? "pk_test_gEFnegtEHajeQURGYVxg0GjVriooNltf" : "" //TODO: enter prod key
+    
+    const div = document.createElement("DIV");
+    const closeButton = document.createElement("span");
+    const iFrame = document.createElement("iframe");
+    iFrame.setAttribute('src', `https://${moonEnv}.moonpay.io/?apiKey=${apiKey}&currencyCode=${params.currency}&walletAddress=${params.address}&baseCurrency=${params.baseCurrency}&email=${params.email}`);
+    iFrame.setAttribute('height', "500");
+    div.appendChild(closeButton);
+    div.appendChild(iFrame);
+    div.style.display = "block";
+    div.style.background = "#fff";
+    div.style.border = "1px #eee solid";
+    div.style.borderRadius = "5px";
+    div.style.padding = "20px";
+    div.style.paddingTop = "35px";
+    div.style.position = "fixed";
+    div.style.bottom = "10px";
+    div.style.right = "10px";
+    closeButton.innerText = "Close";
+    closeButton.style.position = "absolute";
+    closeButton.style.top = "5px";
+    closeButton.style.right = "15px";
+    closeButton.style.cursor = "pointer";
+    closeButton.addEventListener('click', () => {
+      div.style.display = "none";
+    })
+    document.body.appendChild(div);
+    //const envi = params.env === "test" ? "testwyre" : "sendwyre";
+    //window.location.replace(`https://pay.${envi}.com/purchase?destCurrency=${params.currency}&dest=${params.address}&paymentMethod=${params.method}&redirectUrl=${params.redirectUrl}`)
+  }
+
   async fetchContract(abi, address) {
     const provider = new ethers.providers.Web3Provider(this.provider);
     let contract = new ethers.Contract(address, abi, provider);
@@ -186,7 +225,7 @@ export default class SimpleID {
         }
       }
     } catch (error) {
-      console.log(error);
+      console.log("ERROR", error);
       return {success: false, body: error};
     }
   }
@@ -196,10 +235,16 @@ export default class SimpleID {
     const { network, devId, development } = this.config;
     tx = params;
     tx.to = address;
-    const txCount = await web3.eth.getTransactionCount(account);
+    let estimate;
+    //const txCount = await web3.eth.getTransactionCount(account);
     const provider = new ethers.providers.Web3Provider(this.provider);
     let contract = new ethers.Contract(address, abi, provider);
-    const estimate = await contract.estimate[method](value);
+    if(value instanceof Array) {
+      estimate = await contract.estimate[method](...value);
+    } else {
+      estimate = await contract.estimate[method](value);
+    }
+
     const approvalObj = JSON.stringify({
       email,
       fromEmail,
@@ -271,11 +316,12 @@ export default class SimpleID {
     const { email, fromEmail, txObject } = params;
     const { devId, development, network } = this.config;
     const provider = new ethers.providers.Web3Provider(this.provider);
-    const estimate = await provider.estimateGas(txObject)//await web3.eth.estimateGas(txObject);
+    
+    //const estimate = await provider.estimateGas(txObject)//await web3.eth.estimateGas(txObject);
     const approvalObj = JSON.stringify({
       email,
       fromEmail,
-      gasEst: estimate.toNumber(), 
+      //gasEst: estimate.toNumber(), 
       tx: txObject, 
       network, 
       devId, 
@@ -292,7 +338,7 @@ export default class SimpleID {
   }
 
   async pollForStatus(tx) {
-    //Need to convert this to the ethers.js equivalent
+    //TODO: Need to convert this to the ethers.js equivalent
     const status = await web3.eth.getTransaction(tx);
     console.log(status);
     if(status && status.blockNumber) {
