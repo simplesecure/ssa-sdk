@@ -3,8 +3,7 @@ import { nameLookUp, registerSubdomain, makeUserSession } from './blockstack/act
 import { UserSession, AppConfig } from 'blockstack';
 const request = require('request-promise');
 const config = require('./config.json');
-const keys = require('./keys.json');
-const INFURA_KEY = keys.INFURA_KEY;
+const INFURA_KEY = "b8c67a1f996e4d5493d5ba3ae3abfb03"; //TODO: move this to the server to protect key
 const LAYER2_RPC_SERVER = 'https://testnet2.matic.network';
 const SIMPLEID_USER_SESSION = 'SimpleID-User-Session';
 const BLOCKSTACK_DEFAULT_HUB = "https://hub.blockstack.org";
