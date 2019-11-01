@@ -287,7 +287,7 @@ export default class SimpleID {
 
   async broadcastTransaction(params) {
     const { devId, development, network } = this.config;
-    const { email, code, threeBox, contractTx } = params;
+    const { email, code, threeBox, contractTx, threeBoxTx } = params;
     const provider = new ethers.providers.Web3Provider(this.provider);
     const payload = {
       devId,
@@ -296,6 +296,7 @@ export default class SimpleID {
       contractTx,
       code,
       threeBox,
+      threeBoxTx, 
       development: development ? true : false
     }
     headers['Authorization'] = this.apiKey;
@@ -309,6 +310,12 @@ export default class SimpleID {
     } catch(error) {
       return { success: false, body: error }
     }
+  }
+
+  async signTransaction(params) {
+    //There are times when a message or piece of data needs to be signed but 
+    //The actual data doesn't need to be broadcast on chain.
+    //TODO: build this
   }
 
   async generateApproval(params) {
@@ -462,6 +469,24 @@ export default class SimpleID {
       return userSession;
     } catch(error) {
       return {success: false, body: error}
+    }
+  }
+
+  threeBox() {
+    return {
+      send: async (data, callback) => {
+        const txObject = {
+          threeBox: true, 
+          threeBoxTx: data.params[0], 
+          email: this.getUserData().email
+        }
+        const signed = await this.broadcastTransaction(txObject);
+        if(signed.body.success) {
+          callback(null, { result: signed.body.body });
+        } else {
+          console.log("Error", signed)
+        }
+      }
     }
   }
 }
