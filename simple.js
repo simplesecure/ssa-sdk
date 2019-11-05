@@ -176,6 +176,7 @@ export default class SimpleID {
     div.style.position = "fixed";
     div.style.bottom = "10px";
     div.style.right = "10px";
+    div.style.zIndex = "1024";
     closeButton.innerText = "Close";
     closeButton.style.position = "absolute";
     closeButton.style.top = "5px";
