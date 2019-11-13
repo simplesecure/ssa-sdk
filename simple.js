@@ -231,12 +231,11 @@ export default class SimpleID {
   }
 
   async createContractTransaction(params) {
-    const { method, value, abi, address, account, email, fromEmail } = params;
+    const { method, value, abi, address, email, fromEmail } = params;
     const { network, devId, development } = this.config;
     tx = params;
     tx.to = address;
     let estimate;
-    //const txCount = await web3.eth.getTransactionCount(account);
     const provider = new ethers.providers.Web3Provider(this.provider);
     let contract = new ethers.Contract(address, abi, provider);
     if(value instanceof Array) {

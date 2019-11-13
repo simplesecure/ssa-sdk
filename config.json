@@ -6,11 +6,11 @@
     "APP_KEY_URL":"https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/appkeys",
     "GET_CONFIG_URL": "https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/getConfig",
     "UPDATE_CONFIG_URL": "https://i7sev8z82g.execute-api.us-west-2.amazonaws.com/dev/updateConfig",
-    "CREATE_CONTRACT_URL": "http://localhost:3000/v1/createContract",
-    "FETCH_CONTRACT_URL": "http://localhost:3000/v1/fetchContract",
-    "PIN_CONTENT_URL": "http://localhost:3000/v1/pinContent",
-    "FETCH_PINNED_CONTENT_URL": "http://localhost:3000/v1/fetchContent", 
-    "SEND_TX_APPROVAL": "http://localhost:3000/v1/sendTxApproval", 
-    "BROADCAST_TX": "http://localhost:3000/v1/broadcastTx", 
-    "AUTHENTICATION_URL": "http://localhost:3000/v1/authenticate"
+    "CREATE_CONTRACT_URL": "https://6e8aurabe0.execute-api.us-west-2.amazonaws.com/j1/v1/createContract",
+    "FETCH_CONTRACT_URL": "https://6e8aurabe0.execute-api.us-west-2.amazonaws.com/j1/v1/fetchContract",
+    "PIN_CONTENT_URL": "https://6e8aurabe0.execute-api.us-west-2.amazonaws.com/j1/v1/pinContent",
+    "FETCH_PINNED_CONTENT_URL": "https://6e8aurabe0.execute-api.us-west-2.amazonaws.com/j1/v1/fetchContent", 
+    "SEND_TX_APPROVAL": "https://6e8aurabe0.execute-api.us-west-2.amazonaws.com/j1/v1/sendTxApproval", 
+    "BROADCAST_TX": "https://6e8aurabe0.execute-api.us-west-2.amazonaws.com/j1/v1/broadcastTx", 
+    "AUTHENTICATION_URL": "https://6e8aurabe0.execute-api.us-west-2.amazonaws.com/j1/v1/authenticate"
 }
