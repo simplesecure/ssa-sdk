@@ -157,9 +157,10 @@ export default class SimpleID {
   }
 
   buyCrypto(params) {
-    const moonEnv = params.env === "test" ? "buy-staging" : "buy";
-    const apiKey = params.env === "test" ? "pk_test_gEFnegtEHajeQURGYVxg0GjVriooNltf" : "" //TODO: enter prod key
-    
+    //const moonEnv = params.env === "test" ? "buy-staging" : "buy";
+    //const apiKey = params.env === "test" ? "pk_test_gEFnegtEHajeQURGYVxg0GjVriooNltf" : "" //TODO: enter prod key
+    const moonEnv = "test";
+    const apiKey = "pk_test_gEFnegtEHajeQURGYVxg0GjVriooNltf";
     const div = document.createElement("DIV");
     const closeButton = document.createElement("span");
     const iFrame = document.createElement("iframe");
