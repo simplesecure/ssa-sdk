@@ -16,10 +16,12 @@
     "crypto-browserify": "^3.12.0",
     "dotenv": "^8.0.0",
     "ethers": "^4.0.33",
+    "pocket-js-core": "0.0.6",
     "request": "^2.88.0",
     "request-promise": "^4.2.4",
     "safer-pass": "^1.0.3",
-    "web3": "^1.2.2"
+    "web3": "^1.2.2",
+    "web3-provider-engine": "^15.0.4"
   },
   "devDependencies": {
     "mocha": "^6.1.4"
