@@ -2,6 +2,7 @@ import { updateProfile, handleAuth } from './simpleidapi/actions';
 import { nameLookUp, registerSubdomain, makeUserSession } from './blockstack/actions';
 import { UserSession, AppConfig } from 'blockstack';
 import { Query } from './utils/query';
+import connectToChild from 'penpal/lib/connectToChild';
 const ProviderEngine = require('web3-provider-engine')
 const CacheSubprovider = require('web3-provider-engine/subproviders/cache.js')
 const FixtureSubprovider = require('web3-provider-engine/subproviders/fixture.js')
@@ -24,6 +25,14 @@ const ethers = require('ethers');
 let headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
 let tx;
 const version = "0.5.0";
+let iframe = document.createElement('iframe');
+iframe.setAttribute('src', 'https://d28c351b.ngrok.io');
+iframe.setAttribute("id", "sid-widget");
+iframe.style.position = 'fixed';
+iframe.style.top = '0';
+iframe.style.left = '0';
+iframe.style.width = '100vw';
+iframe.style.height = '100vh';
 
 function postToApi(options) {
   return request(options)
@@ -167,7 +176,8 @@ export default class SimpleID {
           }
           cb(error, result);
         },
-        approveTransaction: async (txParams, cb) => {          
+        approveTransaction: async (txParams, cb) => {     
+          this.createPopup();     
           console.log("APPROVE TX, ", txParams);
           const email = this.getUserData().email;
           const code = document.getElementById('token').value;
@@ -215,6 +225,7 @@ export default class SimpleID {
         signMessage: async (msgParams, cb) => {
           console.log("Message tx ", msgParams);
           console.log("Decoding: ", web3.utils.toUtf8(msgParams.data))
+          
           //Signing arbitrary data
           const email = this.getUserData().email;
           const code = document.getElementById('token').value;
@@ -319,6 +330,66 @@ export default class SimpleID {
 
     engine.start();
     return engine;
+  }
+
+  createPopup(action) {
+    //Launch the widget;
+    const scopes = this.scopes;
+    const params = this.config;
+    const connection = connectToChild({
+      // The iframe to which a connection should be made
+      iframe,
+      // Methods the parent is exposing to the child
+      methods: {
+        getConfig(){
+          return params;
+        }, 
+        async signIn(creds){
+          let payload;
+          if(creds.token) {
+            payload = {
+              email: creds.email, 
+              token: creds.token
+            }
+          } else {
+            payload = {
+              email: creds.email
+            }
+          }
+          console.log("PAYLOAD: ", payload);
+          const signedIn = await new SimpleID(params).authenticate(payload);
+          console.log(signedIn);
+          if(signedIn.success || signedIn.message === "user session created") {
+            return true;
+          } else {
+            return false;
+          }
+        }, 
+        close(){
+          if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe);
+          }
+          if(reload) {
+            window.location.reload();
+          }
+        },
+        checkAction() {
+          return action;
+        }
+      }
+    });
+    
+    connection.promise.then(child => {
+      //Call Child Function
+      // child.multiply(2, 6).then(total => console.log(total));
+      // child.divide(12, 4).then(total => console.log(total));
+    });
+
+    document.body.appendChild(iframe);
+  }
+
+  signUserIn() {
+   this.createPopup("sign-in"); 
   }
 
   //If a developer wants to use the ethers.js library manually in-app, they can access it with this function
