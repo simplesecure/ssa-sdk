@@ -26,7 +26,7 @@ let headers = { 'Content-Type': 'application/json', 'Accept': 'application/json'
 let tx;
 const version = "0.5.0";
 let iframe = document.createElement('iframe');
-iframe.setAttribute('src', 'https://d28c351b.ngrok.io');
+iframe.setAttribute('src', 'http://localhost:3003');
 iframe.setAttribute("id", "sid-widget");
 iframe.style.position = 'fixed';
 iframe.style.top = '0';
@@ -365,7 +365,7 @@ export default class SimpleID {
             return false;
           }
         }, 
-        close(){
+        close(reload){
           if (document.body.contains(iframe)) {
             document.body.removeChild(iframe);
           }
