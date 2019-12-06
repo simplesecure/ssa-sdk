@@ -16,7 +16,8 @@ const engine = new ProviderEngine()
 const web3 = new Web3(engine)
 const request = require('request-promise');
 const config = require('./config.json');
-const INFURA_KEY = "b8c67a1f996e4d5493d5ba3ae3abfb03"; //TODO: move this to the server to protect key
+const keys = require('./keys.json');
+const INFURA_KEY = keys.INFURA_KEY;
 const LAYER2_RPC_SERVER = 'https://testnet2.matic.network';
 const SIMPLEID_USER_SESSION = 'SimpleID-User-Session';
 const BLOCKSTACK_DEFAULT_HUB = "https://hub.blockstack.org";
@@ -24,7 +25,10 @@ const BLOCKSTACK_SESSION = 'blockstack-session';
 const ethers = require('ethers');
 let headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
 let tx;
-const version = "0.5.0";
+let thisTx;
+let txSigned;
+let action;
+//const version = "0.5.0";
 let iframe = document.createElement('iframe');
 iframe.setAttribute('src', 'http://localhost:3003');
 iframe.setAttribute("id", "sid-widget");
@@ -176,98 +180,44 @@ export default class SimpleID {
           }
           cb(error, result);
         },
-        approveTransaction: async (txParams, cb) => {     
-          this.createPopup();     
-          console.log("APPROVE TX, ", txParams);
-          const email = this.getUserData().email;
-          const code = document.getElementById('token').value;
-          if(code) {
-            const params = { 
-              email, 
-              code, 
-              contract: false
-            };
-            const signed = await this.broadcastTransaction(params);
-            console.log(signed);            
-            if(signed.success) {
-              console.log("Signed and broadcasted. TX Hash: ", signed.body);
-            } else {
-              console.log("Trouble sending transaction...")
-            }
-          } else {            
-            const email = this.getUserData().email;
-            const params = { 
-              email, 
-              fromEmail: "hello@simpleid.xyz", 
-              txObject: txParams 
-            }
-            const approval = await this.generateApproval(params);
-            console.log(approval);
-            console.log("Waiting for approval...");
+        approveTransaction: async (txParams, cb) => {   
+          let error = "canceled";
+          thisTx = {
+            appName: this.config.appName, 
+            tx: txParams
           }
+          action = 'transaction';
+          const popup = await this.createPopup();
+          console.log(popup);   
+          txSigned = popup;  
+          cb(error, popup);
         }, 
         signTransaction: async (txParams, cb) => {
-          console.log("SIGN TX, ", txParams);
-          let result;
-          let error;
-          const code = document.getElementById('token').value;
-          if(code) {
-            try {
-              const sign = await this.signTx(email, code);
-              console.log(sign);
-              console.log("sending signed tx...")
-            } catch(e) {
-              error = e;
-            }
-          }
-          cb(error, result);
+          return txSigned;
         },
         signMessage: async (msgParams, cb) => {
+          let error = "canceled";
           console.log("Message tx ", msgParams);
           console.log("Decoding: ", web3.utils.toUtf8(msgParams.data))
-          
-          //Signing arbitrary data
-          const email = this.getUserData().email;
-          const code = document.getElementById('token').value;
-          if(code) {
-            const signedMessage = await this.signTx(email, code)
-            console.log(signedMessage);
-          } else {
-            const params = {
-              email, 
-              fromEmail: "hello@simpleid.xyz", 
-              txObject: msgParams
-            }
-            const approval = await this.generateApproval(params);
-            console.log(approval);
+          thisTx = {
+            appName: this.config.appName, 
+            tx: msgParams
           }
+          action = "message";
+          const popup = await this.createPopup();
+          cb(error, popup);
         },
         signPersonalMessage: async (msgParams, cb) => {
+          let error;
           console.log("Message tx ", msgParams);
           console.log("Decoding: ", web3.utils.toUtf8(msgParams.data))
-          //Signing arbitrary data
-          const email = this.getUserData().email;
-          const code = document.getElementById('token').value;
-          if(code) {
-            let error;
-            let result;
-            try {
-              const signedMessage = await this.signTx(email, code)
-              console.log(signedMessage);
-              result = signedMessage;
-            } catch(e) {
-              error = e;
-            }
-            cb(error, result);
-          } else {
-            const params = {
-              email, 
-              fromEmail: "hello@simpleid.xyz", 
-              txObject: msgParams
-            }
-            const approval = await this.generateApproval(params);
-            console.log(approval);
+          thisTx = {
+            appName: this.config.appName, 
+            tx: msgParams
           }
+          action = "message";
+          const popup = await this.createPopup();
+          cb(error, popup);
         },
         signTypedMessage: async (msgParams, cb) => {
           const widgetCommunication = (await this.widget).communication;
@@ -332,18 +282,51 @@ export default class SimpleID {
     return engine;
   }
 
-  createPopup(action) {
-    //Launch the widget;
+  createPopup() {
+    console.log(action);
     const scopes = this.scopes;
     const params = this.config;
+    return new Promise(function(resolve, reject) {
+      //Launch the widget;
     const connection = connectToChild({
       // The iframe to which a connection should be made
       iframe,
       // Methods the parent is exposing to the child
       methods: {
+        getPopUpInfo() {
+          //This is where we can pass the tx details
+          return thisTx;
+        }, 
         getConfig(){
           return params;
         }, 
+        storeWallet(userData) {
+          localStorage.setItem(SIMPLEID_USER_SESSION, userData);
+          return true;
+        }, 
+        signedMessage(message) {
+          resolve(message);
+          //localStorage.setItem('signed-msg', JSON.stringify(message));
+        }, 
+        displayHash(hash) {
+          resolve(hash);
+        }, 
+        async storeKeychain(keychainData) {
+          //need to post this to the DB
+          const createdUser = await new SimpleID(params).createUser(keychainData);
+          return createdUser;
+        },
+        async fetchUser(email) {
+          const user = await new SimpleID(params).checkUser(email);
+          if(user.success === true) {
+            return user.body;
+          } else {
+            return {
+              success: false, 
+              body: "User not found"
+            }
+          }
+        },
         async signIn(creds){
           let payload;
           if(creds.token) {
@@ -366,14 +349,18 @@ export default class SimpleID {
           }
         }, 
         close(reload){
+          action = "";
           if (document.body.contains(iframe)) {
             document.body.removeChild(iframe);
+
           }
           if(reload) {
             window.location.reload();
           }
+          resolve();
         },
         checkAction() {
+          console.log("ACTION FROM SDK: ", action)
           return action;
         }
       }
@@ -386,10 +373,12 @@ export default class SimpleID {
     });
 
     document.body.appendChild(iframe);
+    });
   }
 
   signUserIn() {
-   this.createPopup("sign-in"); 
+    action = "sign-in";
+    this.createPopup(); 
   }
 
   //If a developer wants to use the ethers.js library manually in-app, they can access it with this function
@@ -421,83 +410,44 @@ export default class SimpleID {
     //
   }
 
-  async authenticate(payload, options={}) {
-    const { email } = payload;
-    payload.config = this.config;
-    payload.url = this.appOrigin;
-    const blockstackName = `${email.split('@')[0].split('.').join('_')}_simple`;
-    //The statusCallbackFn is a hook for developers to give visibility about what our API is doing to users. 
-    //It's a function the developer defines that changes the state on a component forcing a re-render with the message that we pass back. 
-    let statusCallbackFn;
+  async createUser(userData) {
+    const { network, devId, development } = this.config;
+    let parsedData = JSON.parse(userData);
+    console.log(parsedData)
+    const { email, encryptedKeychain } = parsedData;
+    //Check if the user exists in the DB. Based on email address
+    const payload = JSON.stringify({
+      email,
+      encryptedKeychain, 
+      network, 
+      devId, 
+      development
+    });
+    var options = { url: config.CREATE_USER_URL, method: 'POST', headers: headers, body: payload };
     try {
-      statusCallbackFn = options.hasOwnProperty('statusCallbackFn') ? options['statusCallbackFn'] : undefined
-    } catch(e) {
-      console.log(e);
+      const postData = await postToApi(options);
+      return postData
+    } catch(error) {
+      return { success: false, body: error }
     }
-  
-    if (statusCallbackFn) {
-      statusCallbackFn("Checking email address...");
-    }
-    const appObj = {
-      scopes: this.scopes, 
-      appOrigin: this.appOrigin, 
-      apiKey: this.apiKey, 
-      devId: this.devId, 
-      development: this.development
-    }
-    const profile = await updateProfile(blockstackName, appObj);
-    payload.profile = profile;
-    const account = await handleAuth(payload);
-    console.log(account);
-    if(!account.success) {
-      const appPrivateKey = account.blockstack ? account.blockstack.private : "";
-      //Set local storage to ensure simpleid user session exists
-      console.log("Setting local storage...");
-      localStorage.setItem(SIMPLEID_USER_SESSION, JSON.stringify(account));
-      console.log("Local storage should be set now")
-      //Make blockstack user session and set it to local storage
-      try {
-        const userSessionParams = {
-          appObj: appObj,
-          userPayload: {
-            privateKey: appPrivateKey,
-          }
-        }
-        const userPayload = userSessionParams.userPayload;
-        const sessionObj = {
-          scopes: appObj.scopes,
-          appOrigin: appObj.appOrigin,
-          appPrivKey: userPayload.privateKey,
-          hubUrl: this.hubUrl ? this.hubUrl : BLOCKSTACK_DEFAULT_HUB,
-          username: blockstackName, //need to account for blockstack's name restrictions
-          profile
-        }
-        const idAddress = account.blockstack.idAddress ? account.blockstack.idAddress : "";
-        const userSession = await makeUserSession(sessionObj, idAddress);
+  }
 
-        if(userSession) {
-          console.log("Blockstack session created");
-          //Setting the blockstack user session to local storage so the dev doesn't manually have to
-          localStorage.setItem(BLOCKSTACK_SESSION, JSON.stringify(userSession.body.store.sessionData));
-          return {
-            message: "user session created",
-            body: userSession.body
-          }
-        } else {
-          console.log("ERROR: could not create Blockstack session")
-          return {
-            message: "trouble creating user session",
-            body: null
-          }
-        }
-      } catch (loginErr) {
-        return {
-          message: "trouble logging in",
-          body: loginErr
-        }
-      }
+  async checkUser(email) {
+    const { network, devId, development } = this.config;
+    //Check if the user exists in the DB. Based on email address
+    const payload = JSON.stringify({
+      email,
+      network, 
+      devId, 
+      development
+    });
+    var options = { url: config.FETCH_USER_URL, method: 'POST', headers: headers, body: payload };
+    try {
+      const postData = await postToApi(options);
+      return postData
+    } catch(error) {
+      return { success: false, body: error }
     }
-    return account;
   }
 
   signOut() {

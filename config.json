@@ -13,5 +13,7 @@
     "SEND_TX_APPROVAL": "https://6e8aurabe0.execute-api.us-west-2.amazonaws.com/j1/v1/sendTxApproval", 
     "SIGN_TX": "http://localhost:3000/v1/signTransaction",
     "BROADCAST_TX": "http://localhost:3000/v1/broadcastTx", 
-    "AUTHENTICATION_URL": "https://6e8aurabe0.execute-api.us-west-2.amazonaws.com/j1/v1/authenticate"
+    "AUTHENTICATION_URL": "https://6e8aurabe0.execute-api.us-west-2.amazonaws.com/j1/v1/authenticate",
+    "FETCH_USER_URL": "http://localhost:3000/v1/fetchUser",
+    "CREATE_USER_URL": "http://localhost:3000/v1/storeUser"
 }
