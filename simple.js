@@ -20,14 +20,13 @@ const keys = require('./keys.json');
 const INFURA_KEY = keys.INFURA_KEY;
 const LAYER2_RPC_SERVER = 'https://testnet2.matic.network';
 const SIMPLEID_USER_SESSION = 'SimpleID-User-Session';
-const BLOCKSTACK_DEFAULT_HUB = "https://hub.blockstack.org";
-const BLOCKSTACK_SESSION = 'blockstack-session';
 const ethers = require('ethers');
 let headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
 let tx;
 let thisTx;
 let txSigned;
 let action;
+let globalMethodCheck;
 //const version = "0.5.0";
 let iframe = document.createElement('iframe');
 iframe.setAttribute('src', 'http://localhost:3003');
@@ -78,6 +77,7 @@ export default class SimpleID {
   _initProvider() {
     const engine = new ProviderEngine();
     const query = new Query(engine);
+    //const address = 
 
     engine.send = (payload, callback) => {
       // Web3 1.0 beta.38 (and above) calls `send` with method and parameters
@@ -92,6 +92,7 @@ export default class SimpleID {
             },
             (error, response) => {
               if (error) {
+                console.log("ERROR in send: ", error)
                 reject(error);
               } else {
                 resolve(response.result);
@@ -120,14 +121,13 @@ export default class SimpleID {
         case 'net_version':
           result = this._network;
           break;
-
         case 'eth_uninstallFilter':
           engine.sendAsync(payload, _ => _);
           result = true;
           break;
 
         default:
-          var message = `The Portis Web3 object does not support synchronous methods like ${
+          var message = `The SimpleID Web3 object does not support synchronous methods like ${
             payload.method
           } without a callback parameter.`;
           throw new Error(message);
@@ -142,7 +142,7 @@ export default class SimpleID {
 
     engine.addProvider(
       new FixtureSubprovider({
-        web3_clientVersion: `Portis/v${this.config.version}/javascript`,
+        web3_clientVersion: `SIMPLEID/v${this.config.version}/javascript`,
         net_listening: true,
         eth_hashrate: '0x00',
         eth_mining: false,
@@ -154,9 +154,15 @@ export default class SimpleID {
     engine.addProvider(new SubscriptionsSubprovider());
     engine.addProvider(new FilterSubprovider());
     engine.addProvider(new NonceSubprovider());
+
     engine.addProvider({
       setEngine: _ => _,
       handleRequest: async (payload, next, end) => {
+        globalMethodCheck = payload.method;
+        // let result;
+        // engine.networkVersion = this.network;
+        // result = this.network;
+        // end("", result);
         if (!payload.id) {
           payload.id = 42;
         }
@@ -168,7 +174,6 @@ export default class SimpleID {
       new HookedWalletSubprovider({
         getAccounts: async cb => {
           const address = this.getUserData() && this.getUserData().wallet ? this.getUserData().wallet.ethAddr : "";
-          console.log(address);
           let addresses = [];
           addresses.push(address);
           const result = addresses;
@@ -180,25 +185,65 @@ export default class SimpleID {
           }
           cb(error, result);
         },
-        approveTransaction: async (txParams, cb) => {   
-          let error = "canceled";
+        approveTransaction: async (txParams, cb) => {  
+          console.log("APPROVE TX", txParams);
+          let error;
           thisTx = {
             appName: this.config.appName, 
             tx: txParams
           }
           action = 'transaction';
-          const popup = await this.createPopup();
-          console.log(popup);   
-          txSigned = popup;  
-          cb(error, popup);
+          const popup = await this.createPopup(); 
+          console.log("POPUP: ", popup);
+          txSigned = popup; 
+          cb(error, true);
         }, 
-        signTransaction: async (txParams, cb) => {
-          return txSigned;
+        signTransaction: (txParams, cb) => {          
+          console.log("SIGN TX ", txParams);
+          let error;
+          console.log("RAWTX: ", txSigned);
+          cb(error, txSigned);
+          // let error;
+          // let result;
+          // if(globalMethodCheck !== "eth_signTransaction") {
+          //   console.log("Broadcasting...")
+          //   console.log(txSigned)
+          //   //web3.eth.sendSignedTransaction(txSigned);
+          //   cb(error, txSigned);
+          //   // setTimeout(() => {
+          //   //   cb(error, txSigned);
+          //   // }, 1500);
+          //   // web3.eth.sendSignedTransaction(txSigned)
+          //   // .on('transactionHash', (hash) => {
+          //   //   console.log("SDK: ", hash);
+          //   // })
+          //   // .on('receipt', (receipt) => {
+          //   //   console.log("SDK RECEIPT: ", receipt);
+          //   //   cb(error, receipt);
+          //   // })
+          //   // result = sent;
+          //   // cb(error, result);
+          // } else {
+          //   result = txSigned;
+          //   cb(error, result);
+          // }                       
         },
+        publishTransaction: (rawTx, cb) => {
+          // console.log("PUBLISH", rawTx);
+          // let error;
+          // return rawTx
+          console.log("PUBLISHED TX: ", rawTx);
+          cb(null, rawTx);
+          // const sent = await web3.eth.sendSignedTransaction(rawTx)
+          // console.log("SENT: ", sent);
+          //cb(null, sent)
+          // setTimeout(() => {
+          //   cb(error, rawTx);
+          // }, 2500)
+        }, 
         signMessage: async (msgParams, cb) => {
-          let error = "canceled";
-          console.log("Message tx ", msgParams);
-          console.log("Decoding: ", web3.utils.toUtf8(msgParams.data))
+          console.log("SIGN MSG");
+          let error;
           thisTx = {
             appName: this.config.appName, 
             tx: msgParams
@@ -208,9 +253,8 @@ export default class SimpleID {
           cb(error, popup);
         },
         signPersonalMessage: async (msgParams, cb) => {
+          console.log("SIGN PERSONAL MSG");
           let error;
-          console.log("Message tx ", msgParams);
-          console.log("Decoding: ", web3.utils.toUtf8(msgParams.data))
           thisTx = {
             appName: this.config.appName, 
             tx: msgParams
@@ -238,20 +282,33 @@ export default class SimpleID {
         getGasPrice: async cb => {
           cb(null, '');
         },
+        getTransactionCount: async (txParams, cb) => {
+         const count = await web3.eth.getTransactionCount(this.getUserData() && this.getUserData().wallet ? this.getUserData().wallet.ethAddr : "") 
+         cb(null, count);
+         //return count;
+        }
       }),
     );
 
-    engine.addProvider({
-      setEngine: _ => _,
-      handleRequest: async (payload, next, end) => {
-        let result;
-  
-          
-        engine.networkVersion = this.network;
-        result = this.network;
-        end("", result);
-      },
-    });
+    // engine.addProvider({
+    //   setEngine: _ => _,
+    //   handleRequest: async (payload, next, end) => {
+    //     let result;
+    //     let error;
+    //     if(!this.network) {
+    //       error = "no network provided";
+    //     }
+    //     //console.log("PAYLOAD: ", payload);
+    //     engine.networkVersion = this.network;
+    //     console.log(engine.networkVersion);
+    //     result = this.network;
+    //     end(error, result);
+    //   },
+    // });
+
+    engine.addProvider(new RpcSubprovider({
+      rpcUrl: `https://${this.network}.infura.io/v3/${INFURA_KEY}`,
+    }))
 
     engine.enable = () =>
       new Promise((resolve, reject) => {
@@ -269,6 +326,12 @@ export default class SimpleID {
     };
 
     engine.isSimpleID = true;
+
+    // engine.on('block', function(block){
+    //   console.log('================================')
+    //   console.log('BLOCK CHANGED:', '#'+block.number.toString('hex'), '0x'+block.hash.toString('hex'))
+    //   console.log('================================')
+    // })
 
     engine.on('error', error => {
       if (error && error.message && error.message.includes('PollingBlockTracker')) {
@@ -304,7 +367,7 @@ export default class SimpleID {
           localStorage.setItem(SIMPLEID_USER_SESSION, userData);
           return true;
         }, 
-        signedMessage(message) {
+        signedMessage(message) {        
           resolve(message);
           //localStorage.setItem('signed-msg', JSON.stringify(message));
         }, 
@@ -359,8 +422,10 @@ export default class SimpleID {
           }
           resolve();
         },
+        checkType() {
+          return globalMethodCheck;
+        }, 
         checkAction() {
-          console.log("ACTION FROM SDK: ", action)
           return action;
         }
       }
