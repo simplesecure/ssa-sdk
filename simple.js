@@ -66,7 +66,6 @@ export default class SimpleID {
     this.scopes = params.scopes;
     this.appOrigin = params.appOrigin;
     this.development = params.development ? params.development : false;
-    
     this.provider = this._initProvider();
     //this.provider = new Web3.providers.HttpProvider(this.network === "local" ? this.localRPCServer : this.network === "layer2" ? LAYER2_RPC_SERVER : `https://${this.network}.infura.io/v3/${INFURA_KEY}`);
     //this.subProvider = new Web3.providers.HttpProvider(this.network === "local" ? this.localRPCServer : this.network === "layer2" ? LAYER2_RPC_SERVER : `https://${this.network}.infura.io/v3/${INFURA_KEY}`);
@@ -351,8 +350,13 @@ export default class SimpleID {
     return engine;
   }
 
-  createPopup() {
+  createPopup(invisible, payload) {
     console.log(action);
+    if(invisible) {
+      console.log("make it invisible")
+      iframe.style.width = 0;
+      iframe.style.height = 0;
+    }
     const scopes = this.scopes;
     const params = this.config;
     return new Promise(function(resolve, reject) {
@@ -362,6 +366,9 @@ export default class SimpleID {
       iframe,
       // Methods the parent is exposing to the child
       methods: {
+        dataToProcess() {
+          return payload;
+        }, 
         getPopUpInfo() {
           //This is where we can pass the tx details
           return thisTx;
@@ -439,6 +446,7 @@ export default class SimpleID {
     });
     
     connection.promise.then(child => {
+      child.getUUID()
       //Call Child Function
       // child.multiply(2, 6).then(total => console.log(total));
       // child.divide(12, 4).then(total => console.log(total));
@@ -451,6 +459,14 @@ export default class SimpleID {
   signUserIn() {
     action = "sign-in";
     this.createPopup(); 
+  }
+
+  processData(type, data) {
+    const invisible = true;
+    const payload = {
+      type, data
+    }
+    this.createPopup(invisible, payload);
   }
 
   //If a developer wants to use the ethers.js library manually in-app, they can access it with this function
@@ -468,41 +484,32 @@ export default class SimpleID {
     return JSON.parse(localStorage.getItem(SIMPLEID_USER_SESSION));
   }
 
-  //This returns the blockstack-specific user-session. Example usage in-app: 
-  //const userSession = simple.getBlockstackSession();
-  //userSession.putFile(FILE_NAME, FILE_CONTENT);
-  
-  getBlockstackSession() {
-    const appConfig = new AppConfig(this.scopes);
-    const userSession = new UserSession({ appConfig });
-    return userSession;
+  passUser() {
+    //This is the method we should use to pass the wallet and email to SimpleID
+    //TODO: Does this need to invoke the iframe? I think it probably does, but need to check with AC
   }
 
-  checkForApproval(txParams, email) {
-    //
-  }
-
-  async createUser(userData) {
-    const { network, devId, development } = this.config;
-    let parsedData = JSON.parse(userData);
-    console.log(parsedData)
-    const { email, encryptedKeychain } = parsedData;
-    //Check if the user exists in the DB. Based on email address
-    const payload = JSON.stringify({
-      email,
-      encryptedKeychain, 
-      network, 
-      devId, 
-      development
-    });
-    var options = { url: config.CREATE_USER_URL, method: 'POST', headers: headers, body: payload };
-    try {
-      const postData = await postToApi(options);
-      return postData
-    } catch(error) {
-      return { success: false, body: error }
-    }
-  }
+  // async createUser(userData) {
+  //   const { network, devId, development } = this.config;
+  //   let parsedData = JSON.parse(userData);
+  //   console.log(parsedData)
+  //   const { email, encryptedKeychain } = parsedData;
+  //   //Check if the user exists in the DB. Based on email address
+  //   const payload = JSON.stringify({
+  //     email,
+  //     encryptedKeychain, 
+  //     network, 
+  //     devId, 
+  //     development
+  //   });
+  //   var options = { url: config.CREATE_USER_URL, method: 'POST', headers: headers, body: payload };
+  //   try {
+  //     const postData = await postToApi(options);
+  //     return postData
+  //   } catch(error) {
+  //     return { success: false, body: error }
+  //   }
+  // }
 
   async checkUser(email) {
     const { network, devId, development } = this.config;
@@ -526,355 +533,5 @@ export default class SimpleID {
     localStorage.removeItem('blockstack-session');
     localStorage.removeItem(SIMPLEID_USER_SESSION);
     window.location.reload();
-  }
-
-  buyCrypto(params) {
-    //const moonEnv = params.env === "test" ? "buy-staging" : "buy";
-    //const apiKey = params.env === "test" ? "pk_test_gEFnegtEHajeQURGYVxg0GjVriooNltf" : "" //TODO: enter prod key
-    const moonEnv = "test";
-    const apiKey = "pk_test_gEFnegtEHajeQURGYVxg0GjVriooNltf";
-    const div = document.createElement("DIV");
-    const closeButton = document.createElement("span");
-    const iFrame = document.createElement("iframe");
-    iFrame.setAttribute('src', `https://${moonEnv}.moonpay.io/?apiKey=${apiKey}&currencyCode=${params.currency}&walletAddress=${params.address}&baseCurrency=${params.baseCurrency}&email=${params.email}`);
-    iFrame.setAttribute('height', "500");
-    div.appendChild(closeButton);
-    div.appendChild(iFrame);
-    div.style.display = "block";
-    div.style.background = "#fff";
-    div.style.border = "1px #eee solid";
-    div.style.borderRadius = "5px";
-    div.style.padding = "20px";
-    div.style.paddingTop = "35px";
-    div.style.position = "fixed";
-    div.style.bottom = "10px";
-    div.style.right = "10px";
-    div.style.zIndex = "1024";
-    closeButton.innerText = "Close";
-    closeButton.style.position = "absolute";
-    closeButton.style.top = "5px";
-    closeButton.style.right = "15px";
-    closeButton.style.cursor = "pointer";
-    closeButton.addEventListener('click', () => {
-      div.style.display = "none";
-    })
-    document.body.appendChild(div);
-    //const envi = params.env === "test" ? "testwyre" : "sendwyre";
-    //window.location.replace(`https://pay.${envi}.com/purchase?destCurrency=${params.currency}&dest=${params.address}&paymentMethod=${params.method}&redirectUrl=${params.redirectUrl}`)
-  }
-
-  async fetchContract(abi, address) {
-    const provider = new ethers.providers.Web3Provider(this.provider);
-    let contract = new ethers.Contract(address, abi, provider);
-    return contract;
-  }
-
-  async createContract(payload) {
-    const { email, fromEmail, account, bytecode, abi } = payload;
-    const txCount = await web3.eth.getTransactionCount(account);
-    try {
-      // Build the transaction
-      tx = {
-        from: account,
-        nonce:    txCount,
-        gasLimit: 21000,
-        gasPrice: ethers.utils.bigNumberify("20000000000"),
-        data: bytecode, 
-        type: "contract", 
-        abi  
-      }
-      const params = {
-        email, 
-        fromEmail, 
-        txObject: tx
-      }
-      const approval = await this.generateApproval(params);
-      if(approval.success) {
-        return approval;
-      } else {
-        return {
-          success: false, 
-          body: approval.body
-        }
-      }
-    } catch (error) {
-      console.log("ERROR", error);
-      return {success: false, body: error};
-    }
-  }
-
-  async createContractTransaction(params) {
-    const { method, value, abi, address, email, fromEmail } = params;
-    const { network, devId, development } = this.config;
-    tx = params;
-    tx.to = address;
-    let estimate;
-    const provider = new ethers.providers.Web3Provider(this.provider);
-    let contract = new ethers.Contract(address, abi, provider);
-    if(value instanceof Array) {
-      estimate = await contract.estimate[method](...value);
-    } else {
-      estimate = await contract.estimate[method](value);
-    }
-
-    const approvalObj = JSON.stringify({
-      email,
-      fromEmail,
-      gasEst: estimate.toNumber(), 
-      tx, 
-      network, 
-      devId, 
-      development
-    });
-    var options = { url: config.SEND_TX_APPROVAL, method: 'POST', headers: headers, body: approvalObj };
-    try {
-      const postData = await postToApi(options);
-      return postData.body;
-    } catch(error) {
-      return { success: false, body: error }
-    }
-  }
-
-  async deployContract(params) {
-    const { devId, development, network } = this.config;
-    const { email, code, constructor } = params;
-    const payload = JSON.stringify({
-      devId,
-      email, 
-      network,
-      // abi: tx.abi, //transaction stored in memory
-      // bytecode: tx.data, //transaction stored in memory
-      code,
-      constructor, //When deploying a contract it's possible that a constructor value may be passed
-      development: development ? true : false
-    });
-    headers['Authorization'] = this.apiKey;
-    var options = { url: config.CREATE_CONTRACT_URL, method: 'POST', headers: headers, body: payload };
-    try {
-      const postData = await postToApi(options);
-      return postData.body;
-    } catch(error) {
-      return { success: false, body: error }
-    }
-  }
-
-  async broadcastTransaction(params) {
-    console.log("Broadcasting...")
-    const { devId, development, network } = this.config;
-    const { email, code, threeBox, contractTx, threeBoxTx, contract } = params;
-    //const provider = new ethers.providers.Web3Provider(this.provider);
-    const payload = {
-      devId,
-      email, 
-      network,
-      contractTx,
-      code,
-      threeBox,
-      threeBoxTx, 
-      contract,
-      development: development ? true : false
-    }
-    headers['Authorization'] = this.apiKey;
-    var options = { url: config.BROADCAST_TX, method: 'POST', headers: headers, body: JSON.stringify(payload) };
-    try {
-      const postData = await postToApi(options);
-      return {
-        success: true, 
-        body: postData.body
-      }
-    } catch(error) {
-      return { success: false, body: error }
-    }
-  }
-
-  async signTx(email, code) {
-    const { devId, development, network } = this.config;
-    const payload = JSON.stringify({
-      email,
-      network, 
-      devId, 
-      code, 
-      development
-    });
-    headers['Authorization'] = this.apiKey;
-    var options = { url: config.SIGN_TX, method: 'POST', headers: headers, body: payload };
-    try {
-      const postData = await postToApi(options);
-      return postData.body;
-    } catch(error) {
-      return { success: false, body: error }
-    }
-  }
-
-  async generateApproval(params) {
-    const { email, fromEmail, txObject } = params;
-    const { devId, development, network } = this.config;
-    const provider = new ethers.providers.Web3Provider(this.provider);
-    
-    //const estimate = await provider.estimateGas(txObject)//await web3.eth.estimateGas(txObject);
-    const approvalObj = JSON.stringify({
-      email,
-      fromEmail,
-      //gasEst: estimate.toNumber(), 
-      tx: txObject, 
-      network, 
-      devId, 
-      development
-    });
-    headers['Authorization'] = this.apiKey;
-    var options = { url: config.SEND_TX_APPROVAL, method: 'POST', headers: headers, body: approvalObj };
-    try {
-      const postData = await postToApi(options);
-      return postData.body;
-    } catch(error) {
-      return { success: false, body: error }
-    }
-  }
-
-  async pollForStatus(tx) {
-    //TODO: Need to convert this to the ethers.js equivalent
-    const status = await web3.eth.getTransaction(tx);
-    console.log(status);
-    if(status && status.blockNumber) {
-      return "Mined";
-    } else {
-      return "Not mined"
-    }
-  }
-
-  //TODO: Pinata support needs significant upgrades
-  async pinContent(params) {
-    const payload = JSON.stringify({
-      devId: this.devId,
-      email: params.email,
-      devSuppliedIdentifier: params.id,
-      contentToPin: params.content,
-      development: this.development ? true : false
-    })
-    headers['Authorization'] = this.apiKey;
-    var options = { url: config.PIN_CONTENT_URL, method: 'POST', headers: headers, body: payload };
-    try {
-      const postData = await postToApi(options);
-      return postData;
-    } catch(error) {
-      return { success: false, body: error }
-    }
-  }
-
-  async fetchPinnedContent(params) {
-    const payload = JSON.stringify({
-      devId: this.devId,
-      email: params.email,
-      devSuppliedIdentifier: params.id,
-      development: this.development ? true : false
-    })
-    headers['Authorization'] = this.apiKey;
-    var options = { url: config.FETCH_PINNED_CONTENT_URL, method: 'POST', headers: headers, body: payload };
-    try {
-      const postData = await postToApi(options);
-      return postData;
-    } catch(error) {
-      return { success: false, body: error }
-    }
-  }
-
-  //***Dev App Specific Functions***//
-  async getConfig(params) {
-    const payload = JSON.stringify({
-      devId: params.devId,
-      development: params.development ? true : false
-    });
-    headers['Authorization'] = params.apiKey;
-    var options = { url: config.GET_CONFIG_URL, method: 'POST', headers: headers, body: payload };
-    try {
-      const postData = await postToApi(options);
-      return postData;
-    } catch(error) {
-      return { success: false, body: error }
-    }
-  }
-
-  async updateConfig(updates, verification) {
-    const payload = JSON.stringify({
-      devId: updates.username,
-      config: updates.config,
-      development: updates.development ? true : false
-    });
-    if(verification) {
-      headers['Authorization'] = updates.verificationID;
-    } else {
-      headers['Authorization'] = updates.apiKey;
-    }
-    var options = { url: config.UPDATE_CONFIG_URL, method: 'POST', headers: headers, body: payload };
-    try {
-      const postData = await postToApi(options);
-      return postData;
-    } catch(error) {
-      return { success: false, body: error }
-    }
-  }
-  //*******//
-    
-  async blockstackNameCheck(name) {
-    const nameAvailable = await nameLookUp(name);
-    return nameAvailable;
-  }
-
-  async registerBlockstackSubdomain(name, idAddress) {
-    try {
-      const registered = await registerSubdomain(name, idAddress);
-      return registered;
-    } catch(error) {
-      return {
-        success: false, body: error
-      }
-    }
-  }
-
-  async createBlockstackSession(params) {
-    const appObj = {
-      scopes: this.scopes, 
-      appOrigin: this.appOrigin, 
-      apiKey: this.apiKey, 
-      devId: this.devId, 
-      development: params.development ? params.development : false
-    }
-    const profile = await updateProfile(params.name, appObj);
-
-    const sessionObj = {
-      scopes: this.scopes,
-      appOrigin: this.appOrigin,
-      appPrivKey: params.privateKey,
-      hubUrl: params.hubUrl ? params.hubUrl : "https://hub.blockstack.org",
-      username: params.username,
-      profile, 
-      apiKey: this.apiKey, 
-      configObj
-    }
-
-    try {
-      const userSession = await makeUserSession(sessionObj, idAddress);
-      return userSession;
-    } catch(error) {
-      return {success: false, body: error}
-    }
-  }
-
-  threeBox() {
-    return {
-      send: async (data, callback) => {
-        const txObject = {
-          threeBox: true, 
-          threeBoxTx: data.params[0], 
-          email: this.getUserData().email
-        }
-        const signed = await this.broadcastTransaction(txObject);
-        if(signed.body.success) {
-          callback(null, { result: signed.body.body });
-        } else {
-          console.log("Error", signed)
-        }
-      }
-    }
   }
 }
