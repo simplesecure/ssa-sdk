@@ -1,6 +1,7 @@
 {
   "name": "simpleid-js-sdk",
-  "version": "0.5.2",
+  "version": "0.1.1-alpha",
+  "production-version": "0.5.2",
   "description": "",
   "main": "simple.js",
   "scripts": {

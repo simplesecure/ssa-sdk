@@ -36,6 +36,7 @@ iframe.style.top = '0';
 iframe.style.left = '0';
 iframe.style.width = '100vw';
 iframe.style.height = '100vh';
+iframe.style.zIndex = '1024';
 
 function postToApi(options) {
   return request(options)
@@ -68,7 +69,8 @@ export default class SimpleID {
     
     this.provider = this._initProvider();
     //this.provider = new Web3.providers.HttpProvider(this.network === "local" ? this.localRPCServer : this.network === "layer2" ? LAYER2_RPC_SERVER : `https://${this.network}.infura.io/v3/${INFURA_KEY}`);
-    this.subProvider = new Web3.providers.HttpProvider(this.network === "local" ? this.localRPCServer : this.network === "layer2" ? LAYER2_RPC_SERVER : `https://${this.network}.infura.io/v3/${INFURA_KEY}`);
+    //this.subProvider = new Web3.providers.HttpProvider(this.network === "local" ? this.localRPCServer : this.network === "layer2" ? LAYER2_RPC_SERVER : `https://${this.network}.infura.io/v3/${INFURA_KEY}`);
+    this.subProvider = new Web3.providers.HttpProvider(this.network === "local" ? this.localRPCServer : this.network === "layer2" ? LAYER2_RPC_SERVER : `https://shared-geth-ropsten.nodes.deploy.radar.tech/?apikey=a356caf36d191f896bac510e685d9e231e6897fc0d0835a9`);
     //web3 = new Web3(this.provider);
     headers['Authorization'] = this.apiKey;
     this.simple = ethers;
@@ -202,6 +204,9 @@ export default class SimpleID {
           console.log("SIGN TX ", txParams);
           let error;
           console.log("RAWTX: ", txSigned);
+          if(!txSigned) {
+            error = "User canceled action"
+          }
           cb(error, txSigned);
           // let error;
           // let result;
@@ -307,7 +312,8 @@ export default class SimpleID {
     // });
 
     engine.addProvider(new RpcSubprovider({
-      rpcUrl: `https://${this.network}.infura.io/v3/${INFURA_KEY}`,
+      //rpcUrl: `https://${this.network}.infura.io/v3/${INFURA_KEY}`,
+      rpcUrl: `https://shared-geth-ropsten.nodes.deploy.radar.tech/?apikey=a356caf36d191f896bac510e685d9e231e6897fc0d0835a9`,
     }))
 
     engine.enable = () =>
@@ -364,6 +370,7 @@ export default class SimpleID {
           return params;
         }, 
         storeWallet(userData) {
+          console.log("STORED WALLET: ", userData);
           localStorage.setItem(SIMPLEID_USER_SESSION, userData);
           return true;
         }, 
