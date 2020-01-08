@@ -351,13 +351,12 @@ export default class SimpleID {
   }
 
   createPopup(invisible, payload) {
-    console.log(action);
     if(invisible) {
       console.log("make it invisible")
       iframe.style.width = 0;
       iframe.style.height = 0;
     }
-    const scopes = this.scopes;
+    //const scopes = this.scopes;
     const params = this.config;
     return new Promise(function(resolve, reject) {
       //Launch the widget;
@@ -367,6 +366,7 @@ export default class SimpleID {
       // Methods the parent is exposing to the child
       methods: {
         dataToProcess() {
+          console.log("From the SDK: ", payload);
           return payload;
         }, 
         getPopUpInfo() {
@@ -426,6 +426,7 @@ export default class SimpleID {
           }
         }, 
         close(reload){
+          console.log("CLOSING iFRAME");
           action = "";
           if (document.body.contains(iframe)) {
             document.body.removeChild(iframe);
@@ -441,12 +442,16 @@ export default class SimpleID {
         }, 
         checkAction() {
           return action;
+        }, 
+        completeSignOut() {
+          console.log("COMPLETE THE SIGN OUT!")
+          localStorage.clear();
+          window.location.reload();
         }
       }
     });
     
     connection.promise.then(child => {
-      child.getUUID()
       //Call Child Function
       // child.multiply(2, 6).then(total => console.log(total));
       // child.divide(12, 4).then(total => console.log(total));
@@ -530,8 +535,7 @@ export default class SimpleID {
   }
 
   signOut() {
-    localStorage.removeItem('blockstack-session');
-    localStorage.removeItem(SIMPLEID_USER_SESSION);
-    window.location.reload();
+    action = 'sign-out';
+    this.createPopup(true, null);
   }
 }
