@@ -26,6 +26,7 @@ let tx;
 let thisTx;
 let txSigned;
 let action;
+let userDataForIFrame;
 let globalMethodCheck;
 //const version = "0.5.0";
 let iframe = document.createElement('iframe');
@@ -358,6 +359,7 @@ export default class SimpleID {
     }
     //const scopes = this.scopes;
     const params = this.config;
+    params.orgId = new SimpleID(params).getUserData() && new SimpleID(params).getUserData().orgId ? new SimpleID(params).getUserData().orgId : null;
     return new Promise(function(resolve, reject) {
       //Launch the widget;
     const connection = connectToChild({
@@ -366,8 +368,11 @@ export default class SimpleID {
       // Methods the parent is exposing to the child
       methods: {
         dataToProcess() {
-          console.log("From the SDK: ", payload);
-          return payload;
+          if(payload) {
+            return payload;
+          } else if(userDataForIFrame) {
+            return userDataForIFrame
+          }
         }, 
         getPopUpInfo() {
           //This is where we can pass the tx details
@@ -444,7 +449,6 @@ export default class SimpleID {
           return action;
         }, 
         completeSignOut() {
-          console.log("COMPLETE THE SIGN OUT!")
           localStorage.clear();
           window.location.reload();
         }
@@ -466,12 +470,21 @@ export default class SimpleID {
     this.createPopup(); 
   }
 
-  processData(type, data) {
+  passUserInfo(userInfo) {
+    //Send this info to the iFrame. Don't display the iFrame though as the user/app isn't using
+    //the SimpleID wallet
+    action = "sign-in-no-sid";
+    userDataForIFrame = userInfo;
+    this.createPopup(true, userInfo);
+  }
+
+  async processData(type, data) {
     const invisible = true;
     const payload = {
       type, data
     }
-    this.createPopup(invisible, payload);
+    const returnedData = await this.createPopup(invisible, payload);
+    return returnedData;
   }
 
   //If a developer wants to use the ethers.js library manually in-app, they can access it with this function
@@ -487,11 +500,6 @@ export default class SimpleID {
   //This returns the wallet info for the SimpleID user
   getUserData() {
     return JSON.parse(localStorage.getItem(SIMPLEID_USER_SESSION));
-  }
-
-  passUser() {
-    //This is the method we should use to pass the wallet and email to SimpleID
-    //TODO: Does this need to invoke the iframe? I think it probably does, but need to check with AC
   }
 
   // async createUser(userData) {
