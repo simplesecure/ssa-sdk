@@ -500,8 +500,9 @@ export default class SimpleID {
   }
 
   launchWallet() {
+    const url = process.env.NODE_ENV === "production" ? "https://wallet.simpleid.xyz" : "http://localhost:3002";
     const element = document.createElement('a');
-    element.setAttribute('href', 'http://localhost:3002');
+    element.setAttribute('href', url);
     element.setAttribute('target', '_blank');
     element.style.display = 'none';
     document.body.appendChild(element);
