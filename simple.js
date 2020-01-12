@@ -30,7 +30,8 @@ let userDataForIFrame;
 let globalMethodCheck;
 //const version = "0.5.0";
 let iframe = document.createElement('iframe');
-iframe.setAttribute('src', 'http://localhost:3003');
+process.env.NODE_ENV === 'production' ? iframe.setAttribute('src', 'https://5e1b30e40f67a0af8133c3b8--compassionate-chandrasekhar-e13e5a.netlify.com') : iframe.setAttribute('src', 'http://localhost:3003');
+//iframe.setAttribute('src', 'https://5e1b30e40f67a0af8133c3b8--compassionate-chandrasekhar-e13e5a.netlify.com')
 iframe.setAttribute("id", "sid-widget");
 iframe.style.position = 'fixed';
 iframe.style.top = '0';
@@ -313,8 +314,8 @@ export default class SimpleID {
     // });
 
     engine.addProvider(new RpcSubprovider({
-      //rpcUrl: `https://${this.network}.infura.io/v3/${INFURA_KEY}`,
-      rpcUrl: `https://shared-geth-ropsten.nodes.deploy.radar.tech/?apikey=a356caf36d191f896bac510e685d9e231e6897fc0d0835a9`,
+      rpcUrl: `https://${this.network}.infura.io/v3/${INFURA_KEY}`,
+      //rpcUrl: `https://shared-geth-ropsten.nodes.deploy.radar.tech/?apikey=a356caf36d191f896bac510e685d9e231e6897fc0d0835a9`,
     }))
 
     engine.enable = () =>
@@ -353,6 +354,7 @@ export default class SimpleID {
   }
 
   createPopup(invisible, payload) {
+    console.log("ACTION FROM THE SDK: ", action);
     if(invisible) {
       console.log("make it invisible")
       iframe.style.width = 0;
@@ -491,6 +493,21 @@ export default class SimpleID {
     }
     const returnedData = await this.createPopup(invisible, payload);
     return returnedData;
+  }
+
+  async openHostedWidget() {
+    action = 'hosted-app';
+    this.createPopup();
+  }
+
+  launchWallet() {
+    const element = document.createElement('a');
+    element.setAttribute('href', 'http://localhost:3002');
+    element.setAttribute('target', '_blank');
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
   }
 
   //If a developer wants to use the ethers.js library manually in-app, they can access it with this function
