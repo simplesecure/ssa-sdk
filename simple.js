@@ -69,8 +69,9 @@ export default class SimpleID {
     this.development = params.development ? params.development : false;
     this.provider = this._initProvider();
     //this.provider = new Web3.providers.HttpProvider(this.network === "local" ? this.localRPCServer : this.network === "layer2" ? LAYER2_RPC_SERVER : `https://${this.network}.infura.io/v3/${INFURA_KEY}`);
-    //this.subProvider = new Web3.providers.HttpProvider(this.network === "local" ? this.localRPCServer : this.network === "layer2" ? LAYER2_RPC_SERVER : `https://${this.network}.infura.io/v3/${INFURA_KEY}`);
-    this.subProvider = new Web3.providers.HttpProvider(this.network === "local" ? this.localRPCServer : this.network === "layer2" ? LAYER2_RPC_SERVER : `https://shared-geth-ropsten.nodes.deploy.radar.tech/?apikey=a356caf36d191f896bac510e685d9e231e6897fc0d0835a9`);
+    this.subProvider = new Web3.providers.HttpProvider(this.network === "local" ? this.localRPCServer : this.network === "layer2" ? LAYER2_RPC_SERVER : `https://${this.network}.infura.io/v3/${INFURA_KEY}`);
+    //TODO: When we understand RADAR better, uncomment below and comment above to switch to their node
+    //this.subProvider = new Web3.providers.HttpProvider(this.network === "local" ? this.localRPCServer : this.network === "layer2" ? LAYER2_RPC_SERVER : `https://shared-geth-ropsten.nodes.deploy.radar.tech/?apikey=a356caf36d191f896bac510e685d9e231e6897fc0d0835a9`);
     //web3 = new Web3(this.provider);
     headers['Authorization'] = this.apiKey;
     this.simple = ethers;
@@ -369,11 +370,15 @@ export default class SimpleID {
       methods: {
         dataToProcess() {
           if(payload) {
+            console.log("COMING FROM THE SDK...", payload);
             return payload;
           } else if(userDataForIFrame) {
             return userDataForIFrame
           }
         }, 
+        returnProcessedData(data) {
+          resolve(data);
+        },
         getPopUpInfo() {
           //This is where we can pass the tx details
           return thisTx;
@@ -479,6 +484,7 @@ export default class SimpleID {
   }
 
   async processData(type, data) {
+    action = 'process-data';
     const invisible = true;
     const payload = {
       type, data
