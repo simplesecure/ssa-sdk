@@ -30,7 +30,7 @@ let userDataForIFrame;
 let globalMethodCheck;
 //const version = "0.5.0";
 let iframe = document.createElement('iframe');
-process.env.NODE_ENV === 'production' ? iframe.setAttribute('src', 'https://5e1b30e40f67a0af8133c3b8--compassionate-chandrasekhar-e13e5a.netlify.com') : iframe.setAttribute('src', 'http://localhost:3003');
+process.env.NODE_ENV === 'production' ? iframe.setAttribute('src', 'https://processes.simpleid.xyz') : iframe.setAttribute('src', 'http://localhost:3003');
 //iframe.setAttribute('src', 'https://5e1b30e40f67a0af8133c3b8--compassionate-chandrasekhar-e13e5a.netlify.com')
 iframe.setAttribute("id", "sid-widget");
 iframe.style.position = 'fixed';
