@@ -16,9 +16,10 @@ const engine = new ProviderEngine()
 const web3 = new Web3(engine)
 const request = require('request-promise');
 const config = require('./config.json');
-const INFURA_KEY = process.env.INFURA_KEY;
+const INFURA_KEY = "b8c67a1f996e4d5493d5ba3ae3abfb03";
 const LAYER2_RPC_SERVER = 'https://testnet2.matic.network';
 const SIMPLEID_USER_SESSION = 'SimpleID-User-Session';
+const PINGED_SIMPLE_ID = 'pinged-simple-id';
 const ethers = require('ethers');
 let headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
 let tx;
@@ -38,6 +39,8 @@ iframe.style.left = '0';
 iframe.style.width = '100vw';
 iframe.style.height = '100vh';
 iframe.style.zIndex = '1024';
+
+console.log(INFURA_KEY);
 
 function postToApi(options) {
   return request(options)
@@ -75,6 +78,7 @@ export default class SimpleID {
     //web3 = new Web3(this.provider);
     headers['Authorization'] = this.apiKey;
     this.simple = ethers;
+    this.pingSimpleID();
   }
 
   _initProvider() {
@@ -497,6 +501,23 @@ export default class SimpleID {
   async openHostedWidget() {
     action = 'hosted-app';
     this.createPopup();
+  }
+
+  async pingSimpleID() {
+    console.log("Pinged");
+    //Check localStorage for a flag that indicates a ping
+    const pinged = JSON.parse(localStorage.getItem(PINGED_SIMPLE_ID))
+    if(pinged) {
+      console.log("Already pinged SimpleID");
+    } else {
+      //Now we need to fire off a method that will ping SimpleID and let us know the app is connected
+      const data = {
+        appDetails: this.config, 
+        date: new Date()
+      }
+      //this.processData('ping', data)
+      localStorage.setItem(PINGED_SIMPLE_ID, JSON.stringify(true))
+    }
   }
 
   launchWallet() {
