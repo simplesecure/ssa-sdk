@@ -1,7 +1,5 @@
-import { updateProfile, handleAuth } from './simpleidapi/actions';
-import { nameLookUp, registerSubdomain, makeUserSession } from './blockstack/actions';
-import { UserSession, AppConfig } from 'blockstack';
 import { Query } from './utils/query';
+import { loadButton } from './simpleid-messages'
 import connectToChild from 'penpal/lib/connectToChild';
 const ProviderEngine = require('web3-provider-engine')
 const CacheSubprovider = require('web3-provider-engine/subproviders/cache.js')
@@ -19,6 +17,7 @@ const config = require('./config.json');
 const INFURA_KEY = "b8c67a1f996e4d5493d5ba3ae3abfb03";
 const LAYER2_RPC_SERVER = 'https://testnet2.matic.network';
 const SIMPLEID_USER_SESSION = 'SimpleID-User-Session';
+const ACTIVE_SID_MESSAGE = 'active-sid-message'
 const PINGED_SIMPLE_ID = 'pinged-simple-id';
 const ethers = require('ethers');
 let headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
@@ -58,7 +57,9 @@ export default class SimpleID {
     this.scopes = params.scopes;
     this.appOrigin = params.appOrigin;
     this.development = params.development ? params.development : false;
+    this.useSimpledIdWidget = params.useSimpledIdWidget
     this.provider = this._initProvider();
+    this.activeNotifications = []
     //this.provider = new Web3.providers.HttpProvider(this.network === "local" ? this.localRPCServer : this.network === "layer2" ? LAYER2_RPC_SERVER : `https://${this.network}.infura.io/v3/${INFURA_KEY}`);
     this.subProvider = new Web3.providers.HttpProvider(this.network === "local" ? this.localRPCServer : this.network === "layer2" ? LAYER2_RPC_SERVER : `https://${this.network}.infura.io/v3/${INFURA_KEY}`);
     //TODO: When we understand RADAR better, uncomment below and comment above to switch to their node
@@ -67,7 +68,8 @@ export default class SimpleID {
     headers['Authorization'] = this.apiKey;
     this.simple = ethers;
     this.notifications = [];
-    this.checkNotifications();
+    //TODO: If we want to handle notifications in the engagement app, this won't fly
+    this.checkNotifications = params.appId === "00000000000000000000000000000000" ? null : this.checkNotifications();
     this.ping = this.pingSimpleID();
   }
 
@@ -357,7 +359,31 @@ export default class SimpleID {
         action = 'process-data';
         notificationCheck = false;  
         const notificationData = await this.processData('notifications', data);
-        console.log("DONE CHECKING NOTIFICATIONS: ", notificationData);
+        if(notificationData) {
+          let activeNotifications = notificationData.filter(a => a.active === true)
+          //No matter what, we need to return this to the developer
+          this.activeNotifications = activeNotifications;
+          console.log("Active Notifications: ", activeNotifications)
+          //Now we check to see if there are more than one notification: 
+          if(activeNotifications.length > 1) {
+            //Need to think through how to best handle this
+          } else if(activeNotifications.length === 1) {
+            //need to check if the developer expects us to handle the widget
+            if(this.useSimpledIdWidget) {
+              console.log("WHAT?")
+              //Throw up the button for the SID widget
+              const notification = activeNotifications[0];
+              const dataToPass = {
+                notification, 
+                appId: this.appId
+              }
+              localStorage.setItem(ACTIVE_SID_MESSAGE, JSON.stringify(dataToPass))
+              loadButton()
+            }
+          }
+        } else {
+          return "No notifications"
+        }
       }
     }
   }
