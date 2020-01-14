@@ -28,19 +28,7 @@ let txSigned;
 let action;
 let userDataForIFrame;
 let globalMethodCheck;
-//const version = "0.5.0";
-let iframe = document.createElement('iframe');
-process.env.NODE_ENV === 'production' ? iframe.setAttribute('src', 'https://processes.simpleid.xyz') : iframe.setAttribute('src', 'http://localhost:3003');
-//iframe.setAttribute('src', 'https://5e1b30e40f67a0af8133c3b8--compassionate-chandrasekhar-e13e5a.netlify.com')
-iframe.setAttribute("id", "sid-widget");
-iframe.style.position = 'fixed';
-iframe.style.top = '0';
-iframe.style.left = '0';
-iframe.style.width = '100vw';
-iframe.style.height = '100vh';
-iframe.style.zIndex = '1024';
-
-console.log(INFURA_KEY);
+let notificationCheck = true;
 
 function postToApi(options) {
   return request(options)
@@ -65,7 +53,7 @@ export default class SimpleID {
     this._selectedAddress = "";
     this.localRPCServer = params.localRPCServer;
     this.network = params.network;
-    this.apiKey = params.apiKey;
+    this.appId = params.appId;
     this.devId = params.devId;
     this.scopes = params.scopes;
     this.appOrigin = params.appOrigin;
@@ -78,7 +66,9 @@ export default class SimpleID {
     //web3 = new Web3(this.provider);
     headers['Authorization'] = this.apiKey;
     this.simple = ethers;
-    this.pingSimpleID();
+    this.notifications = [];
+    this.checkNotifications();
+    this.ping = this.pingSimpleID();
   }
 
   _initProvider() {
@@ -356,7 +346,40 @@ export default class SimpleID {
     return engine;
   }
 
+  async checkNotifications() {
+    if(notificationCheck) {
+      const address = this.getUserData() ? this.getUserData().wallet.ethAddr : "";
+      const appId = this.appId
+      if(address) {
+        const data = {
+          address, appId
+        }
+        action = 'process-data';
+        notificationCheck = false;  
+        const notificationData = await this.processData('notifications', data);
+        console.log("DONE CHECKING NOTIFICATIONS: ", notificationData);
+      }
+    }
+  }
+
   createPopup(invisible, payload) {
+    let iframe;
+    const checkIframe = document.getElementById('sid-widget');
+    if(checkIframe) {
+      //No need to open a new iFrame
+      iframe = checkIframe
+    } else {
+      iframe = document.createElement('iframe');
+      process.env.NODE_ENV === 'production' ? iframe.setAttribute('src', 'https://processes.simpleid.xyz') : iframe.setAttribute('src', 'http://localhost:3003');
+      //iframe.setAttribute('src', 'https://5e1b30e40f67a0af8133c3b8--compassionate-chandrasekhar-e13e5a.netlify.com')
+      iframe.setAttribute("id", "sid-widget");
+      iframe.style.position = 'fixed';
+      iframe.style.top = '0';
+      iframe.style.left = '0';
+      iframe.style.width = '100vw';
+      iframe.style.height = '100vh';
+      iframe.style.zIndex = '1024';
+    }
     console.log("ACTION FROM THE SDK: ", action);
     if(invisible) {
       console.log("make it invisible")
@@ -365,7 +388,7 @@ export default class SimpleID {
     }
     //const scopes = this.scopes;
     const params = this.config;
-    params.orgId = new SimpleID(params).getUserData() && new SimpleID(params).getUserData().orgId ? new SimpleID(params).getUserData().orgId : null;
+    params.orgId = new SimpleID(params).getUserData() && new SimpleID(params).getUserData().orgId ? new SimpleID(params).getUserData().orgId : undefined;
     return new Promise(function(resolve, reject) {
       //Launch the widget;
     const connection = connectToChild({
@@ -515,6 +538,7 @@ export default class SimpleID {
         appDetails: this.config, 
         date: new Date()
       }
+      //TODO: Uncomment and pick up work after web worker stuff
       //this.processData('ping', data)
       localStorage.setItem(PINGED_SIMPLE_ID, JSON.stringify(true))
     }
