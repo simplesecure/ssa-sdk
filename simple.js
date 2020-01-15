@@ -28,6 +28,7 @@ let action;
 let userDataForIFrame;
 let globalMethodCheck;
 let notificationCheck = true;
+let activeNoti = []
 
 function postToApi(options) {
   return request(options)
@@ -58,8 +59,8 @@ export default class SimpleID {
     this.appOrigin = params.appOrigin;
     this.development = params.development ? params.development : false;
     this.useSimpledIdWidget = params.useSimpledIdWidget
-    this.provider = this._initProvider();
-    this.activeNotifications = []
+    this.provider = params.appId === "00000000000000000000000000000000" ? null : this._initProvider();
+    this.activeNotifications = activeNoti
     //this.provider = new Web3.providers.HttpProvider(this.network === "local" ? this.localRPCServer : this.network === "layer2" ? LAYER2_RPC_SERVER : `https://${this.network}.infura.io/v3/${INFURA_KEY}`);
     this.subProvider = new Web3.providers.HttpProvider(this.network === "local" ? this.localRPCServer : this.network === "layer2" ? LAYER2_RPC_SERVER : `https://${this.network}.infura.io/v3/${INFURA_KEY}`);
     //TODO: When we understand RADAR better, uncomment below and comment above to switch to their node
@@ -362,7 +363,7 @@ export default class SimpleID {
         if(notificationData) {
           let activeNotifications = notificationData.filter(a => a.active === true)
           //No matter what, we need to return this to the developer
-          this.activeNotifications = activeNotifications;
+          activeNoti = activeNotifications;
           console.log("Active Notifications: ", activeNotifications)
           //Now we check to see if there are more than one notification: 
           if(activeNotifications.length > 1) {
