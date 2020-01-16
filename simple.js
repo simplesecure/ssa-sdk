@@ -70,8 +70,8 @@ export default class SimpleID {
     this.simple = ethers;
     this.notifications = [];
     //TODO: If we want to handle notifications in the engagement app, this won't fly
-    this.checkNotifications = params.appId === "00000000000000000000000000000000" ? null : this.checkNotifications();
-    this.ping = this.pingSimpleID();
+    //this._checkNotifications = params.appId === "00000000000000000000000000000000" ? null : this._checkNotifications();
+    //this.ping = this.pingSimpleID();
   }
 
   _initProvider() {
@@ -349,6 +349,10 @@ export default class SimpleID {
     return engine;
   }
 
+  async _checkNotifications() {
+    this.checkNotifications()
+  }
+
   async checkNotifications() {
     if(notificationCheck) {
       const address = this.getUserData() ? this.getUserData().wallet.ethAddr : "";
@@ -360,7 +364,8 @@ export default class SimpleID {
         action = 'process-data';
         notificationCheck = false;  
         const notificationData = await this.processData('notifications', data);
-        if(notificationData) {
+        console.log("NOTIFICATION DATA", notificationData);
+        if(notificationData.length > 0) {
           let activeNotifications = notificationData.filter(a => a.active === true)
           //No matter what, we need to return this to the developer
           activeNoti = activeNotifications;
@@ -371,7 +376,6 @@ export default class SimpleID {
           } else if(activeNotifications.length === 1) {
             //need to check if the developer expects us to handle the widget
             if(this.useSimpledIdWidget) {
-              console.log("WHAT?")
               //Throw up the button for the SID widget
               const notification = activeNotifications[0];
               const dataToPass = {
@@ -380,10 +384,13 @@ export default class SimpleID {
               }
               localStorage.setItem(ACTIVE_SID_MESSAGE, JSON.stringify(dataToPass))
               loadButton()
+            } else {
+              return activeNotifications
             }
           }
         } else {
-          return "No notifications"
+          console.log("returning: ", notificationData)
+          return notificationData
         }
       }
     }
@@ -396,9 +403,12 @@ export default class SimpleID {
       //No need to open a new iFrame
       iframe = checkIframe
     } else {
+      const enviro = process.env.NODE_ENV
+      const devUrl = "http://localhost:3003"
+      const prodUrl = 'https://processes.simpleid.xyz'
+
       iframe = document.createElement('iframe');
-      process.env.NODE_ENV === 'production' ? iframe.setAttribute('src', 'https://processes.simpleid.xyz') : iframe.setAttribute('src', 'http://localhost:3003');
-      //iframe.setAttribute('src', 'https://5e1b30e40f67a0af8133c3b8--compassionate-chandrasekhar-e13e5a.netlify.com')
+      enviro === 'production' ? iframe.setAttribute('src', prodUrl) : iframe.setAttribute('src', devUrl);
       iframe.setAttribute("id", "sid-widget");
       iframe.style.position = 'fixed';
       iframe.style.top = '0';
@@ -527,6 +537,15 @@ export default class SimpleID {
 
   signUserIn() {
     action = "sign-in";
+    this.createPopup(); 
+  }
+  //OAuth Flow Would Use This Method
+  signUserInWithEmail(email) {
+    const objectToSend = {
+      thisAction: 'sign-in-email-provided',
+      email
+    }
+    action = objectToSend
     this.createPopup(); 
   }
 
