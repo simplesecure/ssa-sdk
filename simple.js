@@ -1,5 +1,4 @@
 import { Query } from './utils/query';
-import { loadButton } from './simpleid-messages'
 import connectToChild from 'penpal/lib/connectToChild';
 const ProviderEngine = require('web3-provider-engine')
 const CacheSubprovider = require('web3-provider-engine/subproviders/cache.js')
@@ -19,6 +18,7 @@ const LAYER2_RPC_SERVER = 'https://testnet2.matic.network';
 const SIMPLEID_USER_SESSION = 'SimpleID-User-Session';
 const ACTIVE_SID_MESSAGE = 'active-sid-message'
 const PINGED_SIMPLE_ID = 'pinged-simple-id';
+const MESSAGES_SEEN = 'messages-seen'
 const ethers = require('ethers');
 let headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
 let tx;
@@ -29,6 +29,9 @@ let userDataForIFrame;
 let globalMethodCheck;
 let notificationCheck = true;
 let activeNoti = []
+let pingChecked = false
+let buttonEl
+let messageEl
 
 function postToApi(options) {
   return request(options)
@@ -69,9 +72,7 @@ export default class SimpleID {
     headers['Authorization'] = this.apiKey;
     this.simple = ethers;
     this.notifications = [];
-    //TODO: If we want to handle notifications in the engagement app, this won't fly
-    //this._checkNotifications = params.appId === "00000000000000000000000000000000" ? null : this._checkNotifications();
-    //this.ping = this.pingSimpleID();
+    this.ping = this.pingSimpleID();
   }
 
   _initProvider() {
@@ -186,7 +187,6 @@ export default class SimpleID {
           cb(error, result);
         },
         approveTransaction: async (txParams, cb) => {  
-          console.log("APPROVE TX", txParams);
           let error;
           thisTx = {
             appName: this.config.appName, 
@@ -199,53 +199,17 @@ export default class SimpleID {
           cb(error, true);
         }, 
         signTransaction: (txParams, cb) => {          
-          console.log("SIGN TX ", txParams);
           let error;
           console.log("RAWTX: ", txSigned);
           if(!txSigned) {
             error = "User canceled action"
           }
-          cb(error, txSigned);
-          // let error;
-          // let result;
-          // if(globalMethodCheck !== "eth_signTransaction") {
-          //   console.log("Broadcasting...")
-          //   console.log(txSigned)
-          //   //web3.eth.sendSignedTransaction(txSigned);
-          //   cb(error, txSigned);
-          //   // setTimeout(() => {
-          //   //   cb(error, txSigned);
-          //   // }, 1500);
-          //   // web3.eth.sendSignedTransaction(txSigned)
-          //   // .on('transactionHash', (hash) => {
-          //   //   console.log("SDK: ", hash);
-          //   // })
-          //   // .on('receipt', (receipt) => {
-          //   //   console.log("SDK RECEIPT: ", receipt);
-          //   //   cb(error, receipt);
-          //   // })
-          //   // result = sent;
-          //   // cb(error, result);
-          // } else {
-          //   result = txSigned;
-          //   cb(error, result);
-          // }                       
+          cb(error, txSigned);                      
         },
         publishTransaction: (rawTx, cb) => {
-          // console.log("PUBLISH", rawTx);
-          // let error;
-          // return rawTx
-          console.log("PUBLISHED TX: ", rawTx);
           cb(null, rawTx);
-          // const sent = await web3.eth.sendSignedTransaction(rawTx)
-          // console.log("SENT: ", sent);
-          //cb(null, sent)
-          // setTimeout(() => {
-          //   cb(error, rawTx);
-          // }, 2500)
         }, 
         signMessage: async (msgParams, cb) => {
-          console.log("SIGN MSG");
           let error;
           thisTx = {
             appName: this.config.appName, 
@@ -256,7 +220,6 @@ export default class SimpleID {
           cb(error, popup);
         },
         signPersonalMessage: async (msgParams, cb) => {
-          console.log("SIGN PERSONAL MSG");
           let error;
           thisTx = {
             appName: this.config.appName, 
@@ -288,26 +251,9 @@ export default class SimpleID {
         getTransactionCount: async (txParams, cb) => {
          const count = await web3.eth.getTransactionCount(this.getUserData() && this.getUserData().wallet ? this.getUserData().wallet.ethAddr : "") 
          cb(null, count);
-         //return count;
         }
       }),
     );
-
-    // engine.addProvider({
-    //   setEngine: _ => _,
-    //   handleRequest: async (payload, next, end) => {
-    //     let result;
-    //     let error;
-    //     if(!this.network) {
-    //       error = "no network provided";
-    //     }
-    //     //console.log("PAYLOAD: ", payload);
-    //     engine.networkVersion = this.network;
-    //     console.log(engine.networkVersion);
-    //     result = this.network;
-    //     end(error, result);
-    //   },
-    // });
 
     engine.addProvider(new RpcSubprovider({
       rpcUrl: `https://${this.network}.infura.io/v3/${INFURA_KEY}`,
@@ -372,7 +318,34 @@ export default class SimpleID {
           console.log("Active Notifications: ", activeNotifications)
           //Now we check to see if there are more than one notification: 
           if(activeNotifications.length > 1) {
-            //Need to think through how to best handle this
+            let notificationsToReturn = []
+            //Filter out the messages that have been seen
+            const messagesSeen = localStorage.getItem(MESSAGES_SEEN) !== "undefined" ? JSON.parse(localStorage.getItem(MESSAGES_SEEN)) : undefined
+            if(messagesSeen && messagesSeen.length > 0) {
+              for (const noti of activeNotifications) {
+                const foundMessage = messagesSeen.filter(a => a === noti.id)
+                if(foundMessage && foundMessage.length > 0) {  
+                  //Don't do anything here
+                } else {
+                  notificationsToReturn.push(noti);
+                }
+              }
+            } else {
+              notificationsToReturn = activeNotifications
+            }
+
+            if(notificationsToReturn && notificationsToReturn.length > 0) {
+              if(this.useSimpledIdWidget) {
+                const messageToStore = notificationsToReturn[0]
+                localStorage.setItem(ACTIVE_SID_MESSAGE, JSON.stringify(messageToStore))
+                this.loadButton()
+              } else {
+                return notificationsToReturn;
+              }
+            } else {
+              return []
+            }
+            
           } else if(activeNotifications.length === 1) {
             //need to check if the developer expects us to handle the widget
             if(this.useSimpledIdWidget) {
@@ -383,7 +356,7 @@ export default class SimpleID {
                 appId: this.appId
               }
               localStorage.setItem(ACTIVE_SID_MESSAGE, JSON.stringify(dataToPass))
-              loadButton()
+              this.loadButton()
             } else {
               return activeNotifications
             }
@@ -442,6 +415,7 @@ export default class SimpleID {
           }
         }, 
         returnProcessedData(data) {
+          console.log("IS IT HERE")
           resolve(data);
         },
         getPopUpInfo() {
@@ -573,21 +547,174 @@ export default class SimpleID {
   }
 
   async pingSimpleID() {
-    console.log("Pinged");
-    //Check localStorage for a flag that indicates a ping
-    const pinged = JSON.parse(localStorage.getItem(PINGED_SIMPLE_ID))
-    if(pinged) {
-      console.log("Already pinged SimpleID");
-    } else {
-      //Now we need to fire off a method that will ping SimpleID and let us know the app is connected
-      const data = {
-        appDetails: this.config, 
-        date: new Date()
+    if(pingChecked) {
+      //No need to always ping
+      //This is to prevent endless loops that eventually can bog down memory
+      //Now we can check notifications
+
+      //TODO: If we want to handle notifications in the engagement app, this won't fly
+      if(notificationCheck) {
+        this.config.appId === "00000000000000000000000000000000" ? null : this.checkNotifications();
       }
-      //TODO: Uncomment and pick up work after web worker stuff
-      //this.processData('ping', data)
-      localStorage.setItem(PINGED_SIMPLE_ID, JSON.stringify(true))
+    } else {
+      //Check localStorage for a flag that indicates a ping
+      const pinged = JSON.parse(localStorage.getItem(PINGED_SIMPLE_ID))
+      const thisOrigin = window.location.origin
+      pingChecked = true
+      if(pinged && pinged.date) {
+        console.log("Already Pinged SID.")
+        if(notificationCheck) {
+          this.config.appId === "00000000000000000000000000000000" ? null : this.checkNotifications();
+        }
+      } else {
+        //Now we need to fire off a method that will ping SimpleID and let us know the app is connected
+        const data = {
+          appDetails: this.config, 
+          date: Date.now(), 
+          origin: thisOrigin
+        }
+        //TODO: Uncomment and pick up work after web worker stuff
+        try {
+          await this.processData('ping', data)
+          localStorage.setItem(PINGED_SIMPLE_ID, JSON.stringify(data))
+          //Only when the ping is complete should we fetch notifications
+          this.config.appId === "00000000000000000000000000000000" ? null : this.checkNotifications();
+        } catch(e) {
+          console.log("Error pinging: ", e)
+        }
+      }
     }
+  }
+
+  loadButton() {
+    const params = this.config
+    const head = document.head || document.getElementsByTagName('head')[0]
+    const linkEl = document.createElement('link');
+    linkEl.rel = 'stylesheet';
+    linkEl.href = 'https://use.fontawesome.com/releases/v5.0.6/css/all.css';
+
+    const bellIcon = document.createElement('i');
+    bellIcon.setAttribute('class', 'far fa-bell');
+    bellIcon.style.color = "#fff";
+    bellIcon.style.fontSize = "20px";
+
+    buttonEl = document.createElement('button');
+    buttonEl.setAttribute('id', 'notification-button')
+    buttonEl.appendChild(bellIcon);
+    buttonEl.style.width = "60px";
+    buttonEl.style.height = "60px";
+    buttonEl.style.background = "#2568EF";
+    buttonEl.style.border = "none";
+    buttonEl.style.borderRadius = "50%";
+    buttonEl.style.cursor = "pointer";
+    buttonEl.style.boxShadow = "0 3px 7px rgba(0,0,0,0.12)"
+    buttonEl.style.position = "fixed";
+    buttonEl.style.zIndex = "1024";
+    buttonEl.style.bottom = "15px";
+    buttonEl.style.right = "15px";
+    buttonEl.setAttribute('id', 'appMessageButton');
+    buttonEl.onclick = function() {
+      new SimpleID(params).loadMessages()
+    }
+
+    const alertDiv = document.createElement('div');
+    alertDiv.style.background = "red";
+    alertDiv.style.width = "8px";
+    alertDiv.style.height = "8px";
+    alertDiv.style.borderRadius = "50%";
+    alertDiv.style.position = "absolute";
+    alertDiv.style.bottom = "32px";
+    alertDiv.style.right = "22px";
+
+    buttonEl.appendChild(alertDiv);
+
+    messageEl = document.createElement('div');
+    messageEl.setAttribute('id', 'message-element')
+    messageEl.style.width = "300px";
+    messageEl.style.height = "85vh";
+    messageEl.style.position = "fixed";
+    messageEl.style.zIndex = "1024";
+    messageEl.style.right = "15px";
+    messageEl.style.bottom = "15px";
+    messageEl.style.background = "#fff";
+    messageEl.style.borderRadius = "5px";
+    messageEl.style.boxShadow = "0 3px 7px rgba(0,0,0,0.12)"
+    messageEl.style.paddingTop = "15px";
+
+    const closeButton = document.createElement('button');
+    closeButton.setAttribute('id', 'messagesClose');
+    closeButton.style.border = "none";
+    closeButton.style.position = "absolute";
+    closeButton.style.right = "10px";
+    closeButton.style.top = "10px";
+    closeButton.style.background = "#fff";
+    closeButton.style.cursor = "pointer";
+
+    closeButton.innerText = "Dismiss";
+    closeButton.onclick = function() {
+      new SimpleID(params).dismissMessages();
+    }
+
+    messageEl.appendChild(closeButton);
+
+    head.appendChild(linkEl);
+    document.body.appendChild(buttonEl);
+  }
+
+  loadMessages() {
+    const messageData = JSON.parse(localStorage.getItem(ACTIVE_SID_MESSAGE))
+    console.log(messageData)
+    buttonEl.style.display = "none";
+
+    let mainDiv = document.createElement('div');
+    mainDiv.style.width = '100%';
+    mainDiv.style.height = '100%';
+    mainDiv.style.zIndex = '1024';
+    mainDiv.style.border = "none";
+    
+    let secondDiv = document.createElement('div')
+    mainDiv.appendChild(secondDiv)
+    secondDiv.setAttribute('class', 'message-body')
+    let thirdDiv = document.createElement('div');
+    thirdDiv.innerHTML = messageData.notification ? messageData.notification.content : messageData.content //TODO: this is a terrible hack
+    secondDiv.appendChild(thirdDiv)
+
+    mainDiv.style.width ="100%"
+    secondDiv.style.padding = "15px"
+
+    thirdDiv.style.fontSize = "16px"
+    thirdDiv.style.marginBottom = "10px"
+
+    
+    messageEl.appendChild(mainDiv);
+    document.body.appendChild(messageEl);
+  }
+
+  async dismissMessages() {
+    //First we get the notification id
+    const messageData = JSON.parse(localStorage.getItem(ACTIVE_SID_MESSAGE))
+    let messagesSeen = JSON.parse(localStorage.getItem(MESSAGES_SEEN))
+    if(messagesSeen && messagesSeen.length > 0) {
+      messagesSeen.push(messageData.id)
+    } else {
+      messagesSeen = []
+      messagesSeen.push(messageData.id)
+    }
+    localStorage.setItem(MESSAGES_SEEN, JSON.stringify(messagesSeen))
+    const messageID = messageData.notification ? messageData.notification.id : messageData.id //TODO: another terrible hack
+    messageEl.style.display = "none";
+    //Need to hide the message but we also need to send data to the orgData table
+    //Specifically need to show that this user has seen the message
+    const data = {
+      appData: this.config, 
+      address: this.getUserData().wallet.ethAddr,
+      dateSeen: Date.now(), 
+      messageID
+    }
+    action = 'process-data';
+    await this.processData('notification-seen', data);
+    localStorage.removeItem(ACTIVE_SID_MESSAGE);
+    //localStorage.setItem(ACTIVE_SID_MESSAGE, JSON.stringify(messageData));
   }
 
   launchWallet() {
