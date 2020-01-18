@@ -21,7 +21,6 @@ const PINGED_SIMPLE_ID = 'pinged-simple-id';
 const MESSAGES_SEEN = 'messages-seen'
 const ethers = require('ethers');
 let headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
-let tx;
 let thisTx;
 let txSigned;
 let action;
@@ -72,7 +71,7 @@ export default class SimpleID {
     headers['Authorization'] = this.apiKey;
     this.simple = ethers;
     this.notifications = [];
-    this.ping = this.pingSimpleID();
+    this.ping = params.isHostedApp === true ? null : this.pingSimpleID();
   }
 
   _initProvider() {
@@ -379,6 +378,9 @@ export default class SimpleID {
       const enviro = process.env.NODE_ENV
       const devUrl = "http://localhost:3003"
       const prodUrl = 'https://processes.simpleid.xyz'
+      console.log("ENVIROMENT: ", enviro)
+      console.log("DEV URL: ", devUrl)
+      console.log("PROD URL: ", prodUrl)
 
       iframe = document.createElement('iframe');
       enviro === 'production' ? iframe.setAttribute('src', prodUrl) : iframe.setAttribute('src', devUrl);
@@ -542,6 +544,7 @@ export default class SimpleID {
   }
 
   async openHostedWidget() {
+    console.log("OPENING")
     action = 'hosted-app';
     this.createPopup();
   }
