@@ -320,6 +320,7 @@ export default class SimpleID {
             let notificationsToReturn = []
             //Filter out the messages that have been seen
             const messagesSeen = localStorage.getItem(MESSAGES_SEEN) !== "undefined" ? JSON.parse(localStorage.getItem(MESSAGES_SEEN)) : undefined
+            console.log("SEEN MESSAGES: ",JSON.parse(localStorage.getItem(MESSAGES_SEEN)))
             if(messagesSeen && messagesSeen.length > 0) {
               for (const noti of activeNotifications) {
                 const foundMessage = messagesSeen.filter(a => a === noti.id)
@@ -346,10 +347,26 @@ export default class SimpleID {
             }
             
           } else if(activeNotifications.length === 1) {
+            let notificationsToReturn = []
+            //Filter out the messages that have been seen
+            const messagesSeen = localStorage.getItem(MESSAGES_SEEN) !== "undefined" ? JSON.parse(localStorage.getItem(MESSAGES_SEEN)) : undefined
+            console.log("SEEN MESSAGES: ",JSON.parse(localStorage.getItem(MESSAGES_SEEN)))
+            if(messagesSeen && messagesSeen.length > 0) {
+              for (const noti of activeNotifications) {
+                const foundMessage = messagesSeen.filter(a => a === noti.id)
+                if(foundMessage && foundMessage.length > 0) {  
+                  //Don't do anything here
+                } else {
+                  notificationsToReturn.push(noti);
+                }
+              }
+            } else {
+              notificationsToReturn = activeNotifications
+            }
             //need to check if the developer expects us to handle the widget
-            if(this.useSimpledIdWidget) {
+            if(this.useSimpledIdWidget && notificationsToReturn.length > 0) {
               //Throw up the button for the SID widget
-              const notification = activeNotifications[0];
+              const notification = notificationsToReturn[0];
               const dataToPass = {
                 notification, 
                 appId: this.appId
@@ -357,7 +374,7 @@ export default class SimpleID {
               localStorage.setItem(ACTIVE_SID_MESSAGE, JSON.stringify(dataToPass))
               this.loadButton()
             } else {
-              return activeNotifications
+              return notificationsToReturn
             }
           }
         } else {
@@ -397,6 +414,8 @@ export default class SimpleID {
       console.log("make it invisible")
       iframe.style.width = 0;
       iframe.style.height = 0;
+      iframe.style.border = "none"
+      iframe.style.background = "transparent"
     }
     //const scopes = this.scopes;
     const params = this.config;
@@ -525,12 +544,26 @@ export default class SimpleID {
     this.createPopup(); 
   }
 
-  passUserInfo(userInfo) {
+  async passUserInfo(userInfo) {
     //Send this info to the iFrame. Don't display the iFrame though as the user/app isn't using
     //the SimpleID wallet
     action = "sign-in-no-sid";
     userDataForIFrame = userInfo;
-    this.createPopup(true, userInfo);
+    try { 
+      const newUser = await this.createPopup(true, userInfo);
+      localStorage.setItem(SIMPLEID_USER_SESSION, JSON.stringify(newUser))
+      //TODO: need to make this happen without a refresh
+      this.handleNotificationsNonSIDUser()
+      return 'success'
+    } catch(e) {
+      return e
+    }
+  }
+
+  handleNotificationsNonSIDUser() {
+    setTimeout(() => {
+      this.checkNotifications()
+    }, 2000)
   }
 
   async processData(type, data) {
@@ -696,15 +729,16 @@ export default class SimpleID {
   async dismissMessages() {
     //First we get the notification id
     const messageData = JSON.parse(localStorage.getItem(ACTIVE_SID_MESSAGE))
+    const messageID = messageData.notification ? messageData.notification.id : messageData.id //TODO: another terrible hack
+    console.log("MESSAGE DATA: ", messageData);
     let messagesSeen = JSON.parse(localStorage.getItem(MESSAGES_SEEN))
     if(messagesSeen && messagesSeen.length > 0) {
-      messagesSeen.push(messageData.id)
+      messagesSeen.push(messageID)
     } else {
       messagesSeen = []
-      messagesSeen.push(messageData.id)
+      messagesSeen.push(messageID)
     }
     localStorage.setItem(MESSAGES_SEEN, JSON.stringify(messagesSeen))
-    const messageID = messageData.notification ? messageData.notification.id : messageData.id //TODO: another terrible hack
     messageEl.style.display = "none";
     //Need to hide the message but we also need to send data to the orgData table
     //Specifically need to show that this user has seen the message
