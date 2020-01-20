@@ -12,7 +12,6 @@ const Web3 = require('web3');
 const engine = new ProviderEngine()
 const web3 = new Web3(engine)
 const request = require('request-promise');
-const config = require('./config.json');
 const INFURA_KEY = "b8c67a1f996e4d5493d5ba3ae3abfb03";
 const LAYER2_RPC_SERVER = 'https://testnet2.matic.network';
 const SIMPLEID_USER_SESSION = 'SimpleID-User-Session';
