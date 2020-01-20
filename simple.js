@@ -59,10 +59,11 @@ export default class SimpleID {
     this.devId = params.devId;
     this.scopes = params.scopes;
     this.appOrigin = params.appOrigin;
+    this.devWidget = params.devWidget
     this.development = params.development ? params.development : false;
     this.useSimpledIdWidget = params.useSimpledIdWidget
     this.provider = params.appId === "00000000000000000000000000000000" ? null : this._initProvider();
-    this.activeNotifications = activeNoti
+    this.activeNotifications = []
     //this.provider = new Web3.providers.HttpProvider(this.network === "local" ? this.localRPCServer : this.network === "layer2" ? LAYER2_RPC_SERVER : `https://${this.network}.infura.io/v3/${INFURA_KEY}`);
     this.subProvider = new Web3.providers.HttpProvider(this.network === "local" ? this.localRPCServer : this.network === "layer2" ? LAYER2_RPC_SERVER : `https://${this.network}.infura.io/v3/${INFURA_KEY}`);
     //TODO: When we understand RADAR better, uncomment below and comment above to switch to their node
@@ -193,13 +194,11 @@ export default class SimpleID {
           }
           action = 'transaction';
           const popup = await this.createPopup(); 
-          console.log("POPUP: ", popup);
           txSigned = popup; 
           cb(error, true);
         }, 
         signTransaction: (txParams, cb) => {          
           let error;
-          console.log("RAWTX: ", txSigned);
           if(!txSigned) {
             error = "User canceled action"
           }
@@ -276,12 +275,6 @@ export default class SimpleID {
 
     engine.isSimpleID = true;
 
-    // engine.on('block', function(block){
-    //   console.log('================================')
-    //   console.log('BLOCK CHANGED:', '#'+block.number.toString('hex'), '0x'+block.hash.toString('hex'))
-    //   console.log('================================')
-    // })
-
     engine.on('error', error => {
       if (error && error.message && error.message.includes('PollingBlockTracker')) {
         console.warn('If you see this warning constantly, there might be an error with your RPC node.');
@@ -309,18 +302,15 @@ export default class SimpleID {
         action = 'process-data';
         notificationCheck = false;  
         const notificationData = await this.processData('notifications', data);
-        console.log("NOTIFICATION DATA", notificationData);
         if(notificationData.length > 0) {
           let activeNotifications = notificationData.filter(a => a.active === true)
           //No matter what, we need to return this to the developer
           activeNoti = activeNotifications;
-          console.log("Active Notifications: ", activeNotifications)
           //Now we check to see if there are more than one notification: 
           if(activeNotifications.length > 1) {
             let notificationsToReturn = []
             //Filter out the messages that have been seen
             const messagesSeen = localStorage.getItem(MESSAGES_SEEN) !== "undefined" ? JSON.parse(localStorage.getItem(MESSAGES_SEEN)) : undefined
-            console.log("SEEN MESSAGES: ",JSON.parse(localStorage.getItem(MESSAGES_SEEN)))
             if(messagesSeen && messagesSeen.length > 0) {
               for (const noti of activeNotifications) {
                 const foundMessage = messagesSeen.filter(a => a === noti.id)
@@ -340,6 +330,7 @@ export default class SimpleID {
                 localStorage.setItem(ACTIVE_SID_MESSAGE, JSON.stringify(messageToStore))
                 this.loadButton()
               } else {
+                this.notifications = notificationsToReturn
                 return notificationsToReturn;
               }
             } else {
@@ -350,7 +341,6 @@ export default class SimpleID {
             let notificationsToReturn = []
             //Filter out the messages that have been seen
             const messagesSeen = localStorage.getItem(MESSAGES_SEEN) !== "undefined" ? JSON.parse(localStorage.getItem(MESSAGES_SEEN)) : undefined
-            console.log("SEEN MESSAGES: ",JSON.parse(localStorage.getItem(MESSAGES_SEEN)))
             if(messagesSeen && messagesSeen.length > 0) {
               for (const noti of activeNotifications) {
                 const foundMessage = messagesSeen.filter(a => a === noti.id)
@@ -374,11 +364,12 @@ export default class SimpleID {
               localStorage.setItem(ACTIVE_SID_MESSAGE, JSON.stringify(dataToPass))
               this.loadButton()
             } else {
+              this.notifications = notificationsToReturn
               return notificationsToReturn
             }
           }
         } else {
-          console.log("returning: ", notificationData)
+          this.notifications = notificationsToReturn
           return notificationData
         }
       }
@@ -392,15 +383,12 @@ export default class SimpleID {
       //No need to open a new iFrame
       iframe = checkIframe
     } else {
-      const enviro = process.env.NODE_ENV
       const devUrl = "http://localhost:3003"
       const prodUrl = 'https://processes.simpleid.xyz'
-      console.log("ENVIROMENT: ", enviro)
-      console.log("DEV URL: ", devUrl)
-      console.log("PROD URL: ", prodUrl)
 
       iframe = document.createElement('iframe');
-      enviro === 'production' ? iframe.setAttribute('src', prodUrl) : iframe.setAttribute('src', devUrl);
+      this.devWidget ? iframe.setAttribute('src', devUrl) : iframe.setAttribute('src', prodUrl);
+
       iframe.setAttribute("id", "sid-widget");
       iframe.style.position = 'fixed';
       iframe.style.top = '0';
@@ -408,10 +396,11 @@ export default class SimpleID {
       iframe.style.width = '100vw';
       iframe.style.height = '100vh';
       iframe.style.zIndex = '1024';
+      iframe.style.border = "none"
+      iframe.style.background = "transparent"
     }
-    console.log("ACTION FROM THE SDK: ", action);
+
     if(invisible) {
-      console.log("make it invisible")
       iframe.style.width = 0;
       iframe.style.height = 0;
       iframe.style.border = "none"
@@ -429,14 +418,12 @@ export default class SimpleID {
       methods: {
         dataToProcess() {
           if(payload) {
-            console.log("COMING FROM THE SDK...", payload);
             return payload;
           } else if(userDataForIFrame) {
             return userDataForIFrame
           }
         }, 
         returnProcessedData(data) {
-          console.log("IS IT HERE")
           resolve(data);
         },
         getPopUpInfo() {
@@ -447,7 +434,6 @@ export default class SimpleID {
           return params;
         }, 
         storeWallet(userData) {
-          console.log("STORED WALLET: ", userData);
           localStorage.setItem(SIMPLEID_USER_SESSION, userData);
           return true;
         }, 
@@ -486,9 +472,9 @@ export default class SimpleID {
               email: creds.email
             }
           }
-          console.log("PAYLOAD: ", payload);
+          
           const signedIn = await new SimpleID(params).authenticate(payload);
-          console.log(signedIn);
+          
           if(signedIn.success || signedIn.message === "user session created") {
             return true;
           } else {
@@ -496,7 +482,7 @@ export default class SimpleID {
           }
         }, 
         close(reload){
-          console.log("CLOSING iFRAME");
+          
           action = "";
           if (document.body.contains(iframe)) {
             document.body.removeChild(iframe);
@@ -577,7 +563,6 @@ export default class SimpleID {
   }
 
   async openHostedWidget() {
-    console.log("OPENING")
     action = 'hosted-app';
     this.createPopup();
   }
@@ -598,7 +583,6 @@ export default class SimpleID {
       const thisOrigin = window.location.origin
       pingChecked = true
       if(pinged && pinged.date) {
-        console.log("Already Pinged SID.")
         if(notificationCheck) {
           this.config.appId === "00000000000000000000000000000000" ? null : this.checkNotifications();
         }
@@ -699,7 +683,6 @@ export default class SimpleID {
 
   loadMessages() {
     const messageData = JSON.parse(localStorage.getItem(ACTIVE_SID_MESSAGE))
-    console.log(messageData)
     buttonEl.style.display = "none";
 
     let mainDiv = document.createElement('div');
@@ -730,7 +713,6 @@ export default class SimpleID {
     //First we get the notification id
     const messageData = JSON.parse(localStorage.getItem(ACTIVE_SID_MESSAGE))
     const messageID = messageData.notification ? messageData.notification.id : messageData.id //TODO: another terrible hack
-    console.log("MESSAGE DATA: ", messageData);
     let messagesSeen = JSON.parse(localStorage.getItem(MESSAGES_SEEN))
     if(messagesSeen && messagesSeen.length > 0) {
       messagesSeen.push(messageID)
@@ -778,46 +760,6 @@ export default class SimpleID {
   //This returns the wallet info for the SimpleID user
   getUserData() {
     return JSON.parse(localStorage.getItem(SIMPLEID_USER_SESSION));
-  }
-
-  // async createUser(userData) {
-  //   const { network, devId, development } = this.config;
-  //   let parsedData = JSON.parse(userData);
-  //   console.log(parsedData)
-  //   const { email, encryptedKeychain } = parsedData;
-  //   //Check if the user exists in the DB. Based on email address
-  //   const payload = JSON.stringify({
-  //     email,
-  //     encryptedKeychain, 
-  //     network, 
-  //     devId, 
-  //     development
-  //   });
-  //   var options = { url: config.CREATE_USER_URL, method: 'POST', headers: headers, body: payload };
-  //   try {
-  //     const postData = await postToApi(options);
-  //     return postData
-  //   } catch(error) {
-  //     return { success: false, body: error }
-  //   }
-  // }
-
-  async checkUser(email) {
-    const { network, devId, development } = this.config;
-    //Check if the user exists in the DB. Based on email address
-    const payload = JSON.stringify({
-      email,
-      network, 
-      devId, 
-      development
-    });
-    var options = { url: config.FETCH_USER_URL, method: 'POST', headers: headers, body: payload };
-    try {
-      const postData = await postToApi(options);
-      return postData
-    } catch(error) {
-      return { success: false, body: error }
-    }
   }
 
   signOut() {
