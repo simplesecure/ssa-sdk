@@ -299,7 +299,8 @@ export default class SimpleID {
           address, appId
         }
         action = 'process-data';
-        notificationCheck = false;  
+        notificationCheck = false; 
+        let notificationsToReturn = [] 
         const notificationData = await this.processData('notifications', data);
         if(notificationData.length > 0) {
           let activeNotifications = notificationData.filter(a => a.active === true)
@@ -307,7 +308,6 @@ export default class SimpleID {
           activeNoti = activeNotifications;
           //Now we check to see if there are more than one notification: 
           if(activeNotifications.length > 1) {
-            let notificationsToReturn = []
             //Filter out the messages that have been seen
             const messagesSeen = localStorage.getItem(MESSAGES_SEEN) !== "undefined" ? JSON.parse(localStorage.getItem(MESSAGES_SEEN)) : undefined
             if(messagesSeen && messagesSeen.length > 0) {
@@ -337,7 +337,7 @@ export default class SimpleID {
             }
             
           } else if(activeNotifications.length === 1) {
-            let notificationsToReturn = []
+            
             //Filter out the messages that have been seen
             const messagesSeen = localStorage.getItem(MESSAGES_SEEN) !== "undefined" ? JSON.parse(localStorage.getItem(MESSAGES_SEEN)) : undefined
             if(messagesSeen && messagesSeen.length > 0) {
@@ -558,6 +558,7 @@ export default class SimpleID {
       type, data
     }
     const returnedData = await this.createPopup(invisible, payload);
+    action = ""
     return returnedData;
   }
 
