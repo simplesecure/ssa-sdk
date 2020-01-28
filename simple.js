@@ -1,5 +1,6 @@
 import { Query } from './utils/query';
 import connectToChild from 'penpal/lib/connectToChild';
+const log = require('loglevel')
 const ProviderEngine = require('web3-provider-engine')
 const CacheSubprovider = require('web3-provider-engine/subproviders/cache.js')
 const FixtureSubprovider = require('web3-provider-engine/subproviders/fixture.js')
@@ -31,25 +32,12 @@ let pingChecked = false
 let buttonEl
 let messageEl
 
-function postToApi(options) {
-  return request(options)
-    .then((body) => {
-      return {
-        success: true,
-        body: JSON.parse(body)
-      }
-    })
-    .catch(error => {
-      console.log('Error: ', error);
-      return {
-        success: false,
-        body: JSON.parse(error)
-      }
-    });
-}
+const SID_APP_ID = "00000000000000000000000000000000"
 
 export default class SimpleID {
   constructor(params) {
+    const startTimeMs = Date.now()
+
     this.config = params;
     this._selectedAddress = "";
     this.localRPCServer = params.localRPCServer;
@@ -61,26 +49,37 @@ export default class SimpleID {
     this.devWidget = params.devWidget
     this.development = params.development ? params.development : false;
     this.useSimpledIdWidget = params.useSimpledIdWidget
-    this.provider = params.appId === "00000000000000000000000000000000" ? null : this._initProvider();
     this.activeNotifications = []
-    //this.provider = new Web3.providers.HttpProvider(this.network === "local" ? this.localRPCServer : this.network === "layer2" ? LAYER2_RPC_SERVER : `https://${this.network}.infura.io/v3/${INFURA_KEY}`);
-    
-    ///   IF We ever want to put Infrua back in, uncomment below and comment the Radar.
-    
-    //this.subProvider = new Web3.providers.HttpProvider(this.network === "local" ? this.localRPCServer : this.network === "layer2" ? LAYER2_RPC_SERVER : `https://${this.network}.infura.io/v3/${INFURA_KEY}`);
-    
-    this.subProvider = new Web3.providers.HttpProvider(this.network === "local" ? this.localRPCServer : this.network === "layer2" ? LAYER2_RPC_SERVER : `https://shared-geth-ropsten.nodes.deploy.radar.tech/?apikey=a356caf36d191f896bac510e685d9e231e6897fc0d0835a9`);
-    //web3 = new Web3(this.provider);
-    headers['Authorization'] = this.apiKey;
-    this.simple = ethers;
+
+    this.provider = undefined
+    this.subProvider = undefined
+
+    // AC: Commented this out as there is no apiKey defined in this class or
+    //     from what I can see, in the params.
+    //     TODO: talk with Justin further
+    // headers['Authorization'] = this.apiKey;
     this.notifications = [];
     this.ping = params.isHostedApp === true ? null : this.pingSimpleID();
+
+    const endTimeMs = Date.now()
+    log.debug(`Simple ID constructed in ${endTimeMs - startTimeMs} ms.`)
+  }
+
+  // Separate the wallet initialization from the constructor (not used at moment)
+  _initWallet() {
+    //this.provider = new Web3.providers.HttpProvider(this.network === "local" ? this.localRPCServer : this.network === "layer2" ? LAYER2_RPC_SERVER : `https://${this.network}.infura.io/v3/${INFURA_KEY}`);
+    ///   IF We ever want to put Infrua back in, uncomment below and comment the Radar.
+    //this.subProvider = new Web3.providers.HttpProvider(this.network === "local" ? this.localRPCServer : this.network === "layer2" ? LAYER2_RPC_SERVER : `https://${this.network}.infura.io/v3/${INFURA_KEY}`);
+    this.provider = this.config.appId === SID_APP_ID ? null : this._initProvider();
+    this.subProvider = new Web3.providers.HttpProvider(this.network === "local" ? this.localRPCServer : this.network === "layer2" ? LAYER2_RPC_SERVER : `https://shared-geth-ropsten.nodes.deploy.radar.tech/?apikey=a356caf36d191f896bac510e685d9e231e6897fc0d0835a9`);
+
+    //web3 = new Web3(this.provider);
   }
 
   _initProvider() {
     const engine = new ProviderEngine();
     const query = new Query(engine);
-    //const address = 
+    //const address =
 
     engine.send = (payload, callback) => {
       // Web3 1.0 beta.38 (and above) calls `send` with method and parameters
@@ -95,7 +94,7 @@ export default class SimpleID {
             },
             (error, response) => {
               if (error) {
-                console.log("ERROR in send: ", error)
+                log.error("ERROR in send: ", error)
                 reject(error);
               } else {
                 resolve(response.result);
@@ -188,31 +187,31 @@ export default class SimpleID {
           }
           cb(error, result);
         },
-        approveTransaction: async (txParams, cb) => {  
+        approveTransaction: async (txParams, cb) => {
           let error;
           thisTx = {
-            appName: this.config.appName, 
+            appName: this.config.appName,
             tx: txParams
           }
           action = 'transaction';
-          const popup = await this.createPopup(); 
-          txSigned = popup; 
+          const popup = await this.createPopup();
+          txSigned = popup;
           cb(error, true);
-        }, 
-        signTransaction: (txParams, cb) => {          
+        },
+        signTransaction: (txParams, cb) => {
           let error;
           if(!txSigned) {
             error = "User canceled action"
           }
-          cb(error, txSigned);                      
+          cb(error, txSigned);
         },
         publishTransaction: (rawTx, cb) => {
           cb(null, rawTx);
-        }, 
+        },
         signMessage: async (msgParams, cb) => {
           let error;
           thisTx = {
-            appName: this.config.appName, 
+            appName: this.config.appName,
             tx: msgParams
           }
           action = "message";
@@ -222,7 +221,7 @@ export default class SimpleID {
         signPersonalMessage: async (msgParams, cb) => {
           let error;
           thisTx = {
-            appName: this.config.appName, 
+            appName: this.config.appName,
             tx: msgParams
           }
           action = "message";
@@ -249,7 +248,7 @@ export default class SimpleID {
           cb(null, '');
         },
         getTransactionCount: async (txParams, cb) => {
-         const count = await web3.eth.getTransactionCount(this.getUserData() && this.getUserData().wallet ? this.getUserData().wallet.ethAddr : "") 
+         const count = await web3.eth.getTransactionCount(this.getUserData() && this.getUserData().wallet ? this.getUserData().wallet.ethAddr : "")
          cb(null, count);
         }
       }),
@@ -289,10 +288,9 @@ export default class SimpleID {
     return engine;
   }
 
-  async _checkNotifications() {
-    this.checkNotifications()
-  }
-
+  // TODO: notificationCheck probably should be scoped to the class (i.e.
+  //       a class member var--not sure what it means to have it as a global
+  //       or file level global)
   async checkNotifications() {
     if(notificationCheck) {
       const address = this.getUserData() ? this.getUserData().wallet.ethAddr : "";
@@ -302,21 +300,24 @@ export default class SimpleID {
           address, appId
         }
         action = 'process-data';
-        notificationCheck = false; 
-        let notificationsToReturn = [] 
+        notificationCheck = false;
+        let notificationsToReturn = []
         const notificationData = await this.processData('notifications', data);
-        if(notificationData.length > 0) {
+        if(notificationData !== 'Error fetching app data' &&
+           notificationData.length > 0) {
+          log.debug(`notificationData value = ${notificationData}`)
+          log.debug(`notificationData type = ${typeof notificationData}`)
           let activeNotifications = notificationData.filter(a => a.active === true)
           //No matter what, we need to return this to the developer
           activeNoti = activeNotifications;
-          //Now we check to see if there are more than one notification: 
+          //Now we check to see if there are more than one notification:
           if(activeNotifications.length > 1) {
             //Filter out the messages that have been seen
             const messagesSeen = localStorage.getItem(MESSAGES_SEEN) !== "undefined" ? JSON.parse(localStorage.getItem(MESSAGES_SEEN)) : undefined
             if(messagesSeen && messagesSeen.length > 0) {
               for (const noti of activeNotifications) {
                 const foundMessage = messagesSeen.filter(a => a === noti.id)
-                if(foundMessage && foundMessage.length > 0) {  
+                if(foundMessage && foundMessage.length > 0) {
                   //Don't do anything here
                 } else {
                   notificationsToReturn.push(noti);
@@ -338,15 +339,15 @@ export default class SimpleID {
             } else {
               return []
             }
-            
+
           } else if(activeNotifications.length === 1) {
-            
+
             //Filter out the messages that have been seen
             const messagesSeen = localStorage.getItem(MESSAGES_SEEN) !== "undefined" ? JSON.parse(localStorage.getItem(MESSAGES_SEEN)) : undefined
             if(messagesSeen && messagesSeen.length > 0) {
               for (const noti of activeNotifications) {
                 const foundMessage = messagesSeen.filter(a => a === noti.id)
-                if(foundMessage && foundMessage.length > 0) {  
+                if(foundMessage && foundMessage.length > 0) {
                   //Don't do anything here
                 } else {
                   notificationsToReturn.push(noti);
@@ -360,7 +361,7 @@ export default class SimpleID {
               //Throw up the button for the SID widget
               const notification = notificationsToReturn[0];
               const dataToPass = {
-                notification, 
+                notification,
                 appId: this.appId
               }
               localStorage.setItem(ACTIVE_SID_MESSAGE, JSON.stringify(dataToPass))
@@ -408,120 +409,134 @@ export default class SimpleID {
       iframe.style.border = "none"
       iframe.style.background = "transparent"
     }
+
     //const scopes = this.scopes;
     const params = this.config;
-    params.orgId = new SimpleID(params).getUserData() && new SimpleID(params).getUserData().orgId ? new SimpleID(params).getUserData().orgId : undefined;
-    return new Promise(function(resolve, reject) {
-      //Launch the widget;
-    const connection = connectToChild({
-      // The iframe to which a connection should be made
-      iframe,
-      // Methods the parent is exposing to the child
-      methods: {
-        dataToProcess() {
-          if(payload) {
-            return payload;
-          } else if(userDataForIFrame) {
-            return userDataForIFrame
-          }
-        }, 
-        returnProcessedData(data) {
-          resolve(data);
-        },
-        getPopUpInfo() {
-          //This is where we can pass the tx details
-          return thisTx;
-        }, 
-        getConfig(){
-          return params;
-        }, 
-        storeWallet(userData) {
-          localStorage.setItem(SIMPLEID_USER_SESSION, userData);
-          return true;
-        }, 
-        signedMessage(message) {        
-          resolve(message);
-          //localStorage.setItem('signed-msg', JSON.stringify(message));
-        }, 
-        displayHash(hash) {
-          resolve(hash);
-        }, 
-        async storeKeychain(keychainData) {
-          //need to post this to the DB
-          const createdUser = await new SimpleID(params).createUser(keychainData);
-          return createdUser;
-        },
-        async fetchUser(email) {
-          const user = await new SimpleID(params).checkUser(email);
-          if(user.success === true) {
-            return user.body;
-          } else {
-            return {
-              success: false, 
-              body: "User not found"
-            }
-          }
-        },
-        async signIn(creds){
-          let payload;
-          if(creds.token) {
-            payload = {
-              email: creds.email, 
-              token: creds.token
-            }
-          } else {
-            payload = {
-              email: creds.email
-            }
-          }
-          
-          const signedIn = await new SimpleID(params).authenticate(payload);
-          
-          if(signedIn.success || signedIn.message === "user session created") {
-            return true;
-          } else {
-            return false;
-          }
-        }, 
-        close(reload){
-          
-          action = "";
-          if (document.body.contains(iframe)) {
-            document.body.removeChild(iframe);
 
-          }
-          if(reload) {
+    params.orgId = undefined
+    try {
+      params.orgId = this.getUserData().orgId
+      log.debug(`org ID found in local store: ${params.orgId}.`)
+    } catch (suppressedError) {
+      log.debug(`org ID not found in local store: "${suppressedError}"`)
+    }
+
+    return new Promise((resolve, reject) => {
+      //Launch the widget;
+      const connection = connectToChild({
+        // The iframe to which a connection should be made
+        iframe,
+        // Methods the parent is exposing to the child
+        methods: {
+          dataToProcess() {
+            if(payload) {
+              return payload;
+            } else if(userDataForIFrame) {
+              return userDataForIFrame
+            }
+          },
+          returnProcessedData(data) {
+            resolve(data);
+          },
+          getPopUpInfo() {
+            //This is where we can pass the tx details
+            return thisTx;
+          },
+          getConfig(){
+            return params;
+          },
+          storeWallet(userData) {
+            localStorage.setItem(SIMPLEID_USER_SESSION, userData);
+            return true;
+          },
+          signedMessage(message) {
+            resolve(message);
+            //localStorage.setItem('signed-msg', JSON.stringify(message));
+          },
+          displayHash(hash) {
+            resolve(hash);
+          },
+          async storeKeychain(keychainData) {
+            //need to post this to the DB
+            const createdUser = await this.createUser(keychainData);
+            return createdUser;
+          },
+          async fetchUser(email) {
+            const user = await this.checkUser(email);
+            if(user.success === true) {
+              return user.body;
+            } else {
+              return {
+                success: false,
+                body: "User not found"
+              }
+            }
+          },
+          async signIn(creds){
+            let payload;
+            if(creds.token) {
+              payload = {
+                email: creds.email,
+                token: creds.token
+              }
+            } else {
+              payload = {
+                email: creds.email
+              }
+            }
+
+            const signedIn = await this.authenticate(payload);
+
+            if(signedIn.success || signedIn.message === "user session created") {
+              return true;
+            } else {
+              return false;
+            }
+          },
+          close(reload){
+
+            action = "";
+            if (document.body.contains(iframe)) {
+              document.body.removeChild(iframe);
+
+            }
+            if(reload) {
+              window.location.reload();
+            }
+            resolve();
+          },
+          checkType() {
+            return globalMethodCheck;
+          },
+          checkAction() {
+            return action;
+          },
+          completeSignOut() {
+            localStorageClearPreserveDebugScopes()
             window.location.reload();
           }
-          resolve();
-        },
-        checkType() {
-          return globalMethodCheck;
-        }, 
-        checkAction() {
-          return action;
-        }, 
-        completeSignOut() {
-          localStorage.clear();
-          window.location.reload();
         }
-      }
-    });
-    
-    connection.promise.then(child => {
-      //Call Child Function
-      // child.multiply(2, 6).then(total => console.log(total));
-      // child.divide(12, 4).then(total => console.log(total));
-    });
+      });
 
-    document.body.appendChild(iframe);
+      connection.promise.then(child => {
+        // Pass debug scopes from local storage of the page using this SDK to the
+        // widget for dynamic debugging capapbility.
+        try {
+          child.setDebugScopes(getIFrameDebugScopes())
+        } catch (suppressedError) {
+          log.debug(`Suppressed error setting iframe attribute debugScopes.\n${suppressedError}`)
+        }
+      });
+
+      document.body.appendChild(iframe);
     });
   }
 
   signUserIn() {
     action = "sign-in";
-    this.createPopup(); 
+    this.createPopup();
   }
+
   //OAuth Flow Would Use This Method
   signUserInWithEmail(email) {
     const objectToSend = {
@@ -529,7 +544,7 @@ export default class SimpleID {
       email
     }
     action = objectToSend
-    this.createPopup(); 
+    this.createPopup();
   }
 
   async passUserInfo(userInfo) {
@@ -537,7 +552,7 @@ export default class SimpleID {
     //the SimpleID wallet
     action = "sign-in-no-sid";
     userDataForIFrame = userInfo;
-    try { 
+    try {
       const newUser = await this.createPopup(true, userInfo);
       localStorage.setItem(SIMPLEID_USER_SESSION, JSON.stringify(newUser))
       //TODO: need to make this happen without a refresh
@@ -578,7 +593,7 @@ export default class SimpleID {
 
       //TODO: If we want to handle notifications in the engagement app, this won't fly
       if(notificationCheck) {
-        this.config.appId === "00000000000000000000000000000000" ? null : this.checkNotifications();
+        this.config.appId === SID_APP_ID ? null : this.checkNotifications();
       }
     } else {
       //Check localStorage for a flag that indicates a ping
@@ -587,13 +602,13 @@ export default class SimpleID {
       pingChecked = true
       if(pinged && pinged.date) {
         if(notificationCheck) {
-          this.config.appId === "00000000000000000000000000000000" ? null : this.checkNotifications();
+          this.config.appId === SID_APP_ID ? null : this.checkNotifications();
         }
       } else {
         //Now we need to fire off a method that will ping SimpleID and let us know the app is connected
         const data = {
-          appDetails: this.config, 
-          date: Date.now(), 
+          appDetails: this.config,
+          date: Date.now(),
           origin: thisOrigin
         }
         //TODO: Uncomment and pick up work after web worker stuff
@@ -601,9 +616,9 @@ export default class SimpleID {
           await this.processData('ping', data)
           localStorage.setItem(PINGED_SIMPLE_ID, JSON.stringify(data))
           //Only when the ping is complete should we fetch notifications
-          this.config.appId === "00000000000000000000000000000000" ? null : this.checkNotifications();
+          this.config.appId === SID_APP_ID ? null : this.checkNotifications();
         } catch(e) {
-          console.log("Error pinging: ", e)
+          log.error("Error pinging: ", e)
         }
       }
     }
@@ -693,7 +708,7 @@ export default class SimpleID {
     mainDiv.style.height = '100%';
     mainDiv.style.zIndex = '1024';
     mainDiv.style.border = "none";
-    
+
     let secondDiv = document.createElement('div')
     mainDiv.appendChild(secondDiv)
     secondDiv.setAttribute('class', 'message-body')
@@ -707,7 +722,7 @@ export default class SimpleID {
     thirdDiv.style.fontSize = "16px"
     thirdDiv.style.marginBottom = "10px"
 
-    
+
     messageEl.appendChild(mainDiv);
     document.body.appendChild(messageEl);
   }
@@ -728,9 +743,9 @@ export default class SimpleID {
     //Need to hide the message but we also need to send data to the orgData table
     //Specifically need to show that this user has seen the message
     const data = {
-      appData: this.config, 
+      appData: this.config,
       address: this.getUserData().wallet.ethAddr,
-      dateSeen: Date.now(), 
+      dateSeen: Date.now(),
       messageID
     }
     action = 'process-data';
@@ -752,7 +767,7 @@ export default class SimpleID {
 
   //If a developer wants to use the ethers.js library manually in-app, they can access it with this function
   simpleWeb3() {
-    return this.simple;
+    return ethers
   }
 
   getProvider() {
@@ -769,4 +784,90 @@ export default class SimpleID {
     action = 'sign-out';
     this.createPopup(true, null);
   }
+}
+
+
+// TODO: Figure out a good way to refactor the consts below and method to a common
+//       file shared with the widget (which uses these from the file debugScopes.js)
+//
+const ROOT_KEY = 'loglevel'
+const ALLOWED_SCOPES = [ ROOT_KEY,
+                        `${ROOT_KEY}:dataProcessing`,
+                        `${ROOT_KEY}:postMessage`,
+                        `${ROOT_KEY}:sidServices` ]
+const ALLOWED_LEVELS = [ 'TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR' ]
+const DEFAULT_LOG_LEVEL="INFO"
+
+/**
+ *  localStorageClearPreserveDebugScopes:
+ *
+ *  Preserves the value of debug scopes in ALLOWED_SCOPES from local storage
+ *  through a clear operation.
+ *
+ */
+export function localStorageClearPreserveDebugScopes(context='') {
+  const startTimeMs = Date.now()
+
+  // Fetch and preserve any existing debug scopes before clearing local storage:
+  //
+  const debugScopes = {}
+  for (const scopeKey of ALLOWED_SCOPES) {
+    debugScopes[scopeKey] = undefined
+    try {
+      const scope = localStorage.getItem(scopeKey)
+      if (ALLOWED_LEVELS.includes(scope)) {
+        debugScopes[scopeKey] = scope
+      }
+    } catch (suppressedError) {}
+  }
+
+  console.log('Before clear:', debugScopes)
+
+  localStorage.clear()
+
+  // Restore the previously existing debug scopes now that local storage is
+  // cleared:
+  //
+  for (const scopeKey of ALLOWED_SCOPES) {
+    const scope = debugScopes[scopeKey]
+    if (ALLOWED_LEVELS.includes(scope)) {
+      try {
+        console.log(`After clear setting ${scopeKey}=${scope}`)
+        localStorage.setItem(scopeKey, scope)
+      } catch (suppressedError) {}
+    }
+  }
+
+  const endTimeMs = Date.now()
+  log.debug(`localStorageClearPreserveDebugScopes(${context}) completed in ${endTimeMs - startTimeMs} ms.`)
+}
+
+/**
+ *  getDebugScopes:
+ *
+ *  Fetches known debug scopes from local storage to forward to the widget
+ *  iFrame for dynamic debug capability from an App Console.
+ *
+ *  @returns a map of the scope keys to their string values.
+ */
+function getIFrameDebugScopes() {
+  const debugScopes = {
+    [ ROOT_KEY ] : DEFAULT_LOG_LEVEL,
+    [ `${ROOT_KEY}:dataProcessing` ] : DEFAULT_LOG_LEVEL,
+    [ `${ROOT_KEY}:postMessage` ] : DEFAULT_LOG_LEVEL,
+    [ `${ROOT_KEY}:sidServices` ] : DEFAULT_LOG_LEVEL
+  }
+
+  for (const scopeKey in debugScopes) {
+    try {
+      const scope = localStorage.getItem(scopeKey)
+      if (ALLOWED_LEVELS.includes(scope)) {
+        debugScopes[scopeKey] = scope
+      }
+    } catch (suppressedError) {
+      log.debug(`Suppressed error fetching ${scopeKey} from local storage. Setting ${scopeKey} to default value, ${DEFAULT_LOG_LEVEL}.\n${suppressedError}`)
+    }
+  }
+
+  return debugScopes
 }
