@@ -629,6 +629,7 @@ export default class SimpleID {
     this.processingUserInfoQueue = true
     const results = []
     let requestNum = 0
+    let newUser = undefined
     while (this.userInfoQueue.length > 0) {
       const queuedUserInfo = this.userInfoQueue[0]
 
@@ -645,14 +646,18 @@ export default class SimpleID {
       userDataForIFrame = queuedUserInfo;
       try {
         const invisible = true
-        const newUser = await this.createPopup(invisible, queuedUserInfo);
+        newUser = await this.createPopup(invisible, queuedUserInfo);
 
         // Only check for notifications on the last queued entry:
-        if (this.userInfoQueue.length === 0) {
-          localStorage.setItem(SIMPLEID_USER_SESSION, JSON.stringify(newUser))
-          //TODO: need to make this happen without a refresh
-          this.handleNotificationsNonSIDUser()
-        }
+        // AC this will never get called because it's in a while loop that specifically only
+        // runs when the criteria below is > 0 see the while line above
+
+        // if (this.userInfoQueue.length === 0) {
+        //   localStorage.setItem(SIMPLEID_USER_SESSION, JSON.stringify(newUser))
+        //   //TODO: need to make this happen without a refresh
+        //   this.handleNotificationsNonSIDUser()
+        // }
+
         queuedUserInfo.result = 'success'
         results.push(queuedUserInfo)
       } catch(e) {
@@ -666,7 +671,11 @@ export default class SimpleID {
         this.processingUserInfoQueue = false
       }
     }
-
+    if (this.userInfoQueue.length === 0) {
+      localStorage.setItem(SIMPLEID_USER_SESSION, JSON.stringify(newUser))
+      //TODO: need to make this happen without a refresh
+      this.handleNotificationsNonSIDUser()
+    }
     return results
   }
 
