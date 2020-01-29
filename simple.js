@@ -904,8 +904,6 @@ export function localStorageClearPreserveDebugScopes(context='') {
     } catch (suppressedError) {}
   }
 
-  console.log('Before clear:', debugScopes)
-
   localStorage.clear()
 
   // Restore the previously existing debug scopes now that local storage is
@@ -915,7 +913,6 @@ export function localStorageClearPreserveDebugScopes(context='') {
     const scope = debugScopes[scopeKey]
     if (ALLOWED_LEVELS.includes(scope)) {
       try {
-        console.log(`After clear setting ${scopeKey}=${scope}`)
         localStorage.setItem(scopeKey, scope)
       } catch (suppressedError) {}
     }
