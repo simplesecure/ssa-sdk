@@ -61,16 +61,7 @@ export default class SimpleID {
     this.notifications = [];
     this.ping = params.isHostedApp === true ? null : this.pingSimpleID();
 
-    // A queue for the users we are currently processing in the passUserInfo
-    // method. Format for each element is:
-    // {
-    //   email:        <an email>,
-    //   addressLC:    <a lower case wallet address>,
-    //   address:      <wallet address (as passed in)>,
-    //   result:       'success' | <error>
-    // }
-    this.userInfoQueue = []
-    this.processingUserInfoQueue = false
+    this.passUserInfoStatus = undefined
 
     const endTimeMs = Date.now()
     log.debug(`Simple ID constructed in ${endTimeMs - startTimeMs} ms.`)
@@ -567,116 +558,92 @@ export default class SimpleID {
   /**
    *  passUserInfo:
    *
-   *    This is called by apps using Simple ID for 3rd party wallet providers. It
-   *    supports the following use cases given:
+   *    Apps call this *** ONCE *** to register a user's information with
+   *    simple ID.  They pass in a userInfo object which is:
    *
-   *       email   = anEmail@email.com
-   *       address = aWalletAddress
+   *      userInfo = {
+   *        email:   <an email address - optional>,
+   *        address: <a wallet address - required>
+   *      };
    *
-   *    1. Both email and address are provided a single time. The method completes
-   *       after updating the data for the user.
-   *    2. Only an address is provided a single time. The method completes after
-   *       updating the data for the user.
-   *    3. The address is provided in the first call and the email AND address
-   *       are provided in a second call. The method is executed twice sequentially
-   *       to update the data for the user.
-   *    4. The email AND address OR only the same address are provided in
-   *       multiple calls.  The first call is executed to update the data for the
-   *       user. Subsequent calls are ignored.
-   *    5. Different addresses or address AND emails are provided in multiple calls.
-   *       Each call is executed sequentially.
+   *    Calling this more than once in a session results in warnings being
+   *    presented in the console unless the first call resulted in an error,
+   *    in which case subsequent calls can be made until success.
    *
-   *    TODO: test use case 3 above.
-   *    TODO: talk to Justin/PB - this method may be overkill / unclear to
-   *          end users b/c if you call it umpteen times (which you shouldn't,
-   *          the results array returns to the first call). Could resolve this
-   *          with an optional callback.
-   *
-   *    @returns A string indicating the status of the request if it is ignored or
-   *             queued during an existing operation, otherwise it returns an
-   *             array of queue objects with a property indicating request status
-   *             for each request. The queue object format is:
-   *             {
-   *               email:        <an email>,
-   *               addressLC:    <a lower case wallet address>,
-   *               address:      <wallet address (as passed in)>,
-   *               result:       'success' | <error>
-   *             }
+   *    @returns A string 'success' or an error string.
    */
   async passUserInfo(userInfo) {
-    const method = 'passUserInfo'
+    const method = 'SimpleID::passUserInfo'
 
-    const email = userInfo.email
-    const addressLC = (userInfo.address) ? userInfo.address.toLowerCase() : undefined
-    const address = userInfo.address
-
-    for (const queueObj of this.userInfoQueue) {
-      if ( (queueObj.addressLC === addressLC) && ((queueObj.email === email) || !email) ) {
-        // A duplicate request has been received. Ignore it.
-        const msg = `${method}: ignoring duplicate request (wallet=${address}, email=${email})`
-        log.warn(msg)
-        return msg
-      }
-    }
-
-    this.userInfoQueue.push( {email, addressLC, address} )
-    if  (this.processingUserInfoQueue) {
-      const msg = `${method}: queued request (wallet=${address}, email=${email})`
-      log.debug(msg)
+    // Inexpensive test to see if this has been called already:
+    //
+    if (this.passUserInfoStatus) {
+      const msg = `${method}: This method is only intended to be called once per session. Ignoring this call. This warning occurs when this method is called in the wrong place (i.e. the render method).`
+      log.warn(msg)
       return msg
     }
 
-    this.processingUserInfoQueue = true
-    const results = []
-    let requestNum = 0
+    // More expensive test to see if this has been called already:
+    // (sign out will clear session data, we'll need to tell devs to tie
+    //  their sign out process to ours to clear this key from local storage TODO)
+    let sessiondata = undefined
+    try {
+      sessiondata = localStorage.getItem(SIMPLEID_USER_SESSION)
+      log.debug('Checking session data:')
+      log.debug(sessiondata)
+      if (sessiondata) {
+        const msg = `${method}: This method is only intended to be called once per session. Ignoring this call. This warning occurs when this method is called in the wrong place (i.e. the render method).`
+        log.warn(msg)
+        return msg
+      }
+    } catch (suppressedError) {}
+
+    // Check to make sure that at least the wallet address has been specified
+    //
+    if (!userInfo.address) {
+      const msg = `${method}: This method requires a valid address property passed in through userInfo.  userInfo.address=${userInfo.address}`
+      log.error(msg)
+      return msg
+    }
+
+    this.passUserInfoStatus = 'processing'
+
+    let result = undefined
     let newUser = undefined
-    while (this.userInfoQueue.length > 0) {
-      const queuedUserInfo = this.userInfoQueue[0]
-
-      requestNum++
-      const totalRequests = this.userInfoQueue.length + results.length
-      log.debug(`${method}: processing request ${requestNum} of ${totalRequests} (wallet=${queuedUserInfo.address}, email=${queuedUserInfo.email})`)
-
-      // TODO: action here is concerning--it suggests to me that we have to
-      //       block other API actions while this loop is occuring.  Talk to Justin.
-      //
+    try {
       //Send this info to the iFrame. Don't display the iFrame though as the user/app isn't using
       //the SimpleID wallet
+      const invisible = true
       action = "sign-in-no-sid";
-      userDataForIFrame = queuedUserInfo;
-      try {
-        const invisible = true
-        newUser = await this.createPopup(invisible, queuedUserInfo);
-
-        // Only check for notifications on the last queued entry:
-        // AC this will never get called because it's in a while loop that specifically only
-        // runs when the criteria below is > 0 see the while line above
-
-        // if (this.userInfoQueue.length === 0) {
-        //   localStorage.setItem(SIMPLEID_USER_SESSION, JSON.stringify(newUser))
-        //   //TODO: need to make this happen without a refresh
-        //   this.handleNotificationsNonSIDUser()
-        // }
-
-        queuedUserInfo.result = 'success'
-        results.push(queuedUserInfo)
-      } catch(e) {
-        let msg = `${method}: request ${requestNum} of ${totalRequests} failed (wallet=${queuedUserInfo.address}, email=${queuedUserInfo.email})\n${e}`
-        log.error(msg)
-
-        queuedUserInfo.result = e
-        results.push(queuedUserInfo)
-      } finally {
-        this.userInfoQueue.shift()
-        this.processingUserInfoQueue = false
-      }
+      userDataForIFrame = userInfo;
+      newUser = await this.createPopup(invisible, userInfo)
+    } catch (error) {
+      this.passUserInfoStatus = undefined
+      const msg = `${method}: Failed registering user data.\n${error}`
+      log.error(msg)
+      result = msg
     }
-    if (this.userInfoQueue.length === 0) {
-      localStorage.setItem(SIMPLEID_USER_SESSION, JSON.stringify(newUser))
+
+    try {
+      if (newUser) {
+        localStorage.setItem(SIMPLEID_USER_SESSION, JSON.stringify(newUser))
+        this.passUserInfoStatus = 'complete'
+        result = 'success'
+        log.info(`${method}: Succeeded.`)
+      }
+    } catch (error) {
+      this.passUserInfoStatus = undefined
+      const msg = `${method}: Failed writing session to local storage.\n${error}`
+      log.error(msg)
+      result = msg
+    }
+
+    if (result === 'success') {
       //TODO: need to make this happen without a refresh
       this.handleNotificationsNonSIDUser()
     }
-    return results
+
+    return result
   }
 
   handleNotificationsNonSIDUser() {
