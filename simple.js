@@ -61,6 +61,17 @@ export default class SimpleID {
     this.notifications = [];
     this.ping = params.isHostedApp === true ? null : this.pingSimpleID();
 
+    // A queue for the users we are currently processing in the passUserInfo
+    // method. Format for each element is:
+    // {
+    //   email:        <an email>,
+    //   addressLC:    <a lower case wallet address>,
+    //   address:      <wallet address (as passed in)>,
+    //   result:       'success' | <error>
+    // }
+    this.userInfoQueue = []
+    this.processingUserInfoQueue = false
+
     const endTimeMs = Date.now()
     log.debug(`Simple ID constructed in ${endTimeMs - startTimeMs} ms.`)
   }
@@ -431,9 +442,15 @@ export default class SimpleID {
           dataToProcess() {
             if(payload) {
               return payload;
-            } else if(userDataForIFrame) {
+            } else if(userDataForIFrame) {    // TODO: this code may be innefective--consider removing or moving to userDataToProcess method below
               return userDataForIFrame
             }
+          },
+          // userDataToProcess fixes the problem of an iframe getting re-used
+          // with the same payload value from an initial call (payload is bound
+          // to the function instance where userDataForIFrame binds to the parent):
+          userDataToProcess() {
+            return userDataForIFrame
           },
           returnProcessedData(data) {
             resolve(data);
@@ -547,20 +564,110 @@ export default class SimpleID {
     this.createPopup();
   }
 
+  /**
+   *  passUserInfo:
+   *
+   *    This is called by apps using Simple ID for 3rd party wallet providers. It
+   *    supports the following use cases given:
+   *
+   *       email   = anEmail@email.com
+   *       address = aWalletAddress
+   *
+   *    1. Both email and address are provided a single time. The method completes
+   *       after updating the data for the user.
+   *    2. Only an address is provided a single time. The method completes after
+   *       updating the data for the user.
+   *    3. The address is provided in the first call and the email AND address
+   *       are provided in a second call. The method is executed twice sequentially
+   *       to update the data for the user.
+   *    4. The email AND address OR only the same address are provided in
+   *       multiple calls.  The first call is executed to update the data for the
+   *       user. Subsequent calls are ignored.
+   *    5. Different addresses or address AND emails are provided in multiple calls.
+   *       Each call is executed sequentially.
+   *
+   *    TODO: test use case 3 above.
+   *    TODO: talk to Justin/PB - this method may be overkill / unclear to
+   *          end users b/c if you call it umpteen times (which you shouldn't,
+   *          the results array returns to the first call). Could resolve this
+   *          with an optional callback.
+   *
+   *    @returns A string indicating the status of the request if it is ignored or
+   *             queued during an existing operation, otherwise it returns an
+   *             array of queue objects with a property indicating request status
+   *             for each request. The queue object format is:
+   *             {
+   *               email:        <an email>,
+   *               addressLC:    <a lower case wallet address>,
+   *               address:      <wallet address (as passed in)>,
+   *               result:       'success' | <error>
+   *             }
+   */
   async passUserInfo(userInfo) {
-    //Send this info to the iFrame. Don't display the iFrame though as the user/app isn't using
-    //the SimpleID wallet
-    action = "sign-in-no-sid";
-    userDataForIFrame = userInfo;
-    try {
-      const newUser = await this.createPopup(true, userInfo);
-      localStorage.setItem(SIMPLEID_USER_SESSION, JSON.stringify(newUser))
-      //TODO: need to make this happen without a refresh
-      this.handleNotificationsNonSIDUser()
-      return 'success'
-    } catch(e) {
-      return e
+    const method = 'passUserInfo'
+
+    const email = userInfo.email
+    const addressLC = (userInfo.address) ? userInfo.address.toLowerCase() : undefined
+    const address = userInfo.address
+
+    for (const queueObj of this.userInfoQueue) {
+      if ( (queueObj.addressLC === addressLC) && ((queueObj.email === email) || !email) ) {
+        // A duplicate request has been received. Ignore it.
+        const msg = `${method}: ignoring duplicate request (wallet=${address}, email=${email})`
+        log.warn(msg)
+        return msg
+      }
     }
+
+    this.userInfoQueue.push( {email, addressLC, address} )
+    if  (this.processingUserInfoQueue) {
+      const msg = `${method}: queued request (wallet=${address}, email=${email})`
+      log.debug(msg)
+      return msg
+    }
+
+    this.processingUserInfoQueue = true
+    const results = []
+    let requestNum = 0
+    while (this.userInfoQueue.length > 0) {
+      const queuedUserInfo = this.userInfoQueue[0]
+
+      requestNum++
+      const totalRequests = this.userInfoQueue.length + results.length
+      log.debug(`${method}: processing request ${requestNum} of ${totalRequests} (wallet=${queuedUserInfo.address}, email=${queuedUserInfo.email})`)
+
+      // TODO: action here is concerning--it suggests to me that we have to
+      //       block other API actions while this loop is occuring.  Talk to Justin.
+      //
+      //Send this info to the iFrame. Don't display the iFrame though as the user/app isn't using
+      //the SimpleID wallet
+      action = "sign-in-no-sid";
+      userDataForIFrame = queuedUserInfo;
+      try {
+        const invisible = true
+        const newUser = await this.createPopup(invisible, queuedUserInfo);
+
+        // Only check for notifications on the last queued entry:
+        if (this.userInfoQueue.length === 0) {
+          localStorage.setItem(SIMPLEID_USER_SESSION, JSON.stringify(newUser))
+          //TODO: need to make this happen without a refresh
+          this.handleNotificationsNonSIDUser()
+        }
+        queuedUserInfo.result = 'success'
+        results.push(queuedUserInfo)
+      } catch(e) {
+        let msg = `${method}: request ${requestNum} of ${totalRequests} failed (wallet=${queuedUserInfo.address}, email=${queuedUserInfo.email})\n${e}`
+        log.error(msg)
+
+        queuedUserInfo.result = e
+        results.push(queuedUserInfo)
+      } finally {
+        this.userInfoQueue.shift()
+        this.processingUserInfoQueue = false
+      }
+    }
+
+    return results
   }
 
   handleNotificationsNonSIDUser() {
