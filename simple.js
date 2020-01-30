@@ -951,3 +951,53 @@ function getIFrameDebugScopes() {
 
   return debugScopes
 }
+
+function setDebugScope(scopeKey, scopeLevel) {
+  if (scopeKey && !scopeKey.startsWith(ROOT_KEY)) {
+    scopeKey = `${ROOT_KEY}:${scopeKey}`
+  }
+
+  if (!scopeLevel) {
+    scopeLevel = 'DEBUG'
+  }
+
+  if (ALLOWED_SCOPES.includes(scopeKey) && ALLOWED_LEVELS.includes(scopeLevel)) {
+    localStorage.setItem(scopeKey, scopeLevel)
+  }
+}
+
+function setAllDebugScopes(scopeLevel='DEBUG') {
+  if (!ALLOWED_LEVELS.includes(scopeLevel)) {
+    console.log(`Scope level ${scopeLevel} is not supported.  Supported levels are ${JSON.stringify(ALLOWED_LEVELS, 0, 2)}.`)
+    return
+  }
+
+  const debugScopes = getIFrameDebugScopes()
+  for (const scopeKey in debugScopes) {
+    localStorage.setItem(scopeKey, scopeLevel)
+  }
+
+  return
+}
+
+
+// Workaround for queck and easy debug from browser console
+//
+// TODO:
+//       - Analyze as exposure of security problem.
+//
+if (window) {
+  window.sid = {
+    debugScope: function(aScope, aLevel=undefined) {
+      setDebugScope(aScope, aLevel)
+    },
+    debugAll: function() {
+      "use strict";
+      setAllDebugScopes();
+    },
+    debugOff: function() {
+      "use strict";
+      setAllDebugScopes('INFO');
+    }
+  }
+}
