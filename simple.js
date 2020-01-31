@@ -19,6 +19,7 @@ const SIMPLEID_USER_SESSION = 'SimpleID-User-Session';
 const ACTIVE_SID_MESSAGE = 'active-sid-message'
 const PINGED_SIMPLE_ID = 'pinged-simple-id';
 const MESSAGES_SEEN = 'messages-seen'
+const SIMPLEID_NOTIFICATION_FETCH = 'sid-notifications'
 const ethers = require('ethers');
 let headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
 let thisTx;
@@ -50,7 +51,6 @@ export default class SimpleID {
     this.development = params.development ? params.development : false;
     this.useSimpledIdWidget = params.useSimpledIdWidget
     this.activeNotifications = []
-
     this.provider = undefined
     this.subProvider = undefined
 
@@ -58,7 +58,6 @@ export default class SimpleID {
     //     from what I can see, in the params.
     //     TODO: talk with Justin further
     // headers['Authorization'] = this.apiKey;
-    this.notifications = [];
     this.ping = params.isHostedApp === true ? null : this.pingSimpleID();
 
     this.passUserInfoStatus = undefined
@@ -289,7 +288,10 @@ export default class SimpleID {
     engine.start();
     return engine;
   }
-
+  async notifications() {
+    const notifications = await this.checkNotifications()
+    return notifications
+  }
   // TODO: notificationCheck probably should be scoped to the class (i.e.
   //       a class member var--not sure what it means to have it as a global
   //       or file level global)
@@ -370,6 +372,7 @@ export default class SimpleID {
               this.loadButton()
             } else {
               this.notifications = notificationsToReturn
+              localStorage.setItem(SIMPLEID_NOTIFICATION_FETCH, JSON.stringify(notificationsToReturn))
               return notificationsToReturn
             }
           }
@@ -676,7 +679,7 @@ export default class SimpleID {
 
       //TODO: If we want to handle notifications in the engagement app, this won't fly
       if(notificationCheck) {
-        this.config.appId === SID_APP_ID ? null : this.checkNotifications();
+        this.config.appId === SID_APP_ID ? null : this.useSimpledIdWidget ? this.checkNotifications() : null;
       }
     } else {
       //Check localStorage for a flag that indicates a ping
@@ -685,7 +688,7 @@ export default class SimpleID {
       pingChecked = true
       if(pinged && pinged.date) {
         if(notificationCheck) {
-          this.config.appId === SID_APP_ID ? null : this.checkNotifications();
+          this.config.appId === SID_APP_ID ? null : this.useSimpledIdWidget ? this.checkNotifications() : null;
         }
       } else {
         //Now we need to fire off a method that will ping SimpleID and let us know the app is connected
@@ -699,7 +702,7 @@ export default class SimpleID {
           await this.processData('ping', data)
           localStorage.setItem(PINGED_SIMPLE_ID, JSON.stringify(data))
           //Only when the ping is complete should we fetch notifications
-          this.config.appId === SID_APP_ID ? null : this.checkNotifications();
+          this.config.appId === SID_APP_ID ? null : this.useSimpledIdWidget ? this.checkNotifications() : null;
         } catch(e) {
           log.error("Error pinging: ", e)
         }
