@@ -306,7 +306,7 @@ export default class SimpleID {
         let notificationsToReturn = []
         const notificationData = await this.processData('notifications', data);
         if(notificationData !== 'Error fetching app data' &&
-           notificationData.length > 0) {
+          notificationData && notificationData.length > 0) {
           log.debug(`notificationData value = ${notificationData}`)
           log.debug(`notificationData type = ${typeof notificationData}`)
           let activeNotifications = notificationData.filter(a => a.active === true)
