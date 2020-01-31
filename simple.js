@@ -337,8 +337,14 @@ export default class SimpleID {
                 localStorage.setItem(ACTIVE_SID_MESSAGE, JSON.stringify(messageToStore))
                 this.loadButton()
               } else {
+                if(notificationsToReturn.length > 0) {
+                  const updated = this._addPlainText(notificationsToReturn)
+                  if(updated.lenght > 0) {
+                    notificationsToReturn = updated
+                  }
+                }
                 this.notifications = notificationsToReturn
-                return notificationsToReturn;
+                return notificationData
               }
             } else {
               return []
@@ -371,17 +377,39 @@ export default class SimpleID {
               localStorage.setItem(ACTIVE_SID_MESSAGE, JSON.stringify(dataToPass))
               this.loadButton()
             } else {
+              if(notificationsToReturn.length > 0) {
+                const updated = this._addPlainText(notificationsToReturn)
+                if(updated.lenght > 0) {
+                  notificationsToReturn = updated
+                }
+              }
               this.notifications = notificationsToReturn
               localStorage.setItem(SIMPLEID_NOTIFICATION_FETCH, JSON.stringify(notificationsToReturn))
               return notificationsToReturn
             }
           }
         } else {
+          if(notificationsToReturn.length > 0) {
+            const updated = this._addPlainText(notificationsToReturn)
+            if(updated.lenght > 0) {
+              notificationsToReturn = updated
+            }
+          }
           this.notifications = notificationsToReturn
           return notificationData
         }
       }
     }
+  }
+
+  async _addPlainText(notificationsToReturn) {
+    let updatedNotifications = []
+    for (const notification of notificationsToReturn) {
+      const plainText = notification.content.replace(/(<([^>]+)>)/ig,"");
+      notification['plain_text'] = plainText
+      updatedNotifications.push(notification)
+    }
+    return updatedNotifications
   }
 
   createPopup(invisible, payload) {
