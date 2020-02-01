@@ -1,18 +1,17 @@
-import { getGlobal } from 'reactn';
-import { closeWidget } from './postMessage';
-import { walletAnalyticsDataTableGet, organizationDataTableGet, walletAnalyticsDataTablePut, organizationDataTablePut } from '../utils/dynamoConveniences';
-import { getSidSvcs } from '../index';
-
-import { getLog } from './../utils/debugScopes'
-const log = getLog('dataProcessing')
+import { walletAnalyticsDataTableGet, organizationDataTableGet, walletAnalyticsDataTablePut, organizationDataTablePut } from './dynamoConveniences.js';
+import { getSidSvcs } from './sidServices.js';
+import { getLog } from './debugScopes.js'
 
 const rp = require('request-promise');
 const ethers = require('ethers');
 
+const CONFIG = require('../config.json')
 
-const ALETHIO_KEY = process.env.REACT_APP_ALETHIO_KEY;
+const log = getLog('dataProcessing')
+
+const ALETHIO_KEY = CONFIG.ALETHIO_KEY;
 const rootUrl = `https://api.aleth.io/v1`;
-const ROOT_EMAIL_SERVICE_URL = 'https://cnv69peos0.execute-api.us-west-2.amazonaws.com/e1' //!process.env.NODE_ENV === 'production' ? 'https://cnv69peos0.execute-api.us-west-2.amazonaws.com/e1/v1/email' : 'http://localhost:3000' //This should be an env variable
+const ROOT_EMAIL_SERVICE_URL = CONFIG.EMAIL_SVC_URL
 const headers = { Authorization: `Bearer ${ALETHIO_KEY}`, 'Content-Type': 'application/json' }
 let addresses = []
 export async function handleData(dataToProcess) {
@@ -58,7 +57,7 @@ export async function handleData(dataToProcess) {
 
         anObject.apps = apps;
 
-        anObject[process.env.REACT_APP_OD_TABLE_PK] = data.org_id
+        anObject[CONFIG.OD_TABLE_PK] = data.org_id
 
         await organizationDataTablePut(anObject)
         return updatedSegments
@@ -222,7 +221,7 @@ export async function handleData(dataToProcess) {
         }
         anObject.apps = apps;
 
-        anObject[process.env.REACT_APP_OD_TABLE_PK] = org_id
+        anObject[CONFIG.OD_TABLE_PK] = org_id
 
         await organizationDataTablePut(anObject)
 
@@ -314,8 +313,11 @@ export async function filterByLastSeen(users, data) {
   return filteredList;
 }
 
-export async function filterByWalletBalance(users, balanceCriteria) {
-  const { config } = await getGlobal();
+export async function filterByWalletBalance(users, balanceCriteria, config) {
+  if (!config) {
+    throw new Error('Hey Justin, Fix ME!  I need config defined')
+  }
+
   const { operatorType, amount } = balanceCriteria;
   const provider = ethers.getDefaultProvider(config.network ? config.network : 'mainnet');
   let filteredUsers = [];
@@ -374,9 +376,12 @@ export async function filterByWalletBalance(users, balanceCriteria) {
   }
 }
 
-export async function fetchTotalTransactions(users) {
+export async function fetchTotalTransactions(users, config) {
+  if (!config) {
+    throw new Error('Hey Justin, Fix ME!  I need config defined')
+  }
+
   log.debug(users);
-  const { config } = getGlobal();
   const provider = ethers.getDefaultProvider(config.network ? config.network : 'mainnet');
   let txCount = 0;
   for (const user of users) {
@@ -385,11 +390,6 @@ export async function fetchTotalTransactions(users) {
     txCount = txCount + count;
   }
   return txCount;
-}
-
-export async function walletPDF() {
-  document.title = "SimpleID Wallet";
-  window.print();
 }
 
 export async function tokenFetch(url) {

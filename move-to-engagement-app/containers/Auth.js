@@ -31,10 +31,15 @@ export default class Auth extends React.Component {
     setGlobal({ token: e.target.value });
   }
 
+  handleEmailVerify = (e) => {
+    // token is rec'vd by the user on first sign up to verify the email
+    approveSignIn(token)
+  }
+
   suppressDefaultSignIn = (e) => {
     console.log(`DBG: suppressDefaultSignIn`)
     e.preventDefault()
-    signIn()
+    signIn(email, password)
   }
 
   //
@@ -45,7 +50,7 @@ export default class Auth extends React.Component {
       <div>
         <h5>Enter the code you received via email to continue</h5>
         <p>If you didn't receive a code, <span className="a-span" onClick={signIn}>try sending it again.</span></p>
-        <Form onSubmit={approveSignIn}>
+        <Form onSubmit={this.handleEmailVerify}>
           <Form.Group controlId="formBasicEmail">
             <Form.Control onChange={this.handleCode} type="text" placeholder="123456" />
           </Form.Group>
@@ -73,21 +78,6 @@ export default class Auth extends React.Component {
     return (
       <div>
         <h5>{theConfig.appName} is protecting you with <mark>SimpleID</mark></h5>
-        {/*
-
-        ////This can be used for eventual scopes an app may want to request. None to handle now, though////
-        <p>The following information will be provided to the application if you log in: </p>
-        <ul className="text-left">
-          {
-            theConfig.scopes ? theConfig.scopes.map(scope => {
-              return (
-                <li key={scope}>{scope.charAt(0).toUpperCase() + scope.slice(1)}</li>
-              )
-            }) :
-            <li>No scopes requested</li>
-          }
-        </ul>
-        */}
         <p>Get started with just an email.</p>
         <Form onSubmit={signIn}>
           <Form.Group controlId="formBasicEmail">
@@ -162,7 +152,7 @@ export default class Auth extends React.Component {
       case 'sign-in-hosted':
         containerElements = this.renderPasswordFlow()
         break;
-      default: 
+      default:
         containerElements = this.renderPasswordFlow()
     }
 

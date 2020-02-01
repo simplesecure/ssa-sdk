@@ -19,8 +19,10 @@ import { walletAnalyticsDataTablePut,
 
 import { jsonParseToBuffer, getRandomString } from './misc.js'
 
-import { getLog } from './../utils/debugScopes'
+import { getLog } from './debugScopes.js'
 const log = getLog('sidServices')
+
+const CONFIG = require('../config.json')
 
 const AWS = require('aws-sdk')
 const ethers = require('ethers')
@@ -35,18 +37,18 @@ const Buffer = require('buffer/').Buffer  // note: the trailing slash is importa
 
 const eccrypto = require('eccrypto')
 
-const USER_POOL_ID = process.env.REACT_APP_PASSWORD_USER_POOL_ID
+const USER_POOL_ID = CONFIG.PASSWORD_USER_POOL_ID
 
-const USER_POOL_WEB_CLIENT_ID = process.env.REACT_APP_PASSWORD_USER_POOL_WEB_CLIENT_ID 
+const USER_POOL_WEB_CLIENT_ID = CONFIG.PASSWORD_USER_POOL_WEB_CLIENT_ID
 
 // TODO: clean up for security best practices
 //       currently pulled from .env
 //       see: https://create-react-app.dev/docs/adding-custom-environment-variables/
 const amplifyAuthObj = {
-  region: process.env.REACT_APP_REGION,
+  region: CONFIG.REGION,
   userPoolId: USER_POOL_ID,
   userPoolWebClientId: USER_POOL_WEB_CLIENT_ID,
-  identityPoolId: process.env.REACT_APP_IDENTITY_POOL_ID
+  identityPoolId: CONFIG.IDENTITY_POOL_ID
 }
 // TODO: Prefer to use USER_SRP_AUTH but short on time.  Revisit this soon
 //       so that password never leaves client.  Super important!
@@ -74,7 +76,7 @@ Amplify.configure({
   Auth: amplifyAuthObj
 });
 
-AWS.config.update({ region: process.env.REACT_APP_REGION })
+AWS.config.update({ region: CONFIG.REGION })
 
 
 const NON_SID_WALLET_USER_INFO = "non-sid-user-info";
@@ -200,42 +202,6 @@ export class SidServices
     return this.persist.address
   }
 
-  async getWallet() {
-    // If the wallet is undefined, then the iframe has been collapsed and removed
-    // from memory. Need to re-compose the user's secrets after decrypting them first
-    // (assumes tokens still valid--if not will need sign in with MFA):
-    if (!this.neverPersist.wallet) {
-      if ( this.persist.secretCipherText1 && this.persist.secretCipherText2) {
-        // CopyPasta from 2nd half of sign-in
-        // TODO: clean up
-
-        // 2. Decrypt the secrets on the appropriate HSM KMS CMKs
-        // TODO: -should these be Buffer.from()?
-        const secretPlainText1 =
-          await this.decryptWithKmsUsingIdpCredentials(this.persist.secretCipherText1)
-        const secretPlainText2 =
-          await this.decryptWithKmsUsingIdpCredentials(this.persist.secretCipherText2)
-
-        // 3. Merge the secrets to recover the keychain
-        const secretMnemonic = SSS.combine([secretPlainText1, secretPlainText2])
-
-        // 4. Inflate the wallet and persist it to state.
-        const mnemonicStr = secretMnemonic.toString()
-        this.neverPersist.wallet = new ethers.Wallet.fromMnemonic(mnemonicStr)
-
-        // Sanity check
-        if (this.persist.address !== this.neverPersist.wallet.address) {
-          // eslint-disable-next-line
-          throw `ERR: wallet addresses not equal. Persisted ${this.persist.address} vs. recovered ${this.neverPersist.wallet.address}`
-        }
-      } else {
-        // TODO: need to fetch persisted data from dynamo to re-inflate
-      }
-    }
-
-    return this.neverPersist.wallet
-  }
-
   getSID() {
     return this.persist.sid;
   }
@@ -282,7 +248,7 @@ export class SidServices
   *              - two storage options--Cognito User Pool or DB
   *
   */
-  signInOrUp = async (anEmail) => {
+  async signInOrUp(anEmail) {
     const authenticated = await this.isAuthenticated(anEmail)
     if (authenticated) {
       // If the user is already authenticated, then skip this function.
@@ -326,7 +292,7 @@ export class SidServices
     }
   }
 
-  signInOrUpWithPassword = async(anEmail, aPassword) => {
+  async signInOrUpWithPassword(anEmail, aPassword) {
     log.debug(`DBG: signInOrUpWithPassword e:${anEmail},  p:<redacted>`)
 
     // TODO: Can we do this here too:
@@ -436,7 +402,7 @@ export class SidServices
    * signOut:
    *
    */
-  signOut = async () => {
+  async signOut() {
     try {
       await Auth.signOut()
     } catch (error) {
@@ -477,7 +443,7 @@ export class SidServices
    *             - could use a separate policy / user (wallet to uuid map is write only)
    *
    */
-  answerCustomChallenge = async (anAnswer) => {
+  async answerCustomChallenge(anAnswer) {
     let signUpMnemonicReveal = false
 
     log.debug(`DBG: answerCustomChallenge password flow.`)
@@ -720,7 +686,7 @@ export class SidServices
     return { authenticated, signUpMnemonicReveal }
   }
 
-  isAuthenticated = async (anEmail=undefined) => {
+  async isAuthenticated(anEmail=undefined) {
     try {
       const session = await Auth.currentSession();
 
@@ -736,7 +702,7 @@ export class SidServices
     }
   }
 
-  getUserDetails = async () => {
+  async getUserDetails() {
     try {
       if (!this.cognitoUser) {
         this.cognitoUser = await Auth.currentAuthenticatedUser()
@@ -748,7 +714,7 @@ export class SidServices
     return undefined
   }
 
-  getKeyAssignmentFromTokenAttr = async () => {
+  async getKeyAssignmentFromTokenAttr() {
     const userAttributes = await this.getUserDetails()
 
     // TODO: Clean this up (i.e. see if we can do direct assignment instead of a loop)
@@ -783,11 +749,7 @@ export class SidServices
    *        This method only works if this user has access to the organization
    *        private key.
    */
-  getUuidsForWalletAddresses = async (data
-      //anAppId="4e82ff0d-90bb-4c16-86d5-6729efa31787",
-      //theWalletAddresses=["0xa10a980817dF59d2C4f848e0604c920a7E4Cf313",
-      //                    "0xE2c9daA831c91b59f0153842874e0De9E45516FA"]
-    ) => {
+  async getUuidsForWalletAddresses(data) {
     const { app_id, addresses } = data;
     let uuids = []
 
@@ -852,7 +814,7 @@ export class SidServices
    *          indexes or make a second table mapping uuids to { sub: <sub>, email: <email> }
    *        - something better for unauthenticated users (probably a combined table)
    */
-  getEmailsForUuids = async(theUuids) => {
+  async getEmailsForUuids(theUuids) {
     const emails = []
     for (const uuid of theUuids) {
       try {
@@ -885,7 +847,7 @@ export class SidServices
    *
    *         @return orgId, the newly created organization id
    */
-  createOrganizationId = async(aUserUuid, aUserPubKey, aUserPriKey) => {
+  async createOrganizationId(aUserUuid, aUserPubKey, aUserPriKey) {
     const orgId = uuidv4()
 
     let sub = undefined
@@ -945,7 +907,7 @@ export class SidServices
     return orgId
   }
 
-  createSidObject = async() => {
+  async createSidObject() {
     if (!this.appIsSimpleId) {
       return {}
     }
@@ -977,7 +939,7 @@ export class SidServices
    *         Organization Data Table and Wallet Analytics Tables with the
    *         newly created organization id.
    */
-  createAppId = async(anOrgId, anAppObject) => {
+  async createAppId(anOrgId, anAppObject) {
     // await this.getUuidsForWalletAddresses()
     // return
     // TODO: 1. Might want to check if the user has the org_id in their sid
@@ -1044,7 +1006,7 @@ export class SidServices
    *         It does not remove the app id from the User Data table, the
    *         Unauthenticated UUID table, or the Wallet to UUID Map table.
    */
-  deleteAppId = async() => {
+  async deleteAppId() {
     // TODO deleteAppId
   }
 
@@ -1065,7 +1027,7 @@ export class SidServices
    *       - Concurrency and an await Promise.all () with handled
    *         catch statements on individual promises.
    */
-  signUserUpToNewApp = async(isAuthenticatedUser) => {
+  async signUserUpToNewApp(isAuthenticatedUser) {
 
     if (isAuthenticatedUser) {
       // 1.a) Update the User Data Table if the user is authenticated.
@@ -1100,7 +1062,7 @@ export class SidServices
  *                                                                            *
  ******************************************************************************/
 
- persistNonSIDUserInfo = async (userInfo) => {
+ async persistNonSIDUserInfo(userInfo) {
 
    if (this.appIsSimpleId) {
      // We don't do this in Simple ID.
@@ -1269,10 +1231,10 @@ export class SidServices
   //      - might make sense to store these in a hash and pass them to the
   //        appropriate method now that we have multiple IDP.
   //
-  requestIdpCredentials = async (
-      aRegion:string=process.env.REACT_APP_REGION,
-      aUserPoolId:string=USER_POOL_ID,
-      anIdentityPoolId:string=process.env.REACT_APP_IDENTITY_POOL_ID ) => {
+  async requestIdpCredentials(
+      aRegion=CONFIG.REGION,
+      aUserPoolId=USER_POOL_ID,
+      anIdentityPoolId=CONFIG.IDENTITY_POOL_ID ) {
 
     const session = await Auth.currentSession()
 
@@ -1301,11 +1263,11 @@ export class SidServices
  *                                                                            *
  ******************************************************************************/
 
-  encryptWithKmsUsingIdpCredentials = async (keyId, plainText) => {
+  async encryptWithKmsUsingIdpCredentials(keyId, plainText) {
     await this.requestIdpCredentials(
-      process.env.REACT_APP_REGION,
+      CONFIG.REGION,
       USER_POOL_ID,
-      process.env.REACT_APP_CRYPTO_IDENTITY_POOL_ID )
+      CONFIG.CRYPTO_IDENTITY_POOL_ID )
 
     // IMPORTANT AF:
     //
@@ -1325,7 +1287,7 @@ export class SidServices
     // Now that the AWS creds are configured with the cognito login above, we
     // should be able to access the KMS key if we got the IAMs users/roles/grants
     // correct.
-    const kms = new AWS.KMS( { region : process.env.REACT_APP_REGION } )
+    const kms = new AWS.KMS( { region : CONFIG.REGION } )
 
     const cipherText = await new Promise((resolve, reject) => {
       const params = {
@@ -1349,11 +1311,11 @@ export class SidServices
   }
 
 
-  decryptWithKmsUsingIdpCredentials = async (cipherText) => {
+  async decryptWithKmsUsingIdpCredentials(cipherText) {
     await this.requestIdpCredentials(
-      process.env.REACT_APP_REGION,
+      CONFIG.REGION,
       USER_POOL_ID,
-      process.env.REACT_APP_CRYPTO_IDENTITY_POOL_ID )
+      CONFIG.CRYPTO_IDENTITY_POOL_ID )
 
     // IMPORTANT AF:
     //
@@ -1373,7 +1335,7 @@ export class SidServices
     // Now that the AWS creds are configured with the cognito login above, we
     // should be able to access the KMS key if we got the IAMs users/roles/grants
     // correct.
-    const kms = new AWS.KMS( { region: process.env.REACT_APP_REGION } )
+    const kms = new AWS.KMS( { region: CONFIG.REGION } )
 
     const plainText = await new Promise((resolve, reject) => {
       const params = {
@@ -1412,7 +1374,7 @@ export class SidServices
 
   // TODO: abstract the restricted sub out of this code so it's more generic and
   //       not just for restricted row access dynamos.
-  tableGetWithIdpCredentials = async () => {
+  async tableGetWithIdpCredentials() {
     await this.requestIdpCredentials()
 
     let sub = undefined
@@ -1424,13 +1386,13 @@ export class SidServices
     }
 
     const docClient = new AWS.DynamoDB.DocumentClient({
-      region: process.env.REACT_APP_REGION })
+      region: CONFIG.REGION })
 
     const dbParams = {
       Key: {
         sub: sub
       },
-      TableName: process.env.REACT_APP_UD_TABLE,
+      TableName: CONFIG.UD_TABLE,
     }
     const awsDynDbRequest = await new Promise(
       (resolve, reject) => {
@@ -1447,7 +1409,7 @@ export class SidServices
     return awsDynDbRequest
   }
 
-  tablePutWithIdpCredentials = async (keyValueData) => {
+  async tablePutWithIdpCredentials(keyValueData) {
     // Adapted from the JS on:
     //    https://aws.amazon.com/blogs/mobile/building-fine-grained-authorization-using-amazon-cognito-user-pools-groups/
     //
@@ -1465,7 +1427,7 @@ export class SidServices
     }
 
     const docClient = new AWS.DynamoDB.DocumentClient(
-      { region: process.env.REACT_APP_REGION })
+      { region: CONFIG.REGION })
 
     const item = {
       sub: sub
@@ -1476,7 +1438,7 @@ export class SidServices
 
     const dbParams = {
       Item: item,
-      TableName: process.env.REACT_APP_UD_TABLE,
+      TableName: CONFIG.UD_TABLE,
     }
 
     const awsDynDbRequest = await new Promise(
@@ -1515,12 +1477,12 @@ export class SidServices
   //   }
   //
   //   const docClient = new AWS.DynamoDB.DocumentClient(
-  //     { region: process.env.REACT_APP_REGION })
+  //     { region: CONFIG.REGION })
   //
   //
   //   // Taken from dynamoBasics method tableUpdateAppendNestedObjectProperty
   //   const dbParams = {
-  //     TableName: process.env.REACT_APP_UD_TABLE,
+  //     TableName: CONFIG.UD_TABLE,
   //     Key: {
   //       sub: sub
   //     },
@@ -1552,4 +1514,31 @@ export class SidServices
   //
   //   return awsDynDbRequest
   // }
+}
+
+
+// Start of more mess
+////////////////////////////////////////////////////////////////////////////////
+let sidSvcs = undefined
+
+console.log('Created global instance of SidServices')
+console.log('/////////////////////////////////////////////////////////////////')
+
+export function createSidSvcs(config) {
+  const { appId } = config;
+
+  if (!sidSvcs) {
+    sidSvcs = new SidServices(appId)
+  } else {
+    log.warn('Sid Services already exists.')
+  }
+}
+
+// TODO: cleanup this workaround for initialization order errors:
+export function getSidSvcs() {
+  if (!sidSvcs) {
+    throw new Error('createSidSvcs must be called before getSidSvcs.')
+  }
+
+  return sidSvcs
 }

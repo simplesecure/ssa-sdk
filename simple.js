@@ -1,32 +1,20 @@
-import { Query } from './utils/query';
-import connectToChild from 'penpal/lib/connectToChild';
+import { handleData } from './utils/dataProcessing.js';
+import { configureDebugScopes } from './utils/debugScopes.js'
+import { createSidSvcs, getSidSvcs } from './utils/sidServices.js'
+
 const log = require('loglevel')
-const ProviderEngine = require('web3-provider-engine')
-const CacheSubprovider = require('web3-provider-engine/subproviders/cache.js')
-const FixtureSubprovider = require('web3-provider-engine/subproviders/fixture.js')
-const FilterSubprovider = require('web3-provider-engine/subproviders/filters.js')
-const SubscriptionsSubprovider = require('web3-provider-engine/subproviders/subscriptions')
-const HookedWalletSubprovider = require('web3-provider-engine/subproviders/hooked-wallet.js')
-const NonceSubprovider = require('web3-provider-engine/subproviders/nonce-tracker.js')
-const RpcSubprovider = require('web3-provider-engine/subproviders/rpc.js')
+// configureDebugScopes()            // Configure default settings for log scopes
+
 const Web3 = require('web3');
-const engine = new ProviderEngine()
-const web3 = new Web3(engine)
 const request = require('request-promise');
-const INFURA_KEY = "b8c67a1f996e4d5493d5ba3ae3abfb03";
-const LAYER2_RPC_SERVER = 'https://testnet2.matic.network';
 const SIMPLEID_USER_SESSION = 'SimpleID-User-Session';
 const ACTIVE_SID_MESSAGE = 'active-sid-message'
 const PINGED_SIMPLE_ID = 'pinged-simple-id';
 const MESSAGES_SEEN = 'messages-seen'
 const SIMPLEID_NOTIFICATION_FETCH = 'sid-notifications'
-const ethers = require('ethers');
 let headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
-let thisTx;
-let txSigned;
 let action;
 let userDataForIFrame;
-let globalMethodCheck;
 let notificationCheck = true;
 let activeNoti = []
 let pingChecked = false
@@ -35,266 +23,28 @@ let messageEl
 
 const SID_APP_ID = "00000000000000000000000000000000"
 
+
 export default class SimpleID {
   constructor(params) {
-    const startTimeMs = Date.now()
-
     this.config = params;
-    this._selectedAddress = "";
-    this.localRPCServer = params.localRPCServer;
-    this.network = params.network;
     this.appId = params.appId;
-    this.devId = params.devId;
-    this.scopes = params.scopes;
     this.appOrigin = params.appOrigin;
-    this.devWidget = params.devWidget
-    this.development = params.development ? params.development : false;
-    this.useSimpledIdWidget = params.useSimpledIdWidget
+    this.renderNotifications = params.renderNotifications
     this.activeNotifications = []
-    this.provider = undefined
-    this.subProvider = undefined
 
-    // AC: Commented this out as there is no apiKey defined in this class or
-    //     from what I can see, in the params.
-    //     TODO: talk with Justin further
-    // headers['Authorization'] = this.apiKey;
     this.ping = params.isHostedApp === true ? null : this.pingSimpleID();
 
     this.passUserInfoStatus = undefined
 
-    const endTimeMs = Date.now()
-    log.debug(`Simple ID constructed in ${endTimeMs - startTimeMs} ms.`)
+    createSidSvcs(this.config)
   }
 
-  // Separate the wallet initialization from the constructor (not used at moment)
-  _initWallet() {
-    //this.provider = new Web3.providers.HttpProvider(this.network === "local" ? this.localRPCServer : this.network === "layer2" ? LAYER2_RPC_SERVER : `https://${this.network}.infura.io/v3/${INFURA_KEY}`);
-    ///   IF We ever want to put Infrua back in, uncomment below and comment the Radar.
-    //this.subProvider = new Web3.providers.HttpProvider(this.network === "local" ? this.localRPCServer : this.network === "layer2" ? LAYER2_RPC_SERVER : `https://${this.network}.infura.io/v3/${INFURA_KEY}`);
-    this.provider = this.config.appId === SID_APP_ID ? null : this._initProvider();
-    this.subProvider = new Web3.providers.HttpProvider(this.network === "local" ? this.localRPCServer : this.network === "layer2" ? LAYER2_RPC_SERVER : `https://shared-geth-ropsten.nodes.deploy.radar.tech/?apikey=a356caf36d191f896bac510e685d9e231e6897fc0d0835a9`);
-
-    //web3 = new Web3(this.provider);
-  }
-
-  _initProvider() {
-    const engine = new ProviderEngine();
-    const query = new Query(engine);
-    //const address =
-
-    engine.send = (payload, callback) => {
-      // Web3 1.0 beta.38 (and above) calls `send` with method and parameters
-      if (typeof payload === 'string') {
-        return new Promise((resolve, reject) => {
-          engine.sendAsync(
-            {
-              jsonrpc: '2.0',
-              id: 42,
-              method: payload,
-              params: callback || [],
-            },
-            (error, response) => {
-              if (error) {
-                log.error("ERROR in send: ", error)
-                reject(error);
-              } else {
-                resolve(response.result);
-              }
-            },
-          );
-        });
-      }
-
-      // Web3 1.0 beta.37 (and below) uses `send` with a callback for async queries
-      if (callback) {
-        engine.sendAsync(payload, callback);
-        return;
-      }
-
-      let result = null;
-      switch (payload.method) {
-        case 'eth_accounts':
-          result = this._selectedAddress ? [this._selectedAddress] : [];
-          break;
-
-        case 'eth_coinbase':
-          result = this._selectedAddress ? [this._selectedAddress] : [];
-          break;
-
-        case 'net_version':
-          result = this._network;
-          break;
-        case 'eth_uninstallFilter':
-          engine.sendAsync(payload, _ => _);
-          result = true;
-          break;
-
-        default:
-          var message = `The SimpleID Web3 object does not support synchronous methods like ${
-            payload.method
-          } without a callback parameter.`;
-          throw new Error(message);
-      }
-
-      return {
-        id: payload.id,
-        jsonrpc: payload.jsonrpc,
-        result: result,
-      };
-    };
-
-    engine.addProvider(
-      new FixtureSubprovider({
-        web3_clientVersion: `SIMPLEID/v${this.config.version}/javascript`,
-        net_listening: true,
-        eth_hashrate: '0x00',
-        eth_mining: false,
-        eth_syncing: true,
-      }),
-    );
-
-    engine.addProvider(new CacheSubprovider());
-    engine.addProvider(new SubscriptionsSubprovider());
-    engine.addProvider(new FilterSubprovider());
-    engine.addProvider(new NonceSubprovider());
-
-    engine.addProvider({
-      setEngine: _ => _,
-      handleRequest: async (payload, next, end) => {
-        globalMethodCheck = payload.method;
-        // let result;
-        // engine.networkVersion = this.network;
-        // result = this.network;
-        // end("", result);
-        if (!payload.id) {
-          payload.id = 42;
-        }
-        next();
-      },
-    });
-
-    engine.addProvider(
-      new HookedWalletSubprovider({
-        getAccounts: async cb => {
-          const address = this.getUserData() && this.getUserData().wallet ? this.getUserData().wallet.ethAddr : "";
-          let addresses = [];
-          addresses.push(address);
-          const result = addresses;
-          let error;
-          if (result) {
-            this._selectedAddress = result[0];
-          } else {
-            error = "Trouble getting account"
-          }
-          cb(error, result);
-        },
-        approveTransaction: async (txParams, cb) => {
-          let error;
-          thisTx = {
-            appName: this.config.appName,
-            tx: txParams
-          }
-          action = 'transaction';
-          const popup = await this.createPopup();
-          txSigned = popup;
-          cb(error, true);
-        },
-        signTransaction: (txParams, cb) => {
-          let error;
-          if(!txSigned) {
-            error = "User canceled action"
-          }
-          cb(error, txSigned);
-        },
-        publishTransaction: (rawTx, cb) => {
-          cb(null, rawTx);
-        },
-        signMessage: async (msgParams, cb) => {
-          let error;
-          thisTx = {
-            appName: this.config.appName,
-            tx: msgParams
-          }
-          action = "message";
-          const popup = await this.createPopup();
-          cb(error, popup);
-        },
-        signPersonalMessage: async (msgParams, cb) => {
-          let error;
-          thisTx = {
-            appName: this.config.appName,
-            tx: msgParams
-          }
-          action = "message";
-          const popup = await this.createPopup();
-          cb(error, popup);
-        },
-        signTypedMessage: async (msgParams, cb) => {
-          const widgetCommunication = (await this.widget).communication;
-          const params = Object.assign({}, msgParams, { messageStandard: 'signTypedMessage' });
-          const { error, result } = await widgetCommunication.signMessage(params, this.config);
-          cb(error, result);
-        },
-        signTypedMessageV3: async (msgParams, cb) => {
-          const widgetCommunication = (await this.widget).communication;
-          const params = Object.assign({}, msgParams, { messageStandard: 'signTypedMessageV3' });
-          const { error, result } = await widgetCommunication.signMessage(params, this.config);
-          cb(error, result);
-        },
-        estimateGas: async (txParams, cb) => {
-          const gas = await getTxGas(query, txParams);
-          cb(null, gas);
-        },
-        getGasPrice: async cb => {
-          cb(null, '');
-        },
-        getTransactionCount: async (txParams, cb) => {
-         const count = await web3.eth.getTransactionCount(this.getUserData() && this.getUserData().wallet ? this.getUserData().wallet.ethAddr : "")
-         cb(null, count);
-        }
-      }),
-    );
-
-    engine.addProvider(new RpcSubprovider({
-      rpcUrl: `https://${this.network}.infura.io/v3/${INFURA_KEY}`,
-      //rpcUrl: `https://shared-geth-ropsten.nodes.deploy.radar.tech/?apikey=a356caf36d191f896bac510e685d9e231e6897fc0d0835a9`,
-    }))
-
-    engine.enable = () =>
-      new Promise((resolve, reject) => {
-        engine.sendAsync({ method: 'eth_accounts' }, (error, response) => {
-          if (error) {
-            reject(error);
-          } else {
-            resolve(response.result);
-          }
-        });
-      });
-
-    engine.isConnected = () => {
-      return true;
-    };
-
-    engine.isSimpleID = true;
-
-    engine.on('error', error => {
-      if (error && error.message && error.message.includes('PollingBlockTracker')) {
-        console.warn('If you see this warning constantly, there might be an error with your RPC node.');
-      } else {
-        console.error(error);
-      }
-    });
-
-    engine.start();
-    return engine;
-  }
   async notifications() {
-    const notifications = await this.checkNotifications()
-    return notifications
+    return await this.checkNotifications()
   }
-  // TODO: notificationCheck probably should be scoped to the class (i.e.
-  //       a class member var--not sure what it means to have it as a global
-  //       or file level global)
+
+  // TODO: Justin, AC:
+  //       - remove notificationCheck altogether (it's in there to prevent an infintie loop)
   async checkNotifications() {
     if(notificationCheck) {
       const address = this.getUserData() ? this.getUserData().wallet.ethAddr : "";
@@ -317,13 +67,12 @@ export default class SimpleID {
           //Now we check to see if there are more than one notification:
           if(activeNotifications.length > 1) {
             //Filter out the messages that have been seen
-            const messagesSeen = localStorage.getItem(MESSAGES_SEEN) !== "undefined" ? JSON.parse(localStorage.getItem(MESSAGES_SEEN)) : undefined
+            const messagesSeen = localStorage.getItem(MESSAGES_SEEN) !== "undefined" ?
+              JSON.parse(localStorage.getItem(MESSAGES_SEEN)) : undefined
             if(messagesSeen && messagesSeen.length > 0) {
               for (const noti of activeNotifications) {
                 const foundMessage = messagesSeen.filter(a => a === noti.id)
-                if(foundMessage && foundMessage.length > 0) {
-                  //Don't do anything here
-                } else {
+                if (!foundMessage || !(foundMessage.length > 0)) {
                   notificationsToReturn.push(noti);
                 }
               }
@@ -332,14 +81,14 @@ export default class SimpleID {
             }
 
             if(notificationsToReturn && notificationsToReturn.length > 0) {
-              if(this.useSimpledIdWidget) {
+              if(this.renderNotifications) {
                 const messageToStore = notificationsToReturn[0]
                 localStorage.setItem(ACTIVE_SID_MESSAGE, JSON.stringify(messageToStore))
                 this.loadButton()
               } else {
                 if(notificationsToReturn.length > 0) {
                   const updated = this._addPlainText(notificationsToReturn)
-                  if(updated.lenght > 0) {
+                  if(updated.length > 0) {
                     notificationsToReturn = updated
                   }
                 }
@@ -353,11 +102,12 @@ export default class SimpleID {
           } else if(activeNotifications.length === 1) {
 
             //Filter out the messages that have been seen
-            const messagesSeen = localStorage.getItem(MESSAGES_SEEN) !== "undefined" ? JSON.parse(localStorage.getItem(MESSAGES_SEEN)) : undefined
+            const messagesSeen = localStorage.getItem(MESSAGES_SEEN) !== "undefined" ?
+                JSON.parse(localStorage.getItem(MESSAGES_SEEN)) : undefined
             if(messagesSeen && messagesSeen.length > 0) {
               for (const noti of activeNotifications) {
                 const foundMessage = messagesSeen.filter(a => a === noti.id)
-                if(foundMessage && foundMessage.length > 0) {
+                if (foundMessage && foundMessage.length > 0) {
                   //Don't do anything here
                 } else {
                   notificationsToReturn.push(noti);
@@ -367,7 +117,7 @@ export default class SimpleID {
               notificationsToReturn = activeNotifications
             }
             //need to check if the developer expects us to handle the widget
-            if(this.useSimpledIdWidget && notificationsToReturn.length > 0) {
+            if(this.renderNotifications && notificationsToReturn.length > 0) {
               //Throw up the button for the SID widget
               const notification = notificationsToReturn[0];
               const dataToPass = {
@@ -412,158 +162,44 @@ export default class SimpleID {
     return updatedNotifications
   }
 
-  createPopup(invisible, payload) {
-    let iframe;
-    const checkIframe = document.getElementById('sid-widget');
-    if(checkIframe) {
-      //No need to open a new iFrame
-      iframe = checkIframe
-    } else {
-      const devUrl = "http://localhost:3003"
-      const prodUrl = 'https://processes.simpleid.xyz'
+  // Start of mess
+  //////////////////////////////////////////////////////////////////////////////
+  async handleAction(action, options={}) {
+    console.log("ACTION: ", action);
 
-      iframe = document.createElement('iframe');
-      this.devWidget ? iframe.setAttribute('src', devUrl) : iframe.setAttribute('src', prodUrl);
+   if (action === 'sign-out') {
+      clearSidKeysFromLocalStore('simple.js')
+      //window.location.reload();
+      this.completeSignOut();
+    } else if(action === 'sign-in-no-sid') {
+      const { userInfo } = options
 
-      iframe.setAttribute("id", "sid-widget");
-      iframe.style.position = 'fixed';
-      iframe.style.top = '0';
-      iframe.style.left = '0';
-      iframe.style.width = '100vw';
-      iframe.style.height = '100vh';
-      iframe.style.zIndex = '1024';
-      iframe.style.border = "none"
-      iframe.style.background = "transparent"
+      const dataToReturn = await getSidSvcs().persistNonSIDUserInfo(userInfo);
+      return dataToReturn
+    } else if(action === 'process-data') {
+      const { payload } = options
+      const data = payload
+
+      if (data) {
+        const dataToReturn = await handleData(data);
+        return dataToReturn
+      }
     }
-
-    if(invisible) {
-      iframe.style.width = 0;
-      iframe.style.height = 0;
-      iframe.style.border = "none"
-      iframe.style.background = "transparent"
-    }
-
-    //const scopes = this.scopes;
-    const params = this.config;
-
-    params.orgId = undefined
-    try {
-      params.orgId = this.getUserData().orgId
-      log.debug(`org ID found in local store: ${params.orgId}.`)
-    } catch (suppressedError) {
-      log.debug(`org ID not found in local store: "${suppressedError}"`)
-    }
-
-    return new Promise((resolve, reject) => {
-      //Launch the widget;
-      const connection = connectToChild({
-        // The iframe to which a connection should be made
-        iframe,
-        // Methods the parent is exposing to the child
-        methods: {
-          dataToProcess() {
-            if(payload) {
-              return payload;
-            } else if(userDataForIFrame) {    // TODO: this code may be innefective--consider removing or moving to userDataToProcess method below
-              return userDataForIFrame
-            }
-          },
-          // userDataToProcess fixes the problem of an iframe getting re-used
-          // with the same payload value from an initial call (payload is bound
-          // to the function instance where userDataForIFrame binds to the parent):
-          userDataToProcess() {
-            return userDataForIFrame
-          },
-          returnProcessedData(data) {
-            resolve(data);
-          },
-          getPopUpInfo() {
-            //This is where we can pass the tx details
-            return thisTx;
-          },
-          getConfig(){
-            return params;
-          },
-          storeUserData(userData) {
-            localStorage.setItem(SIMPLEID_USER_SESSION, userData);
-            return true;
-          },
-          signedMessage(message) {
-            resolve(message);
-            //localStorage.setItem('signed-msg', JSON.stringify(message));
-          },
-          displayHash(hash) {
-            resolve(hash);
-          },
-          async storeKeychain(keychainData) {
-            //need to post this to the DB
-            const createdUser = await this.createUser(keychainData);
-            return createdUser;
-          },
-          async fetchUser(email) {
-            const user = await this.checkUser(email);
-            if(user.success === true) {
-              return user.body;
-            } else {
-              return {
-                success: false,
-                body: "User not found"
-              }
-            }
-          },
-          close(reload){
-
-            action = "";
-            if (document.body.contains(iframe)) {
-              document.body.removeChild(iframe);
-
-            }
-            if(reload) {
-              window.location.reload();
-            }
-            resolve();
-          },
-          checkType() {
-            return globalMethodCheck;
-          },
-          checkAction() {
-            return action;
-          },
-          completeSignOut() {
-            localStorageClearPreserveDebugScopes()
-            window.location.reload();
-          }
-        }
-      });
-
-      connection.promise.then(child => {
-        // Pass debug scopes from local storage of the page using this SDK to the
-        // widget for dynamic debugging capapbility.
-        try {
-          child.setDebugScopes(getIFrameDebugScopes())
-        } catch (suppressedError) {
-          log.debug(`Suppressed error setting iframe attribute debugScopes.\n${suppressedError}`)
-        }
-      });
-
-      document.body.appendChild(iframe);
-    });
   }
 
-  signUserIn() {
-    action = "sign-in";
-    this.createPopup();
+  storeWallet(userData) {
+    localStorage.setItem(SIMPLEID_USER_SESSION, userData);
+    return true;
   }
 
-  //OAuth Flow Would Use This Method
-  signUserInWithEmail(email) {
-    const objectToSend = {
-      thisAction: 'sign-in-email-provided',
-      email
-    }
-    action = objectToSend
-    this.createPopup();
+  completeSignOut() {
+    clearSidKeysFromLocalStore('simple.js')
+    window.location.reload();
   }
+
+  // End of mess
+  /////////////////////////////////////////////////////////////////////////////
+
 
   /**
    *  passUserInfo:
@@ -626,7 +262,7 @@ export default class SimpleID {
       const invisible = true
       action = "sign-in-no-sid";
       userDataForIFrame = userInfo;
-      newUser = await this.createPopup(invisible, userInfo)
+      newUser = await this.handleAction(action, { userInfo })
     } catch (error) {
       this.passUserInfoStatus = undefined
       const msg = `${method}: Failed registering user data.\n${error}`
@@ -668,14 +304,12 @@ export default class SimpleID {
     const payload = {
       type, data
     }
-    const returnedData = await this.createPopup(invisible, payload);
+    const options = {
+      payload: payload
+    }
+    const returnedData = await this.handleAction(action, options)
     action = ""
     return returnedData;
-  }
-
-  async openHostedWidget() {
-    action = 'hosted-app';
-    this.createPopup();
   }
 
   async pingSimpleID() {
@@ -686,7 +320,7 @@ export default class SimpleID {
 
       //TODO: If we want to handle notifications in the engagement app, this won't fly
       if(notificationCheck) {
-        this.config.appId === SID_APP_ID ? null : this.useSimpledIdWidget ? this.checkNotifications() : null;
+        this.config.appId === SID_APP_ID ? null : this.renderNotifications ? this.checkNotifications() : null;
       }
     } else {
       //Check localStorage for a flag that indicates a ping
@@ -695,7 +329,7 @@ export default class SimpleID {
       pingChecked = true
       if(pinged && pinged.date) {
         if(notificationCheck) {
-          this.config.appId === SID_APP_ID ? null : this.useSimpledIdWidget ? this.checkNotifications() : null;
+          this.config.appId === SID_APP_ID ? null : this.renderNotifications ? this.checkNotifications() : null;
         }
       } else {
         //Now we need to fire off a method that will ping SimpleID and let us know the app is connected
@@ -709,7 +343,7 @@ export default class SimpleID {
           await this.processData('ping', data)
           localStorage.setItem(PINGED_SIMPLE_ID, JSON.stringify(data))
           //Only when the ping is complete should we fetch notifications
-          this.config.appId === SID_APP_ID ? null : this.useSimpledIdWidget ? this.checkNotifications() : null;
+          this.config.appId === SID_APP_ID ? null : this.renderNotifications ? this.checkNotifications() : null;
         } catch(e) {
           log.error("Error pinging: ", e)
         }
@@ -847,27 +481,6 @@ export default class SimpleID {
     //localStorage.setItem(ACTIVE_SID_MESSAGE, JSON.stringify(messageData));
   }
 
-  launchWallet() {
-    const url = process.env.NODE_ENV === "production" ? "https://wallet.simpleid.xyz" : "http://localhost:3002";
-    const element = document.createElement('a');
-    element.setAttribute('href', url);
-    element.setAttribute('target', '_blank');
-    element.style.display = 'none';
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
-  }
-
-  //If a developer wants to use the ethers.js library manually in-app, they can access it with this function
-  simpleWeb3() {
-    return ethers
-  }
-
-  getProvider() {
-    return this.provider;
-    //return this.subProvider;
-  }
-
   //This returns the wallet info for the SimpleID user
   getUserData() {
     return JSON.parse(localStorage.getItem(SIMPLEID_USER_SESSION));
@@ -875,7 +488,23 @@ export default class SimpleID {
 
   signOut() {
     action = 'sign-out';
-    this.createPopup(true, null);
+    this.handleAction(action)
+  }
+}
+
+
+/**
+ *  clearSidKeysFromLocalStore:
+ *
+ *    Clears some keys from local store (but not debug or ping)
+ *
+ */
+export function clearSidKeysFromLocalStore(context='') {
+  const keysToClear = [SIMPLEID_USER_SESSION]
+  for (const key of keysToClear) {
+    try {
+      localStorage.remove(key)
+    } catch (suppressedError) {}
   }
 }
 
@@ -890,47 +519,6 @@ const ALLOWED_SCOPES = [ ROOT_KEY,
                         `${ROOT_KEY}:sidServices` ]
 const ALLOWED_LEVELS = [ 'TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR' ]
 const DEFAULT_LOG_LEVEL="INFO"
-
-/**
- *  localStorageClearPreserveDebugScopes:
- *
- *  Preserves the value of debug scopes in ALLOWED_SCOPES from local storage
- *  through a clear operation.
- *
- */
-export function localStorageClearPreserveDebugScopes(context='') {
-  const startTimeMs = Date.now()
-
-  // Fetch and preserve any existing debug scopes before clearing local storage:
-  //
-  const debugScopes = {}
-  for (const scopeKey of ALLOWED_SCOPES) {
-    debugScopes[scopeKey] = undefined
-    try {
-      const scope = localStorage.getItem(scopeKey)
-      if (ALLOWED_LEVELS.includes(scope)) {
-        debugScopes[scopeKey] = scope
-      }
-    } catch (suppressedError) {}
-  }
-
-  localStorage.clear()
-
-  // Restore the previously existing debug scopes now that local storage is
-  // cleared:
-  //
-  for (const scopeKey of ALLOWED_SCOPES) {
-    const scope = debugScopes[scopeKey]
-    if (ALLOWED_LEVELS.includes(scope)) {
-      try {
-        localStorage.setItem(scopeKey, scope)
-      } catch (suppressedError) {}
-    }
-  }
-
-  const endTimeMs = Date.now()
-  log.debug(`localStorageClearPreserveDebugScopes(${context}) completed in ${endTimeMs - startTimeMs} ms.`)
-}
 
 /**
  *  getDebugScopes:

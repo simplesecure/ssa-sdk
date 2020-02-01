@@ -6,6 +6,8 @@ import { tableGet,
          tableUpdateListAppend,
          tableUpdateAppendNestedObjectProperty } from './dynamoBasics.js'
 
+const CONFIG = require('../config.json')
+
 // TODO: This func will go away and go into our EC2/Lambda Mail service machine
 //
 export async function userDataTableGetEmailsFromUuid(uuid) {
@@ -14,9 +16,9 @@ export async function userDataTableGetEmailsFromUuid(uuid) {
   }
 
   return tableGetBySecondaryIndex(
-    process.env.REACT_APP_UD_TABLE,
-    process.env.REACT_APP_UD_TABLE_INDEX,
-    process.env.REACT_APP_UD_TABLE_SK,
+    CONFIG.UD_TABLE,
+    CONFIG.UD_TABLE_INDEX,
+    CONFIG.UD_TABLE_SK,
     uuid
   )
 }
@@ -25,10 +27,10 @@ export async function walletAnalyticsDataTableGet(anAppId) {
   if (!anAppId) {
     throw new Error(`DB access method walletAnalyticsDataTableGet requires a value for anAppId.  anAppId="${anAppId}".`)
   }
-
+  
   return tableGet(
-    process.env.REACT_APP_AD_TABLE,
-    process.env.REACT_APP_AD_TABLE_PK,
+    CONFIG.AD_TABLE,
+    CONFIG.AD_TABLE_PK,
     anAppId
   )
 }
@@ -39,7 +41,7 @@ export async function walletAnalyticsDataTablePut(aWalletAnalyticsRowObj) {
   }
 
   return tablePut(
-    process.env.REACT_APP_AD_TABLE,
+    CONFIG.AD_TABLE,
     aWalletAnalyticsRowObj
   )
 }
@@ -52,8 +54,8 @@ export async function walletAnalyticsDataTableGetAppPublicKey(anAppId) {
   let walletAnalyticsRowObjs = undefined
   try {
     walletAnalyticsRowObjs = await tableQuerySpecificItem(
-      process.env.REACT_APP_AD_TABLE,
-      process.env.REACT_APP_AD_TABLE_PK,
+      CONFIG.AD_TABLE,
+      CONFIG.AD_TABLE_PK,
       anAppId,
       'public_key'
     )
@@ -73,8 +75,8 @@ export async function walletToUuidMapTableGet(aWalletAddress) {
   }
 
   return tableGet(
-    process.env.REACT_APP_UUID_TABLE,
-    process.env.REACT_APP_UUID_TABLE_PK,
+    CONFIG.UUID_TABLE,
+    CONFIG.UUID_TABLE_PK,
     aWalletAddress
   )
 }
@@ -85,7 +87,7 @@ export async function walletToUuidMapTablePut(aWalletToUuidMapRowObj) {
   }
 
   return tablePut(
-    process.env.REACT_APP_UUID_TABLE,
+    CONFIG.UUID_TABLE,
     aWalletToUuidMapRowObj
   )
 }
@@ -96,8 +98,8 @@ export async function organizationDataTableGet(anOrgId) {
   }
 
   return tableGet(
-    process.env.REACT_APP_ORG_TABLE,
-    process.env.REACT_APP_ORG_TABLE_PK,
+    CONFIG.ORG_TABLE,
+    CONFIG.ORG_TABLE_PK,
     anOrgId
   )
 }
@@ -108,7 +110,7 @@ export async function organizationDataTablePut(aOrganizationDataRowObj) {
   }
 
   return tablePut(
-    process.env.REACT_APP_ORG_TABLE,
+    CONFIG.ORG_TABLE,
     aOrganizationDataRowObj
   )
 }
@@ -119,9 +121,9 @@ export async function unauthenticatedUuidTableQueryByEmail(anEmail) {
   }
 
   return tableGetBySecondaryIndex(
-    process.env.REACT_APP_UNAUTH_UUID_TABLE,
-    process.env.REACT_APP_UNAUTH_UUID_TABLE_INDEX,
-    process.env.REACT_APP_UNAUTH_UUID_TABLE_SK,
+    CONFIG.UNAUTH_UUID_TABLE,
+    CONFIG.UNAUTH_UUID_TABLE_INDEX,
+    CONFIG.UNAUTH_UUID_TABLE_SK,
     anEmail
   )
 }
@@ -132,8 +134,8 @@ export async function unauthenticatedUuidTableGetByUuid(aUuid) {
   }
 
   return tableGet(
-    process.env.REACT_APP_UNAUTH_UUID_TABLE,
-    process.env.REACT_APP_UNAUTH_UUID_TABLE_PK,
+    CONFIG.UNAUTH_UUID_TABLE,
+    CONFIG.UNAUTH_UUID_TABLE_PK,
     aUuid
   )
 }
@@ -146,7 +148,7 @@ export async function unauthenticatedUuidTablePut(anUnauthenticatedUuidRowObj) {
   }
 
   return tablePut(
-    process.env.REACT_APP_UNAUTH_UUID_TABLE,
+    CONFIG.UNAUTH_UUID_TABLE,
     anUnauthenticatedUuidRowObj
   )
 }
@@ -157,8 +159,8 @@ export async function unauthenticatedUuidTableAppendAppId(aUuid, anAppId) {
   }
 
   return tableUpdateListAppend(
-    process.env.REACT_APP_UNAUTH_UUID_TABLE,
-    { [ process.env.REACT_APP_UNAUTH_UUID_TABLE_PK ] : aUuid },
+    CONFIG.UNAUTH_UUID_TABLE,
+    { [ CONFIG.UNAUTH_UUID_TABLE_PK ] : aUuid },
     'apps',
     anAppId
   )
@@ -172,8 +174,8 @@ export async function walletToUuidMapTableAddCipherTextUuidForAppId(
   }
 
   return tableUpdateAppendNestedObjectProperty(
-    process.env.REACT_APP_UUID_TABLE,
-    { [ process.env.REACT_APP_UUID_TABLE_PK ] : aWalletAddress },
+    CONFIG.UUID_TABLE,
+    { [ CONFIG.UUID_TABLE_PK ] : aWalletAddress },
     'app_to_enc_uuid_map',
     anAppId,
     aCipherTextUuid
@@ -188,8 +190,8 @@ export async function walletAnalyticsDataTableAddWalletForAnalytics(
   }
 
   return tableUpdateAppendNestedObjectProperty(
-    process.env.REACT_APP_AD_TABLE,
-    { [ process.env.REACT_APP_AD_TABLE_PK] : anAppId },
+    CONFIG.AD_TABLE,
+    { [ CONFIG.AD_TABLE_PK] : anAppId },
     'analytics',
     aWalletAddress,
     {
@@ -206,16 +208,16 @@ export async function walletToUuidMapTableGetUuids(anArrayOfWalletAddrs) {
   const arrOfKeyValuePairs = []
   for (const walletAddress of anArrayOfWalletAddrs) {
     arrOfKeyValuePairs.push({
-      [ process.env.REACT_APP_UUID_TABLE_PK ] : walletAddress
+      [ CONFIG.UUID_TABLE_PK ] : walletAddress
     })
   }
 
   const rawDataResults =
-    await tableBatchGet(process.env.REACT_APP_UUID_TABLE, arrOfKeyValuePairs)
+    await tableBatchGet(CONFIG.UUID_TABLE, arrOfKeyValuePairs)
 
   let walletToUuids = undefined
   try {
-    walletToUuids = rawDataResults.Responses[process.env.REACT_APP_UUID_TABLE]
+    walletToUuids = rawDataResults.Responses[CONFIG.UUID_TABLE]
   } catch (error) {
     throw new Error(`Unable to access wallet to UUID maps in db response.\n${error}`);
   }

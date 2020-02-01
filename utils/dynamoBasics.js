@@ -1,22 +1,24 @@
 const AWS = require('aws-sdk')
 
+const CONFIG = require('../config.json')
+
 // TODO TODO TODO TODO
 // This is for quick dev, remove this and use Cognito to assign role based access
 // through IDP (at least within the iFrame) lest we mess things up with
 // confliting perms and excess access:
 //
 AWS.config.update({
-  accessKeyId: process.env.REACT_APP_AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.REACT_APP_AWS_SECRET_ACCESS_KEY,
-  region: process.env.REACT_APP_REGION
+  accessKeyId: CONFIG.AWS_ACCESS_KEY_ID,
+  secretAccessKey: CONFIG.AWS_SECRET_ACCESS_KEY,
+  region: CONFIG.REGION
 })
 //
 // _docClientAK: AK --> AWS Access Key Credentialing (vs. Cognito Credentials).
 //
 const _docClientAK = new AWS.DynamoDB.DocumentClient()
 
-const DEBUG_DYNAMO = ( process.env.REACT_APP_DEBUG_DYNAMO ||
-                       process.env.DEBUG_DYNAMO) ? true : false
+const DEBUG_DYNAMO = ( CONFIG.DEBUG_DYNAMO ||
+                       CONFIG.DEBUG_DYNAMO) ? true : false
 
 export function dbRequestDebugLog(anOperation, params, error) {
   try {

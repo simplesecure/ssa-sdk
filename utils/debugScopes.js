@@ -2,6 +2,8 @@
 //   - https://github.com/pimterry/loglevel
 //
 const log = require('loglevel')
+// The prefix library calls setLevel with no option regarding persistence to
+// local storage.
 const prefix = require('loglevel-plugin-prefix');
 
 const ROOT_KEY = 'loglevel'
@@ -55,7 +57,7 @@ export function getLog(logName=undefined) {
  * TODO:
  *      - refactor to it's own file and the consts too
  */
-export function configureDebugScopes(debugScopes={}, persistLogLevel=false) {
+export function configureDebugScopes(debugScopes={}) {
   for (const scopeKey of ALLOWED_SCOPES) {
     // Get the module name from the scopeKey:
     const moduleName = scopeKey.replace(`${ROOT_KEY}:`, '')
@@ -72,53 +74,12 @@ export function configureDebugScopes(debugScopes={}, persistLogLevel=false) {
 
     try {
       if (moduleName === ROOT_KEY) {
-        log.setLevel(scopeValue, persistLogLevel)
+        log.setLevel(scopeValue)
       } else {
-        log.getLogger(moduleName).setLevel(scopeValue, persistLogLevel)
+        log.getLogger(moduleName).setLevel(scopeValue)
       }
     } catch (suppressedError) {
       log.debug(`Suppressed error setting the iframe log level for ${moduleName} to ${scopeValue}.\n${suppressedError}`)
     }
   }
-}
-
-/**
- *  localStorageClearPreserveDebugScopes:
- *
- *  Preserves the value of debug scopes in ALLOWED_SCOPES from local storage
- *  through a clear operation.
- *
- */
-export function localStorageClearPreserveDebugScopes(context='') {
-  const startTimeMs = Date.now()
-
-  // Fetch and preserve any existing debug scopes before clearing local storage:
-  //
-  const debugScopes = {}
-  for (const scopeKey of ALLOWED_SCOPES) {
-    debugScopes[scopeKey] = undefined
-    try {
-      const scope = localStorage.getItem(scopeKey)
-      if (ALLOWED_LEVELS.includes(scope)) {
-        debugScopes[scopeKey] = scope
-      }
-    } catch (suppressedError) {}
-  }
-
-  localStorage.clear()
-
-  // Restore the previously existing debug scopes now that local storage is
-  // cleared:
-  //
-  for (const scopeKey of ALLOWED_SCOPES) {
-    const scope = debugScopes[scopeKey]
-    if (ALLOWED_LEVELS.includes(scope)) {
-      try {
-        localStorage.setItem(scopeKey, scope)
-      } catch (suppressedError) {}
-    }
-  }
-
-  const endTimeMs = Date.now()
-  log.debug(`localStorageClearPreserveDebugScopes(${context}) completed in ${endTimeMs - startTimeMs} ms.`)
 }
