@@ -1,7 +1,7 @@
 import React, { setGlobal } from 'reactn';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
-import { signIn, approveSignIn, handlePassword } from '../actions/postMessage';
+import { signIn, approveSignIn } from '../actions/postMessage';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger'
 import Tooltip from 'react-bootstrap/Tooltip'
 
@@ -29,17 +29,6 @@ export default class Auth extends React.Component {
 
   handleCode = (e) => {
     setGlobal({ token: e.target.value });
-  }
-
-  handlePassword = (e, encrypt) => {
-    const password = e.target.value;
-    const found = password.match(PASSWORD_REGEX);
-    if (found) {
-      setGlobal({ password: e.target.value, encrypt });
-    }
-    else {
-      //todo Justin...throw some sort of error here
-    }
   }
 
   suppressDefaultSignIn = (e) => {
@@ -78,40 +67,6 @@ export default class Auth extends React.Component {
     )
   }
 
-  renderEnterNewPassword = () => {
-    return (
-      <div>
-        <h5>You'll need a password to protect your account</h5>
-        <p>Your password will never be revealed or stored, so it's important that you keep this somewhere safe. You will not be able to recovery your account without your password.</p>
-        <Form onSubmit={(e) => handlePassword(e, "new-auth")}>
-          <Form.Group controlId="formBasicEmail">
-            <Form.Control onChange={this.handlePassword} type="password" placeholder="Your password" />
-          </Form.Group>
-          <Button variant="primary" type="submit">
-            Next
-          </Button>
-        </Form>
-      </div>
-    )
-  }
-
-  renderEnterPassword = () => {
-    return (
-      <div>
-        <h5>Enter your password to continue</h5>
-        <p>Your password will never be revealed or stored.</p>
-        <Form onSubmit={(e) => handlePassword(e, "auth")}>
-          <Form.Group controlId="formBasicEmail">
-            <Form.Control onChange={this.handlePassword} type="password" placeholder="Your password" />
-          </Form.Group>
-          <Button variant="primary" type="submit">
-            Next
-          </Button>
-        </Form>
-      </div>
-    )
-  }
-
   // Maps to unknown actions (i.e. default), which includes 'sign-in'
   renderEnterEmail = (theConfig) => {
     console.log("should not be rendering")
@@ -134,26 +89,6 @@ export default class Auth extends React.Component {
         </ul>
         */}
         <p>Get started with just an email.</p>
-        <Form onSubmit={signIn}>
-          <Form.Group controlId="formBasicEmail">
-            <Form.Control onChange={this.handleEmail} type="email" placeholder="your.email@email.com" />
-          </Form.Group>
-          <Form.Text className="text-muted bottom-10">
-            A one-time code will be emailed to you.
-          </Form.Text>
-          <Button variant="primary" type="submit">
-            Continue
-          </Button>
-        </Form>
-      </div>
-    )
-  }
-
-  renderEnterEmailHosted = () => {
-    return (
-      <div>
-        <h5>Sign Into Your SimpleID Wallet</h5>
-        <p>All you need is an email.</p>
         <Form onSubmit={signIn}>
           <Form.Group controlId="formBasicEmail">
             <Form.Control onChange={this.handleEmail} type="email" placeholder="your.email@email.com" />
@@ -214,7 +149,7 @@ export default class Auth extends React.Component {
   }
 
   render = () => {
-    const { config, action } = this.global;
+    const { action } = this.global;
 
     let containerElements = undefined
     switch (action) {
@@ -224,25 +159,11 @@ export default class Auth extends React.Component {
       case 'loading':
         containerElements = this.renderLoading()
         break
-      case 'enter-new-password':
-        containerElements = this.renderEnterNewPassword()
-        break
-      case 'enter-password':
-        containerElements = this.renderEnterPassword()
-        break
       case 'sign-in-hosted':
-        if (process.env.REACT_APP_COGNITO_W_PASSWORD === "true") {
-          containerElements = this.renderPasswordFlow()
-        } else {
-          containerElements = this.renderEnterEmailHosted()
-        }
+        containerElements = this.renderPasswordFlow()
         break;
-      default:  // includes 'sign-in' and anything else...
-        if (process.env.REACT_APP_COGNITO_W_PASSWORD === "true") {
-          containerElements = this.renderPasswordFlow()
-        } else {
-          containerElements = this.renderEnterEmailHosted(config)
-        }
+      default: 
+        containerElements = this.renderPasswordFlow()
     }
 
     return (

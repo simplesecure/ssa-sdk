@@ -95,17 +95,6 @@ connection.promise.then(parent => {
 
         }
       })
-    } else if(action === 'hosted-app') {
-      //Need to check if the user is already logged into the iframe
-      const wallet = getSidSvcs().getWalletAddress();
-      console.log("WALLET: ", wallet);
-      if(wallet) {
-        //Show a blance screen with other functionality
-        setGlobal({ showWallet: true });
-      } else {
-        setGlobal({ action: "sign-in-hosted" });
-      }
-      setGlobal({ hostedApp: true, action, auth: action === "transaction" || action === "message" || wallet ? false : true });
     } else  {
       //If not a sign out request, set the action appropriately
       setGlobal({ action, auth: action === "transaction" || action === "message" ? false : true });
@@ -152,8 +141,6 @@ setGlobal({
   error: "",
   subaction: "",
   type: "",
-  nonSignInEvent: false,
-  hostedApp: false,
   showWallet: false,
   network: 'mainnet',
   signUpMnemonicReveal: false,

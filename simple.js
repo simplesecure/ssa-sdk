@@ -484,7 +484,7 @@ export default class SimpleID {
           getConfig(){
             return params;
           },
-          storeWallet(userData) {
+          storeUserData(userData) {
             localStorage.setItem(SIMPLEID_USER_SESSION, userData);
             return true;
           },

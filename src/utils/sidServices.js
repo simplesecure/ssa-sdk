@@ -1,6 +1,5 @@
 import { Auth } from 'aws-amplify'
 import Amplify from 'aws-amplify';
-import { getGlobal } from 'reactn';
 
 import { walletAnalyticsDataTablePut,
          walletToUuidMapTablePut,
@@ -19,7 +18,6 @@ import { walletAnalyticsDataTablePut,
          walletToUuidMapTableGet } from './dynamoConveniences.js'
 
 import { jsonParseToBuffer, getRandomString } from './misc.js'
-import { localStorageClearPreserveDebugScopes } from './debugScopes'
 
 import { getLog } from './../utils/debugScopes'
 const log = getLog('sidServices')
@@ -37,17 +35,9 @@ const Buffer = require('buffer/').Buffer  // note: the trailing slash is importa
 
 const eccrypto = require('eccrypto')
 
+const USER_POOL_ID = process.env.REACT_APP_PASSWORD_USER_POOL_ID
 
-const PASSWORD_USER_POOL =
-  (process.env.REACT_APP_COGNITO_W_PASSWORD === "true")
-
-const USER_POOL_ID = (PASSWORD_USER_POOL) ?
-  process.env.REACT_APP_PASSWORD_USER_POOL_ID :
-  process.env.REACT_APP_USER_POOL_ID
-
-const USER_POOL_WEB_CLIENT_ID = (PASSWORD_USER_POOL) ?
- process.env.REACT_APP_PASSWORD_USER_POOL_WEB_CLIENT_ID :
- process.env.REACT_APP_USER_POOL_WEB_CLIENT_ID
+const USER_POOL_WEB_CLIENT_ID = process.env.REACT_APP_PASSWORD_USER_POOL_WEB_CLIENT_ID 
 
 // TODO: clean up for security best practices
 //       currently pulled from .env
@@ -58,29 +48,27 @@ const amplifyAuthObj = {
   userPoolWebClientId: USER_POOL_WEB_CLIENT_ID,
   identityPoolId: process.env.REACT_APP_IDENTITY_POOL_ID
 }
-if (PASSWORD_USER_POOL) {
-  // TODO: Prefer to use USER_SRP_AUTH but short on time.  Revisit this soon
-  //       so that password never leaves client.  Super important!
-  //   references:
-  //      - (here too) https://stackoverflow.com/questions/54430978/unable-to-verify-secret-hash-for-client-at-refresh-token-auth
-  //      - (way down in this) https://stackoverflow.com/questions/37438879/unable-to-verify-secret-hash-for-client-in-amazon-cognito-userpools
-  //      - https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_InitiateAuth.html
-  //        - https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/CognitoIdentityServiceProvider.html#initiateAuth-property
-  //      - https://stackoverflow.com/questions/41526205/implementing-user-srp-auth-with-python-boto3-for-aws-cognito
-  //      - https://docs.amazonaws.cn/en_us/cognito/latest/developerguide/cognito-dg.pdf
-  //      - https://aws-amplify.github.io/docs/js/authentication  (section Switching Authentication Flow Type)
-  //      -
-  //      - https://stackoverflow.com/questions/49000676/aws-cognito-authentication-user-password-auth-flow-not-enabled-for-this-client
-  //
-  amplifyAuthObj['authenticationFlowType'] = 'USER_PASSWORD_AUTH'
-  //
-  // More TODO:
-  //      - https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_CreateUserPoolClient.html#CognitoUserPools-CreateUserPoolClient-request-PreventUserExistenceErrors
-  // Doesn't work:
-  // amplifyAuthObj['PreventUserExistenceErrors'] = 'LEGACY'
-  // Did this instead for the time being:
-  //      - https://github.com/aws-amplify/amplify-js/issues/4430
-}
+// TODO: Prefer to use USER_SRP_AUTH but short on time.  Revisit this soon
+//       so that password never leaves client.  Super important!
+//   references:
+//      - (here too) https://stackoverflow.com/questions/54430978/unable-to-verify-secret-hash-for-client-at-refresh-token-auth
+//      - (way down in this) https://stackoverflow.com/questions/37438879/unable-to-verify-secret-hash-for-client-in-amazon-cognito-userpools
+//      - https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_InitiateAuth.html
+//        - https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/CognitoIdentityServiceProvider.html#initiateAuth-property
+//      - https://stackoverflow.com/questions/41526205/implementing-user-srp-auth-with-python-boto3-for-aws-cognito
+//      - https://docs.amazonaws.cn/en_us/cognito/latest/developerguide/cognito-dg.pdf
+//      - https://aws-amplify.github.io/docs/js/authentication  (section Switching Authentication Flow Type)
+//      -
+//      - https://stackoverflow.com/questions/49000676/aws-cognito-authentication-user-password-auth-flow-not-enabled-for-this-client
+//
+amplifyAuthObj['authenticationFlowType'] = 'USER_PASSWORD_AUTH'
+//
+// More TODO:
+//      - https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_CreateUserPoolClient.html#CognitoUserPools-CreateUserPoolClient-request-PreventUserExistenceErrors
+// Doesn't work:
+// amplifyAuthObj['PreventUserExistenceErrors'] = 'LEGACY'
+// Did this instead for the time being:
+//      - https://github.com/aws-amplify/amplify-js/issues/4430
 
 Amplify.configure({
   Auth: amplifyAuthObj
@@ -166,7 +154,6 @@ export class SidServices
    *
    */
   constructor(anAppId) {
-    this.hostedApp = getGlobal().hostedApp
 
     this.cognitoUser = undefined
     this.signUpUserOnConfirm = false
@@ -361,7 +348,7 @@ export class SidServices
     try {
       this.cognitoUser = await Auth.signIn(anEmail, aPassword)
       this.persist.email = anEmail
-      return 'finish-passwordless-login'
+      return 'finish-verifying-email'
     } catch (err) {
       log.debug('DBG: signInOrUpWithPassword. Initial sign in attempt failed.')
       log.debug('Error code:', err.code)
@@ -450,17 +437,10 @@ export class SidServices
    *
    */
   signOut = async () => {
-    if (this.hostedApp) {
-      // For now, if the user is on the hosted wallet page and not in a third parth app
-      // We'll clear localStorage and refresh
-      localStorageClearPreserveDebugScopes('hosted app, sidServices.js')
-      window.location.reload();
-    } else {
-      try {
-        await Auth.signOut()
-      } catch (error) {
-        throw Error(`ERROR: Signing out encounted an error.\n${error}`)
-      }
+    try {
+      await Auth.signOut()
+    } catch (error) {
+      throw Error(`ERROR: Signing out encounted an error.\n${error}`)
     }
   }
 
@@ -500,73 +480,65 @@ export class SidServices
   answerCustomChallenge = async (anAnswer) => {
     let signUpMnemonicReveal = false
 
-    if (PASSWORD_USER_POOL) {
-      log.debug(`DBG: answerCustomChallenge password flow.`)
-      // TODO: refactor this whole method to make sense if we keep the password flow stuff.
-      //       (i.e. split out the common code into names that make more sense etc.).
+    log.debug(`DBG: answerCustomChallenge password flow.`)
+    // TODO: refactor this whole method to make sense if we keep the password flow stuff.
+    //       (i.e. split out the common code into names that make more sense etc.).
+    //
+    // We only need to do this stuff here if the user is signing up,
+    // otherwise we just run the rest of the flow below this entire conditional
+    // block.
+    //
+    log.debug(`DBG: signUpUserOnConfirm: ${this.signUpUserOnConfirm}`)
+    if (this.signUpUserOnConfirm) {
+      // Password Cognito Flow:
       //
-      // We only need to do this stuff here if the user is signing up,
-      // otherwise we just run the rest of the flow below this entire conditional
-      // block.
-      //
-      log.debug(`DBG: signUpUserOnConfirm: ${this.signUpUserOnConfirm}`)
-      if (this.signUpUserOnConfirm) {
-        // Password Cognito Flow:
-        //
-        // First send the confirmation code for the email.
-        try {
-          log.debug(`DBG: calling confirmSignUp ... e:${this.persist.email}, a:${anAnswer}`)
-          await Auth.confirmSignUp(this.persist.email, anAnswer)
-          log.debug('  success!')
-        } catch (err) {
-          // Something went wrong--possibly the confirmation code. TODO: we might
-          // need to get them to re-enter it.
-          log.debug(`DBG: answerCustomChallenge(password flow) failed.\n${err}`)
-          throw new Error(err)
-        }
-        // Now sign the user in and proceed with the rest of our flow:
-        try {
-          log.debug(`DBG: calling signIn ... e:${this.persist.email}, p:${this.neverPersist.password}`)
-          this.cognitoUser = await Auth.signIn(this.persist.email, this.neverPersist.password)
-          log.debug('  success!')
-        } catch (err) {
-          log.debug(`DBG: answerCustomChallenge. Sign in attempt failed.\nError code:${err.code}\nError:${err}`)
-          if (err.code === 'UserNotConfirmedException') {
-              // The error happens if the user didn't finish the confirmation step when signing up
-              // In this case you need to resend the code and confirm the user
-              // About how to resend the code and confirm the user, please check the signUp part
-              // TODO:
-              log.error(err)
-              throw new Error(err)
-          } else if (err.code === 'PasswordResetRequiredException') {
-              // The error happens when the password is reset in the Cognito console
-              // In this case you need to call forgotPassword to reset the password
-              // Please check the Forgot Password part.
-              // TODO:
-              log.error(err)
-              throw new Error(err)
-          } else if (err.code === 'NotAuthorizedException') {
-              // The error happens when the incorrect password is provided
-              // TODO:
-              log.error(err)
-              throw new Error(err)
-          } else if (err.code === 'UserNotFoundException') {
-              // The error happens when the supplied username/email does not exist in the Cognito user pool
-              // TODO:
-              log.error(err)
-              throw new Error(err)
-          } else {
-              log.error(err)
-              throw Error(`ERROR: Sign in attempt has failed.\n${err}`)
-          }
+      // First send the confirmation code for the email.
+      try {
+        log.debug(`DBG: calling confirmSignUp ... e:${this.persist.email}, a:${anAnswer}`)
+        await Auth.confirmSignUp(this.persist.email, anAnswer)
+        log.debug('  success!')
+      } catch (err) {
+        // Something went wrong--possibly the confirmation code. TODO: we might
+        // need to get them to re-enter it.
+        log.debug(`DBG: answerCustomChallenge(password flow) failed.\n${err}`)
+        throw new Error(err)
+      }
+      // Now sign the user in and proceed with the rest of our flow:
+      try {
+        log.debug(`DBG: calling signIn ... e:${this.persist.email}, p:${this.neverPersist.password}`)
+        this.cognitoUser = await Auth.signIn(this.persist.email, this.neverPersist.password)
+        log.debug('  success!')
+      } catch (err) {
+        log.debug(`DBG: answerCustomChallenge. Sign in attempt failed.\nError code:${err.code}\nError:${err}`)
+        if (err.code === 'UserNotConfirmedException') {
+            // The error happens if the user didn't finish the confirmation step when signing up
+            // In this case you need to resend the code and confirm the user
+            // About how to resend the code and confirm the user, please check the signUp part
+            // TODO:
+            log.error(err)
+            throw new Error(err)
+        } else if (err.code === 'PasswordResetRequiredException') {
+            // The error happens when the password is reset in the Cognito console
+            // In this case you need to call forgotPassword to reset the password
+            // Please check the Forgot Password part.
+            // TODO:
+            log.error(err)
+            throw new Error(err)
+        } else if (err.code === 'NotAuthorizedException') {
+            // The error happens when the incorrect password is provided
+            // TODO:
+            log.error(err)
+            throw new Error(err)
+        } else if (err.code === 'UserNotFoundException') {
+            // The error happens when the supplied username/email does not exist in the Cognito user pool
+            // TODO:
+            log.error(err)
+            throw new Error(err)
+        } else {
+            log.error(err)
+            throw Error(`ERROR: Sign in attempt has failed.\n${err}`)
         }
       }
-    } else {
-      // Passwordless Cognito Flow:
-
-      // Following line throws and is intentionally unhandled.
-      this.cognitoUser = await Auth.sendCustomChallengeAnswer(
-        this.cognitoUser, anAnswer)
     }
 
     // The user has entered a challenge answer and no error occured. Now test
@@ -732,60 +704,6 @@ export class SidServices
       // 5. If the user has never signed into this App before, we need to update
       //    the appropriate tables with the user's data unless this is happening on the hosted-wallet side of things:
       //
-      if (this.hostedApp !== true) {
-
-        /* REMOVE Test code when working ****************************************/
-        const oldAppId = this.appId
-        if (TEST_SIGN_USER_UP_TO_NEW_APP) {
-          log.warn('************************ REMOVE WHEN WORKING ***************')
-          log.warn('* Faking a new AppId to build signUserUpToNewApp           *')
-          log.warn('************************************************************')
-          this.appId = `new-app-id-random-authd-${Date.now()}`
-        }
-        // See also: BEGIN REMOVE ~10 lines down
-        /* END REMOVE ***********************************************************/
-
-        let userDataDbNeedsUpdate = false
-        if (!userData.apps.hasOwnProperty(this.appId)) {
-          // TODO: make this a partial update using the idp partial update (writing
-          //       the buffers with the secrets etc. is costly and dangerous--failed write
-          //       could eliminate the cipherText secrets).
-          //
-          userDataDbNeedsUpdate = true
-
-          userData.apps[this.appId] = {}
-
-          if (this.appIsSimpleId) {
-            const sidObj = await this.createSidObject()
-            userData.sid = sidObj
-            this.persist.sid = sidObj
-          } else {
-          }
-
-          const authenticatedUser = true
-          await this.signUserUpToNewApp(authenticatedUser)
-        }
-
-        //Need to update the date stamp
-        await this.updateDateStamp()
-
-        // WARNING: Moving this will break the SID Analytics App
-        //
-        this.persist.sid = userData && userData.sid ? userData.sid : undefined;
-
-        // BEGIN REMOVE
-        // restore appId
-        this.appId = oldAppId
-        // END REMOVE
-
-
-        // 6. If we modified the User Data, update the DB version:
-        //
-        if (userDataDbNeedsUpdate) {
-          await this.tablePutWithIdpCredentials( userData )
-          userDataDbNeedsUpdate = false
-        }
-      }
     }
 
     if (authenticated) {
@@ -1148,14 +1066,6 @@ export class SidServices
    *         catch statements on individual promises.
    */
   signUserUpToNewApp = async(isAuthenticatedUser) => {
-    const hostedApp = this.hostedApp
-
-    //We should only be doing this if the request is coming from a regular app.
-    //If the request is coming from wallet.simpleid.xyz, the experience needs to be
-    //different.
-    if(hostedApp === true) {
-      return
-    }
 
     if (isAuthenticatedUser) {
       // 1.a) Update the User Data Table if the user is authenticated.
