@@ -511,27 +511,6 @@ export default class SimpleID {
               }
             }
           },
-          async signIn(creds){
-            let payload;
-            if(creds.token) {
-              payload = {
-                email: creds.email,
-                token: creds.token
-              }
-            } else {
-              payload = {
-                email: creds.email
-              }
-            }
-
-            const signedIn = await this.authenticate(payload);
-
-            if(signedIn.success || signedIn.message === "user session created") {
-              return true;
-            } else {
-              return false;
-            }
-          },
           close(reload){
 
             action = "";

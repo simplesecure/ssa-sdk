@@ -4,7 +4,11 @@
   "description": "",
   "main": "simple.js",
   "scripts": {
-    "test": "mocha"
+    "start": "PORT=3003 react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "deploy-stage": "aws s3 sync build/ s3://staging-simpleid-widget --acl public-read"
   },
   "author": "SimpleID",
   "license": "ISC",
@@ -12,17 +16,45 @@
     "crypto": "^1.0.1",
     "crypto-browserify": "^3.12.0",
     "dotenv": "^8.2.0",
-    "ethers": "^4.0.33",
+    "ethers": "^4.0.40",
     "loglevel": "^1.6.6",
     "penpal": "^4.1.1",
     "pocket-js-core": "0.0.6",
-    "request": "^2.88.0",
-    "request-promise": "^4.2.4",
     "safer-pass": "^1.0.3",
-    "web3": "^1.2.2",
-    "web3-provider-engine": "^15.0.4"
+    "web3-provider-engine": "^15.0.4",
+    "aws-amplify": "^2.2.1",
+    "aws-sdk": "^2.593.0",
+    "bootstrap": "^4.3.1",
+    "buffer": "^5.4.3",
+    "crypto-js": "^3.1.9-1",
+    "eccrypto": "^1.1.2",
+    "ethereumjs-tx": "^2.1.1",
+    "loglevel-plugin-prefix": "^0.8.4",
+    "react": "^16.12.0",
+    "react-bootstrap": "^1.0.0-beta.16",
+    "react-dom": "^16.12.0",
+    "react-scripts": "3.2.0",
+    "reactn": "^2.2.4",
+    "request": "^2.88.0",
+    "request-promise": "^4.2.5",
+    "shamirs-secret-sharing": "^1.0.1",
+    "sys": "0.0.1",
+    "uuid": "^3.3.3",
+    "web3": "^1.2.4"
   },
   "devDependencies": {
     "mocha": "^6.1.4"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   }
 }
