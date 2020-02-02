@@ -1,5 +1,4 @@
 import { tableGet,
-         tableBatchGet,
          tablePut,
          tableQuerySpecificItem,
          tableGetBySecondaryIndex,
@@ -8,26 +7,11 @@ import { tableGet,
 
 const CONFIG = require('../config.json')
 
-// TODO: This func will go away and go into our EC2/Lambda Mail service machine
-//
-export async function userDataTableGetEmailsFromUuid(uuid) {
-  if (!uuid) {
-    throw new Error(`DB access method userDataTableGetEmailsFromUuid requires a value for uuid.  uuid="${uuid}".`)
-  }
-
-  return tableGetBySecondaryIndex(
-    CONFIG.UD_TABLE,
-    CONFIG.UD_TABLE_INDEX,
-    CONFIG.UD_TABLE_SK,
-    uuid
-  )
-}
-
 export async function walletAnalyticsDataTableGet(anAppId) {
   if (!anAppId) {
     throw new Error(`DB access method walletAnalyticsDataTableGet requires a value for anAppId.  anAppId="${anAppId}".`)
   }
-  
+
   return tableGet(
     CONFIG.AD_TABLE,
     CONFIG.AD_TABLE_PK,
@@ -198,28 +182,4 @@ export async function walletAnalyticsDataTableAddWalletForAnalytics(
       last_seen: Date.now()
     }
   )
-}
-
-export async function walletToUuidMapTableGetUuids(anArrayOfWalletAddrs) {
-  if (!anArrayOfWalletAddrs) {
-    throw new Error(`DB access method walletToUuidMapTableGetUuids requires a value for anArrayOfWalletAddrs.\nanArrayOfWalletAddrs=${anArrayOfWalletAddrs}`)
-  }
-
-  const arrOfKeyValuePairs = []
-  for (const walletAddress of anArrayOfWalletAddrs) {
-    arrOfKeyValuePairs.push({
-      [ CONFIG.UUID_TABLE_PK ] : walletAddress
-    })
-  }
-
-  const rawDataResults =
-    await tableBatchGet(CONFIG.UUID_TABLE, arrOfKeyValuePairs)
-
-  let walletToUuids = undefined
-  try {
-    walletToUuids = rawDataResults.Responses[CONFIG.UUID_TABLE]
-  } catch (error) {
-    throw new Error(`Unable to access wallet to UUID maps in db response.\n${error}`);
-  }
-  return walletToUuids
 }

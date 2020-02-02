@@ -9,7 +9,6 @@ const prefix = require('loglevel-plugin-prefix');
 const ROOT_KEY = 'loglevel'
 const ALLOWED_SCOPES = [ ROOT_KEY,
                         `${ROOT_KEY}:dataProcessing`,
-                        `${ROOT_KEY}:postMessage`,
                         `${ROOT_KEY}:sidServices` ]
 const ALLOWED_LEVELS = [ 'TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR' ]
 const DEFAULT_LOG_LEVEL="INFO"
@@ -82,4 +81,61 @@ export function configureDebugScopes(debugScopes={}) {
       log.debug(`Suppressed error setting the iframe log level for ${moduleName} to ${scopeValue}.\n${suppressedError}`)
     }
   }
+}
+
+/**
+ *  getDebugScopes:
+ *
+ *  Fetches known debug scopes from local storage to forward to the widget
+ *  iFrame for dynamic debug capability from an App Console.
+ *
+ *  @returns a map of the scope keys to their string values.
+ */
+export function getDebugScopes() {
+  const debugScopes = {
+    [ ROOT_KEY ] : DEFAULT_LOG_LEVEL,
+    [ `${ROOT_KEY}:dataProcessing` ] : DEFAULT_LOG_LEVEL,
+    [ `${ROOT_KEY}:sidServices` ] : DEFAULT_LOG_LEVEL
+  }
+
+  for (const scopeKey in debugScopes) {
+    try {
+      const scope = localStorage.getItem(scopeKey)
+      if (ALLOWED_LEVELS.includes(scope)) {
+        debugScopes[scopeKey] = scope
+      }
+    } catch (suppressedError) {
+      log.debug(`Suppressed error fetching ${scopeKey} from local storage. Setting ${scopeKey} to default value, ${DEFAULT_LOG_LEVEL}.\n${suppressedError}`)
+    }
+  }
+
+  return debugScopes
+}
+
+export function setDebugScope(scopeKey, scopeLevel) {
+  if (scopeKey && !scopeKey.startsWith(ROOT_KEY)) {
+    scopeKey = `${ROOT_KEY}:${scopeKey}`
+  }
+
+  if (!scopeLevel) {
+    scopeLevel = 'DEBUG'
+  }
+
+  if (ALLOWED_SCOPES.includes(scopeKey) && ALLOWED_LEVELS.includes(scopeLevel)) {
+    localStorage.setItem(scopeKey, scopeLevel)
+  }
+}
+
+export function setAllDebugScopes(scopeLevel='DEBUG') {
+  if (!ALLOWED_LEVELS.includes(scopeLevel)) {
+    console.log(`Scope level ${scopeLevel} is not supported.  Supported levels are ${JSON.stringify(ALLOWED_LEVELS, 0, 2)}.`)
+    return
+  }
+
+  const debugScopes = getDebugScopes()
+  for (const scopeKey in debugScopes) {
+    localStorage.setItem(scopeKey, scopeLevel)
+  }
+
+  return
 }

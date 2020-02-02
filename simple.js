@@ -1,20 +1,18 @@
 import { handleData } from './utils/dataProcessing.js';
-import { configureDebugScopes } from './utils/debugScopes.js'
+import { configureDebugScopes,
+         getDebugScopes,
+         setDebugScope,
+         setAllDebugScopes } from './utils/debugScopes.js'
 import { createSidSvcs, getSidSvcs } from './utils/sidServices.js'
 
 const log = require('loglevel')
-// configureDebugScopes()            // Configure default settings for log scopes
-
-const Web3 = require('web3');
 const request = require('request-promise');
+
 const SIMPLEID_USER_SESSION = 'SimpleID-User-Session';
 const ACTIVE_SID_MESSAGE = 'active-sid-message'
 const PINGED_SIMPLE_ID = 'pinged-simple-id';
 const MESSAGES_SEEN = 'messages-seen'
 const SIMPLEID_NOTIFICATION_FETCH = 'sid-notifications'
-let headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
-let action;
-let userDataForIFrame;
 let notificationCheck = true;
 let activeNoti = []
 let pingChecked = false
@@ -53,7 +51,6 @@ export default class SimpleID {
         const data = {
           address, appId
         }
-        action = 'process-data';
         notificationCheck = false;
         let notificationsToReturn = []
         const notificationData = await this.processData('notifications', data);
@@ -162,19 +159,17 @@ export default class SimpleID {
     return updatedNotifications
   }
 
-  // Start of mess
-  //////////////////////////////////////////////////////////////////////////////
-  async handleAction(action, options={}) {
-    console.log("ACTION: ", action);
+  async handleAction(anAction, options={}) {
+    log.debug("ACTION: ", anAction);
 
-   if (action === 'sign-out') {
+   if (anAction === 'sign-out') {
       this.completeSignOut();
-    } else if(action === 'sign-in-no-sid') {
+    } else if(anAction === 'sign-in-no-sid') {
       const { userInfo } = options
 
       const dataToReturn = await getSidSvcs().persistNonSIDUserInfo(userInfo);
       return dataToReturn
-    } else if(action === 'process-data') {
+    } else if(anAction === 'process-data') {
       const { payload } = options
       const data = payload
 
@@ -190,13 +185,10 @@ export default class SimpleID {
     return true;
   }
 
-  async completeSignOut() {
-    await clearSidKeysFromLocalStore('simple.js')
+  completeSignOut() {
+    clearSidKeysFromLocalStore('simple.js')
     window.location.reload();
   }
-
-  // End of mess
-  /////////////////////////////////////////////////////////////////////////////
 
 
   /**
@@ -255,12 +247,7 @@ export default class SimpleID {
     let result = undefined
     let newUser = undefined
     try {
-      //Send this info to the iFrame. Don't display the iFrame though as the user/app isn't using
-      //the SimpleID wallet
-      const invisible = true
-      action = "sign-in-no-sid";
-      userDataForIFrame = userInfo;
-      newUser = await this.handleAction(action, { userInfo })
+      newUser = await this.handleAction("sign-in-no-sid", { userInfo })
     } catch (error) {
       this.passUserInfoStatus = undefined
       const msg = `${method}: Failed registering user data.\n${error}`
@@ -297,17 +284,13 @@ export default class SimpleID {
   }
 
   async processData(type, data) {
-    action = 'process-data';
-    const invisible = true;
-    const payload = {
-      type, data
-    }
     const options = {
-      payload: payload
+      payload: {
+        type,
+        data
+      }
     }
-    const returnedData = await this.handleAction(action, options)
-    action = ""
-    return returnedData;
+    return await this.handleAction('process-data', options)
   }
 
   async pingSimpleID() {
@@ -473,7 +456,6 @@ export default class SimpleID {
       dateSeen: Date.now(),
       messageID
     }
-    action = 'process-data';
     await this.processData('notification-seen', data);
     localStorage.removeItem(ACTIVE_SID_MESSAGE);
     //localStorage.setItem(ACTIVE_SID_MESSAGE, JSON.stringify(messageData));
@@ -485,8 +467,7 @@ export default class SimpleID {
   }
 
   signOut() {
-    action = 'sign-out';
-    this.handleAction(action)
+    this.handleAction('sign-out')
   }
 }
 
@@ -506,75 +487,6 @@ export function clearSidKeysFromLocalStore(context='') {
   }
 }
 
-
-// TODO: Figure out a good way to refactor the consts below and method to a common
-//       file shared with the widget (which uses these from the file debugScopes.js)
-//
-const ROOT_KEY = 'loglevel'
-const ALLOWED_SCOPES = [ ROOT_KEY,
-                        `${ROOT_KEY}:dataProcessing`,
-                        `${ROOT_KEY}:postMessage`,
-                        `${ROOT_KEY}:sidServices` ]
-const ALLOWED_LEVELS = [ 'TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR' ]
-const DEFAULT_LOG_LEVEL="INFO"
-
-/**
- *  getDebugScopes:
- *
- *  Fetches known debug scopes from local storage to forward to the widget
- *  iFrame for dynamic debug capability from an App Console.
- *
- *  @returns a map of the scope keys to their string values.
- */
-function getIFrameDebugScopes() {
-  const debugScopes = {
-    [ ROOT_KEY ] : DEFAULT_LOG_LEVEL,
-    [ `${ROOT_KEY}:dataProcessing` ] : DEFAULT_LOG_LEVEL,
-    [ `${ROOT_KEY}:postMessage` ] : DEFAULT_LOG_LEVEL,
-    [ `${ROOT_KEY}:sidServices` ] : DEFAULT_LOG_LEVEL
-  }
-
-  for (const scopeKey in debugScopes) {
-    try {
-      const scope = localStorage.getItem(scopeKey)
-      if (ALLOWED_LEVELS.includes(scope)) {
-        debugScopes[scopeKey] = scope
-      }
-    } catch (suppressedError) {
-      log.debug(`Suppressed error fetching ${scopeKey} from local storage. Setting ${scopeKey} to default value, ${DEFAULT_LOG_LEVEL}.\n${suppressedError}`)
-    }
-  }
-
-  return debugScopes
-}
-
-function setDebugScope(scopeKey, scopeLevel) {
-  if (scopeKey && !scopeKey.startsWith(ROOT_KEY)) {
-    scopeKey = `${ROOT_KEY}:${scopeKey}`
-  }
-
-  if (!scopeLevel) {
-    scopeLevel = 'DEBUG'
-  }
-
-  if (ALLOWED_SCOPES.includes(scopeKey) && ALLOWED_LEVELS.includes(scopeLevel)) {
-    localStorage.setItem(scopeKey, scopeLevel)
-  }
-}
-
-function setAllDebugScopes(scopeLevel='DEBUG') {
-  if (!ALLOWED_LEVELS.includes(scopeLevel)) {
-    console.log(`Scope level ${scopeLevel} is not supported.  Supported levels are ${JSON.stringify(ALLOWED_LEVELS, 0, 2)}.`)
-    return
-  }
-
-  const debugScopes = getIFrameDebugScopes()
-  for (const scopeKey in debugScopes) {
-    localStorage.setItem(scopeKey, scopeLevel)
-  }
-
-  return
-}
 
 
 // Workaround for queck and easy debug from browser console
