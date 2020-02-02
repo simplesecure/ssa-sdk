@@ -9,7 +9,8 @@ const prefix = require('loglevel-plugin-prefix');
 const ROOT_KEY = 'loglevel'
 const ALLOWED_SCOPES = [ ROOT_KEY,
                         `${ROOT_KEY}:dataProcessing`,
-                        `${ROOT_KEY}:sidServices` ]
+                        `${ROOT_KEY}:sidServices`,
+                        `${ROOT_KEY}:dynamoBasics`]
 const ALLOWED_LEVELS = [ 'TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR' ]
 const DEFAULT_LOG_LEVEL="INFO"
 
@@ -92,10 +93,9 @@ export function configureDebugScopes(debugScopes={}) {
  *  @returns a map of the scope keys to their string values.
  */
 export function getDebugScopes() {
-  const debugScopes = {
-    [ ROOT_KEY ] : DEFAULT_LOG_LEVEL,
-    [ `${ROOT_KEY}:dataProcessing` ] : DEFAULT_LOG_LEVEL,
-    [ `${ROOT_KEY}:sidServices` ] : DEFAULT_LOG_LEVEL
+  const debugScopes = {}
+  for (const key of ALLOWED_SCOPES) {
+    debugScopes[key] = DEFAULT_LOG_LEVEL
   }
 
   for (const scopeKey in debugScopes) {

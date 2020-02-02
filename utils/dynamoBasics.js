@@ -1,47 +1,58 @@
-const AWS = require('aws-sdk')
+import { getLog } from './debugScopes.js'
+const log = getLog('dynamoBasics')
 
+const AWS = require('aws-sdk')
 const CONFIG = require('../config.json')
 
-// TODO TODO TODO TODO
-// This is for quick dev, remove this and use Cognito to assign role based access
-// through IDP (at least within the iFrame) lest we mess things up with
-// confliting perms and excess access:
-//
-AWS.config.update({
-  accessKeyId: CONFIG.AWS_ACCESS_KEY_ID,
-  secretAccessKey: CONFIG.AWS_SECRET_ACCESS_KEY,
-  region: CONFIG.REGION
-})
-//
-// _docClientAK: AK --> AWS Access Key Credentialing (vs. Cognito Credentials).
-//
-const _docClientAK = new AWS.DynamoDB.DocumentClient()
+AWS.config.region = CONFIG.REGION
+AWS.config.credentials = new AWS.CognitoIdentityCredentials(
+  { IdentityPoolId: CONFIG.SDK_IDENTITY_POOL })
 
-const DEBUG_DYNAMO = ( CONFIG.DEBUG_DYNAMO ||
-                       CONFIG.DEBUG_DYNAMO) ? true : false
+let _docClientIDP = undefined
+const initDocClient = async () => {
+  if (_docClientIDP) {
+    // TODO:  how to refresh this token & creds (check and do)
+    // https://docs.aws.amazon.com/cognito/latest/developerguide/getting-credentials.html
+    return
+  }
+
+  try {
+    // Get unauthenticated Cognito credentials ...
+    // getPromise documented here:
+    //    https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/Credentials.html#get-property
+    //
+    await AWS.config.credentials.getPromise()
+    _docClientIDP = new AWS.DynamoDB.DocumentClient()
+  } catch (error) {
+    log.error(`Unable to secure access to DB.\n${error}`)
+    throw new Error(`Unable to secure access to DB.\n${error}`)
+  }
+}
+
+
 
 export function dbRequestDebugLog(anOperation, params, error) {
   try {
-    if (DEBUG_DYNAMO) {
-      const indentSpaces = 4
-      let dbgMsg = `${anOperation} operation failed.\n`
-      dbgMsg += '========================================\n'
-      dbgMsg += 'params:\n'
-      dbgMsg += '--------------------\n'
-      dbgMsg += JSON.stringify(params, 0, indentSpaces) + '\n'
-      dbgMsg += '\n'
-      dbgMsg += 'error:\n'
-      dbgMsg += '--------------------\n'
-      dbgMsg += '  ' + String(error) + '\n'
-      dbgMsg += '\n'
+    const indentSpaces = 4
+    let dbgMsg = `${anOperation} operation failed.\n`
+    dbgMsg += '========================================\n'
+    dbgMsg += 'params:\n'
+    dbgMsg += '--------------------\n'
+    dbgMsg += JSON.stringify(params, 0, indentSpaces) + '\n'
+    dbgMsg += '\n'
+    dbgMsg += 'error:\n'
+    dbgMsg += '--------------------\n'
+    dbgMsg += '  ' + String(error) + '\n'
+    dbgMsg += '\n'
 
-      console.log(dbgMsg)
-    }
+    log.error(dbgMsg)
   } catch(suppressedError) {}
 }
 
 
 export async function tableGet(aTable, aKeyName, aKeyValue) {
+  await initDocClient()
+
   const params = {
     TableName: aTable,
     Key: {
@@ -50,7 +61,7 @@ export async function tableGet(aTable, aKeyName, aKeyValue) {
   }
 
   return new Promise((resolve, reject) => {
-    _docClientAK.get(params, (err, data) => {
+    _docClientIDP.get(params, (err, data) => {
       if (err) {
         dbRequestDebugLog('tableGet', params, err)
 
@@ -63,13 +74,15 @@ export async function tableGet(aTable, aKeyName, aKeyValue) {
 }
 
 export async function tablePut(aTable, anObject) {
+  await initDocClient()
+
   const params = {
     TableName: aTable,
     Item: anObject
   }
 
   return new Promise((resolve, reject) => {
-    _docClientAK.put(params, (err, data) => {
+    _docClientIDP.put(params, (err, data) => {
       if (err) {
         dbRequestDebugLog('tablePut', params, err)
 
@@ -83,6 +96,8 @@ export async function tablePut(aTable, anObject) {
 
 // ProjectionExpression example here: https://www.dynamodbguide.com/querying/
 export async function tableQuerySpecificItem(aTable, aKeyName, aKeyValue, aSpecificKey) {
+  await initDocClient()
+
   const params = {
     TableName: aTable,
     KeyConditionExpression: `#${aKeyName} = :${aKeyName}`,
@@ -96,7 +111,7 @@ export async function tableQuerySpecificItem(aTable, aKeyName, aKeyValue, aSpeci
   }
 
   return new Promise((resolve, reject) => {
-    _docClientAK.query(params, (err, data) => {
+    _docClientIDP.query(params, (err, data) => {
       if (err) {
         dbRequestDebugLog('tableQuerySpecificItem', params, err)
 
@@ -111,8 +126,10 @@ export async function tableQuerySpecificItem(aTable, aKeyName, aKeyValue, aSpeci
 // Adapted from: https://stackoverflow.com/questions/51134296/dynamodb-how-to-query-a-global-secondary-index
 //
 export async function tableGetBySecondaryIndex(aTable, anIndexName, aKeyName, aKeyValue) {
-  console.log("tableGetBySecondaryIndex")
-  console.log("table: ", aTable, "index: ", anIndexName, "keyname: ", aKeyName, "keyvalue: ", aKeyValue)
+  await initDocClient()
+
+  log.debug("tableGetBySecondaryIndex")
+  log.debug("table: ", aTable, "index: ", anIndexName, "keyname: ", aKeyName, "keyvalue: ", aKeyValue)
   const expressionAtrNameObj = {
     [ `#${aKeyName}` ] : aKeyName
   }
@@ -128,12 +145,12 @@ export async function tableGetBySecondaryIndex(aTable, anIndexName, aKeyName, aK
   }
   if(aKeyName) {
     return new Promise((resolve, reject) => {
-      _docClientAK.query(params, (err, data) => {
+      _docClientIDP.query(params, (err, data) => {
         if (err) {
           dbRequestDebugLog('tableGetBySecondaryIndex', params, err)
           reject(err)
         } else {
-          console.log("THE DATA: ", data)
+          log.debug("data = ", data)
           resolve(data)
         }
       })
@@ -148,6 +165,8 @@ export async function tableGetBySecondaryIndex(aTable, anIndexName, aKeyName, aK
 //   - https://stackoverflow.com/questions/41400538/append-a-new-object-to-a-json-array-in-dynamodb-using-nodejs
 //   -
 export async function tableUpdateListAppend(aTable, aPrimKeyObj, anArrayKey, anArrayValue) {
+  await initDocClient()
+
   const exprAttr = ':eleValue'
   const updateExpr = `set ${anArrayKey} = list_append(${anArrayKey}, ${exprAttr})`
 
@@ -162,7 +181,7 @@ export async function tableUpdateListAppend(aTable, aPrimKeyObj, anArrayKey, anA
   }
 
   return new Promise((resolve, reject) => {
-    _docClientAK.update(params, (err, data) => {
+    _docClientIDP.update(params, (err, data) => {
       if (err) {
         dbRequestDebugLog('tableUpdateListAppend', params, err)
 
@@ -217,6 +236,7 @@ export async function tableUpdateListAppend(aTable, aPrimKeyObj, anArrayKey, anA
  */
 export async function tableUpdateAppendNestedObjectProperty(
   aTable, aPrimKeyObj, aNestedObjKey, aPropName, aPropValue) {
+  await initDocClient()
 
   const params = {
     TableName: aTable,
@@ -232,10 +252,8 @@ export async function tableUpdateAppendNestedObjectProperty(
     ReturnValues: 'UPDATED_NEW'
   }
 
-  console.log("UPDATE PARAMS: ", params);
-
   return new Promise((resolve, reject) => {
-    _docClientAK.update(params, (err, data) => {
+    _docClientIDP.update(params, (err, data) => {
       if (err) {
         dbRequestDebugLog('tableUpdateAppendNestedObjectProperty', params, err)
 
