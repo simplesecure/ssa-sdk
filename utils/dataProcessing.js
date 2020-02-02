@@ -247,7 +247,6 @@ export async function handleData(dataToProcess) {
     log.debug('done...')
     return 'Better return something or no tomorrow.'
   }
-  closeWidget();
 }
 
 export async function filterByContract(userList, contractAddress) {

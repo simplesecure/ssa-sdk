@@ -168,8 +168,6 @@ export default class SimpleID {
     console.log("ACTION: ", action);
 
    if (action === 'sign-out') {
-      clearSidKeysFromLocalStore('simple.js')
-      //window.location.reload();
       this.completeSignOut();
     } else if(action === 'sign-in-no-sid') {
       const { userInfo } = options
@@ -187,13 +185,13 @@ export default class SimpleID {
     }
   }
 
-  storeWallet(userData) {
+  storeUserData(userData) {
     localStorage.setItem(SIMPLEID_USER_SESSION, userData);
     return true;
   }
 
-  completeSignOut() {
-    clearSidKeysFromLocalStore('simple.js')
+  async completeSignOut() {
+    await clearSidKeysFromLocalStore('simple.js')
     window.location.reload();
   }
 
@@ -503,7 +501,7 @@ export function clearSidKeysFromLocalStore(context='') {
   const keysToClear = [SIMPLEID_USER_SESSION]
   for (const key of keysToClear) {
     try {
-      localStorage.remove(key)
+      localStorage.removeItem(key)
     } catch (suppressedError) {}
   }
 }
