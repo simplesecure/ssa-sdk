@@ -2,4 +2,3 @@ node_modules
 *.env*
 package-lock.json
 /keys.json
-config.json

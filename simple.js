@@ -1,12 +1,9 @@
 import { handleData } from './utils/dataProcessing.js';
-import { configureDebugScopes,
-         getDebugScopes,
-         setDebugScope,
+import { setDebugScope,
          setAllDebugScopes } from './utils/debugScopes.js'
 import { createSidSvcs, getSidSvcs } from './utils/sidServices.js'
 
 const log = require('loglevel')
-const request = require('request-promise');
 
 const SIMPLEID_USER_SESSION = 'SimpleID-User-Session';
 const ACTIVE_SID_MESSAGE = 'active-sid-message'
@@ -14,7 +11,6 @@ const PINGED_SIMPLE_ID = 'pinged-simple-id';
 const MESSAGES_SEEN = 'messages-seen'
 const SIMPLEID_NOTIFICATION_FETCH = 'sid-notifications'
 let notificationCheck = true;
-let activeNoti = []
 let pingChecked = false
 let buttonEl
 let messageEl
@@ -41,9 +37,8 @@ export default class SimpleID {
     return await this.checkNotifications()
   }
 
-  // TODO: Justin, AC:
-  //       - remove notificationCheck altogether (it's in there to prevent an infintie loop)
   async checkNotifications() {
+    
     if(notificationCheck) {
       const address = this.getUserData() ? this.getUserData().wallet.ethAddr : "";
       const appId = this.appId
@@ -59,8 +54,6 @@ export default class SimpleID {
           log.debug(`notificationData value = ${notificationData}`)
           log.debug(`notificationData type = ${typeof notificationData}`)
           let activeNotifications = notificationData.filter(a => a.active === true)
-          //No matter what, we need to return this to the developer
-          activeNoti = activeNotifications;
           //Now we check to see if there are more than one notification:
           if(activeNotifications.length > 1) {
             //Filter out the messages that have been seen
@@ -78,9 +71,9 @@ export default class SimpleID {
             }
 
             if(notificationsToReturn && notificationsToReturn.length > 0) {
-              if(this.renderNotifications) {
-                const messageToStore = notificationsToReturn[0]
-                localStorage.setItem(ACTIVE_SID_MESSAGE, JSON.stringify(messageToStore))
+              const messageToStore = notificationsToReturn[0]
+              localStorage.setItem(ACTIVE_SID_MESSAGE, JSON.stringify(messageToStore))
+              if(this.renderNotifications === true) {
                 this.loadButton()
               } else {
                 if(notificationsToReturn.length > 0) {
@@ -89,8 +82,8 @@ export default class SimpleID {
                     notificationsToReturn = updated
                   }
                 }
-                this.notifications = notificationsToReturn
-                return notificationData
+                
+                return notificationsToReturn
               }
             } else {
               return []
@@ -125,12 +118,14 @@ export default class SimpleID {
               this.loadButton()
             } else {
               if(notificationsToReturn.length > 0) {
+                const messageToStore = notificationsToReturn[0]
+                localStorage.setItem(ACTIVE_SID_MESSAGE, JSON.stringify(messageToStore))
                 const updated = this._addPlainText(notificationsToReturn)
                 if(updated.lenght > 0) {
                   notificationsToReturn = updated
                 }
               }
-              this.notifications = notificationsToReturn
+              
               localStorage.setItem(SIMPLEID_NOTIFICATION_FETCH, JSON.stringify(notificationsToReturn))
               return notificationsToReturn
             }
@@ -142,8 +137,8 @@ export default class SimpleID {
               notificationsToReturn = updated
             }
           }
-          this.notifications = notificationsToReturn
-          return notificationData
+          
+          return notificationsToReturn
         }
       }
     }
@@ -359,8 +354,8 @@ export default class SimpleID {
     buttonEl.style.bottom = "15px";
     buttonEl.style.right = "15px";
     buttonEl.setAttribute('id', 'appMessageButton');
-    buttonEl.onclick = function() {
-      new SimpleID(params).loadMessages()
+    buttonEl.onclick = () => {
+      this.loadMessages()
     }
 
     const alertDiv = document.createElement('div');
@@ -397,8 +392,8 @@ export default class SimpleID {
     closeButton.style.cursor = "pointer";
 
     closeButton.innerText = "Dismiss";
-    closeButton.onclick = function() {
-      new SimpleID(params).dismissMessages();
+    closeButton.onclick = () => {
+      this.dismissMessages();
     }
 
     messageEl.appendChild(closeButton);
@@ -436,8 +431,10 @@ export default class SimpleID {
   }
 
   async dismissMessages() {
+    
     //First we get the notification id
     const messageData = JSON.parse(localStorage.getItem(ACTIVE_SID_MESSAGE))
+    
     const messageID = messageData.notification ? messageData.notification.id : messageData.id //TODO: another terrible hack
     let messagesSeen = JSON.parse(localStorage.getItem(MESSAGES_SEEN))
     if(messagesSeen && messagesSeen.length > 0) {
@@ -447,7 +444,9 @@ export default class SimpleID {
       messagesSeen.push(messageID)
     }
     localStorage.setItem(MESSAGES_SEEN, JSON.stringify(messagesSeen))
-    messageEl.style.display = "none";
+    if(messageEl) {
+      messageEl.style.display = "none";
+    }
     //Need to hide the message but we also need to send data to the orgData table
     //Specifically need to show that this user has seen the message
     const data = {
@@ -458,7 +457,8 @@ export default class SimpleID {
     }
     await this.processData('notification-seen', data);
     localStorage.removeItem(ACTIVE_SID_MESSAGE);
-    //localStorage.setItem(ACTIVE_SID_MESSAGE, JSON.stringify(messageData));
+    notificationCheck = true
+    this.checkNotifications()
   }
 
   //This returns the wallet info for the SimpleID user

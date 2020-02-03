@@ -81,31 +81,32 @@ export async function handleData(dataToProcess) {
   } else if(type === 'notification-seen') {
     log.debug("Notification has been seen!")
     log.debug(data)
-    const appData = await walletAnalyticsDataTableGet(data.appData.appId);
-    if(appData.Item) {
-      const org_id = appData.Item.org_id
-      //Now with the org_id, we can fetch the notification info from the org_table
-      const orgData = await organizationDataTableGet(org_id);
-      try {
-        const anObject = orgData.Item
-        let apps = anObject.apps
-        let thisApp = apps[data.appData.appId]
-        let notifications = thisApp.notifications
-        let thisNotification = notifications[data.messageID]
-        if(thisNotification.seenCount) {
-          thisNotification.seenCount = thisNotification.seenCount++
-        } else {
-          thisNotification['seenCount'] = 1
-        }
-        anObject.apps = apps;
+    //This is where we can count number of seen messages
+    // const appData = await walletAnalyticsDataTableGet(data.appData.appId);
+    // if(appData.Item) {
+    //   const org_id = appData.Item.org_id
+    //   //Now with the org_id, we can fetch the notification info from the org_table
+    //   const orgData = await organizationDataTableGet(org_id);
+    //   try {
+    //     const anObject = orgData.Item
+    //     let apps = anObject.apps
+    //     let thisApp = apps[data.appData.appId]
+    //     let notifications = thisApp.notifications
+    //     let thisNotification = notifications[data.messageID]
+    //     if(thisNotification.seenCount) {
+    //       thisNotification.seenCount = thisNotification.seenCount++
+    //     } else {
+    //       thisNotification['seenCount'] = 1
+    //     }
+    //     anObject.apps = apps;
 
-        anObject[CONFIG.OD_TABLE_PK] = org_id
+    //     anObject[CONFIG.OD_TABLE_PK] = org_id
 
-        await organizationDataTablePut(anObject)
+    //     await organizationDataTablePut(anObject)
 
-      } catch (suppressedError) {
-        log.error(`ERROR: problem writing to DB.\n${suppressedError}`)
-      }
-    }
+    //   } catch (suppressedError) {
+    //     log.error(`ERROR: problem writing to DB.\n${suppressedError}`)
+    //   }
+    // }
   }
 }

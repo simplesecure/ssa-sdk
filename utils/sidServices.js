@@ -9,12 +9,9 @@ import { walletAnalyticsDataTablePut,
          walletAnalyticsDataTableAddWalletForAnalytics,
          walletAnalyticsDataTableGet,
          walletToUuidMapTableGet } from './dynamoConveniences.js'
-import { jsonParseToBuffer } from './misc.js'
 import { getLog } from './debugScopes.js'
 const log = getLog('sidServices')
 
-
-const CONFIG = require('../config.json')
 // v4 = random. Might consider using v5 (namespace, in conjunction w/ app id)
 // see: https://github.com/kelektiv/node-uuid
 const uuidv4 = require('uuid/v4')
