@@ -1,7 +1,7 @@
 {
   "name": "simpleid-js-sdk",
-  "version": "0.1.5-beta",
-  "description": "",
+  "version": "1.0.0",
+  "description": "SimpleID JS SDK",
   "main": "simple.js",
   "scripts": {},
   "author": "SimpleID",
