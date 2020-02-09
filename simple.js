@@ -1,11 +1,11 @@
 import { SIMPLEID_USER_SESSION
          __pingSimpleID,
          __fetchNotifications,
-         __issueWebApiCmd } from './sdkUtils/helpers.js'
+         __issueWebApiCmd } from './utils/helpers.js'
 
 import { getLog,
          setDebugScope,
-         setAllDebugScopes } from './sdkUtils/debugScopes.js'
+         setAllDebugScopes } from './utils/debugScopes.js'
 const log = getLog()
 
 
