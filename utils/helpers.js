@@ -9,20 +9,12 @@
  *
  ****************************************************************************/
 
-// Refactor TODO:
-//
-//  - Anything using dynamo dynamoConveniences needs to be refactored into
-//    serverUtils
-//
-import { walletAnalyticsDataTableGet,
-        organizationDataTableGet,
-        walletAnalyticsDataTablePut,
-        organizationDataTablePut } from './../serverUtils/dynamoConveniences.js'
-
-
+import 'whatwg-fetch'
 
 import { getLog } from './sdkUtils/debugScopes.js'
 const log = getLog('helpers')
+
+const CONFIG = require('../config.json')
 
 export const SIMPLEID_USER_SESSION = 'SimpleID-User-Session';
 
@@ -61,7 +53,13 @@ export async function __issueWebApiCmd(cmdObj) {
   }
 
   try {
-
+    fetch(CONFIG.SID_API_HOST, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'appliction/json'
+      },
+      body: JSON.stringify(cmdObj)
+    })
   } catch (error) {
   }
 

@@ -1,14 +1,3 @@
 {
-  "REGION" : "us-west-2",
-  "SDK_IDENTITY_POOL" : "us-west-2:eaefb35c-d2a5-49c1-b0af-d1adf06958bc",
-  "AD_TABLE" : "simple_id_cust_analytics_data_v001",
-  "AD_TABLE_PK" : "app_id",
-  "UUID_TABLE" : "simple_id_wallet_uuid_map_v001",
-  "UUID_TABLE_PK" : "wallet_address",
-  "UNAUTH_UUID_TABLE" : "simple_id_unauth_uuid_map_v001",
-  "UNAUTH_UUID_TABLE_INDEX" : "email-index",
-  "UNAUTH_UUID_TABLE_PK" : "uuid",
-  "UNAUTH_UUID_TABLE_SK" : "email",
-  "ORG_TABLE" : "simple_id_org_data_v001",
-  "ORG_TABLE_PK" : "org_id"
+  "SID_API_HOST" : "http://localhost:3005"
 }

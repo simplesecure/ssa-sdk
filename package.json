@@ -7,16 +7,9 @@
   "author": "SimpleID",
   "license": "ISC",
   "dependencies": {
-    "dotenv": "^8.2.0",
     "loglevel": "^1.6.6",
-    "aws-sdk": "^2.593.0",
-    "buffer": "^5.4.3",
-    "eccrypto": "^1.1.2",
     "loglevel-plugin-prefix": "^0.8.4",
-    "request": "^2.88.0",
-    "request-promise": "^4.2.5",
-    "sys": "0.0.1",
-    "uuid": "^3.3.3"
+    "whatwg-fetch": "^3.0.0"
   },
   "browserslist": {
     "production": [
