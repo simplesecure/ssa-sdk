@@ -10,7 +10,8 @@ const ROOT_KEY = 'loglevel'
 const ALLOWED_SCOPES = [ ROOT_KEY,
                         `${ROOT_KEY}:helpers`]
 const ALLOWED_LEVELS = [ 'TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR' ]
-const DEFAULT_LOG_LEVEL="INFO"
+// const DEFAULT_LOG_LEVEL="INFO"
+const DEFAULT_LOG_LEVEL="DEBUG"
 
 
 function configureLogPrefix(aLog) {

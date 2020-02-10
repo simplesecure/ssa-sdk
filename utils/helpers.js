@@ -11,7 +11,7 @@
 
 import 'whatwg-fetch'
 
-import { getLog } from './sdkUtils/debugScopes.js'
+import { getLog } from './debugScopes.js'
 const log = getLog('helpers')
 
 const CONFIG = require('../config.json')
@@ -47,23 +47,29 @@ let messageEl = undefined
  *             undefined.
  */
 export async function __issueWebApiCmd(cmdObj) {
-  const result = {
+  let result = {
     error: undefined,
     data: undefined
   }
 
   try {
-    fetch(CONFIG.SID_API_HOST, {
+    const response = await fetch(CONFIG.SID_API_HOST, {
       method: 'POST',
       headers: {
-        'Content-Type': 'appliction/json'
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(cmdObj)
     })
+
+    result = await response.json()
   } catch (error) {
+    result.error = error
   }
 
-  return results
+  log.debug('web api command result = ')
+  log.debug(JSON.stringify(result, 0, 2))
+
+  return result
 }
 
 // TODO:
@@ -73,11 +79,14 @@ export async function __issueWebApiCmd(cmdObj) {
 //
 // TODO: Justin, AC:
 //       - remove notificationCheck altogether (it's in there to prevent an infintie loop)
-export async __fetchNotifications(appId, renderNotifications, config) {
+export async function __fetchNotifications(appId, renderNotifications, config) {
   if(notificationCheck) {
     const ud = __getUserData()
-    const address = ud ? ud.wallet.ethAddr : "";
-    const appId = appId
+    let address = ""
+    try {
+      address = ud.wallet.ethAddr
+    } catch (suppressedError) {}
+
     if(address) {
       const data = {
         address, appId
@@ -93,7 +102,7 @@ export async __fetchNotifications(appId, renderNotifications, config) {
       if (result.error) {
         throw new Error(result.error)
       }
-      notificationData = (result && result.data) ? result.data : undefined
+      let notificationData = (result && result.data) ? result.data : undefined
 
       if (notificationData &&
           notificationData !== 'Error fetching app data' &&
@@ -188,7 +197,7 @@ export async __fetchNotifications(appId, renderNotifications, config) {
 
 
 // This returns the wallet info for the SimpleID user
-function __getUserData() {
+export function __getUserData() {
   try {
   return JSON.parse(localStorage.getItem(SIMPLEID_USER_SESSION));
   } catch (suppressedError) {}

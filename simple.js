@@ -1,7 +1,8 @@
-import { SIMPLEID_USER_SESSION
+import { SIMPLEID_USER_SESSION,
          __pingSimpleID,
          __fetchNotifications,
-         __issueWebApiCmd } from './utils/helpers.js'
+         __issueWebApiCmd,
+         __getUserData } from './utils/helpers.js'
 
 import { getLog,
          setDebugScope,
@@ -24,9 +25,14 @@ export default class SimpleID {
     this.renderNotifications = params.renderNotifications
     this.activeNotifications = []
 
-    this.ping = (params.isHostedApp === true) ?
-      null :
-      __pingSimpleID(this.appId, this.renderNotifications, this.config);
+    // TODO: Change this.
+    //       Intention is to communicate to customer in SAAS product that
+    //       installation is complete. Shouldn't run for every user (i.e. check
+    //       DB).
+    //       Notification checking should just start.
+    //       Shouldn't check for notifications if someone is not signed in.
+    __pingSimpleID(this.appId, this.renderNotifications, this.config)
+
 
     this.passUserInfoStatus = undefined
   }
@@ -96,11 +102,11 @@ export default class SimpleID {
           address: userInfo.address
         }
       }
-      const result = await __issueWebApiCmd(cmdObj)
-      if (result.error) {
-        throw new Error(result.error)
+      const webApiResult = await __issueWebApiCmd(cmdObj)
+      if (webApiResult.error) {
+        throw new Error(webApiResult.error)
       }
-      newUser = result.data
+      newUser = webApiResult.data
     } catch (error) {
       this.passUserInfoStatus = undefined
       const msg = `${method}: Failed registering user data.\n${error}`
@@ -110,6 +116,7 @@ export default class SimpleID {
 
     try {
       if (newUser) {
+        log.debug(`Writing local storage:\nkey:${SIMPLEID_USER_SESSION}\nvalue:${JSON.stringify(newUser)}\n`)
         localStorage.setItem(SIMPLEID_USER_SESSION, JSON.stringify(newUser))
         this.passUserInfoStatus = 'complete'
         result = 'success'
@@ -145,6 +152,12 @@ export default class SimpleID {
       localStorage.removeItem(SIMPLEID_USER_SESSION)
     } catch (suppressedError) {}
     window.location.reload();
+  }
+
+  // TODO: talk w/ Justin about whether not including this in the public api is
+  //       an oversight.
+  getUserData() {
+    return __getUserData()
   }
 }
 
