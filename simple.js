@@ -2,7 +2,8 @@ import { SIMPLEID_USER_SESSION,
          __pingSimpleID,
          __fetchNotifications,
          __issueWebApiCmd,
-         __getUserData } from './utils/helpers.js'
+         __getUserData,
+         validUserData } from './utils/helpers.js'
 
 import { getLog,
          setDebugScope,
@@ -73,7 +74,7 @@ export default class SimpleID {
       sessiondata = localStorage.getItem(SIMPLEID_USER_SESSION)
       log.debug('Checking session data:')
       log.debug(sessiondata)
-      if (sessiondata) {
+      if (validUserData(sessiondata)) {
         const msg = `${method}: This method is only intended to be called once per session. Ignoring this call. This warning occurs when this method is called in the wrong place (i.e. the render method).`
         log.warn(msg)
         return msg
@@ -103,6 +104,7 @@ export default class SimpleID {
         }
       }
       const webApiResult = await __issueWebApiCmd(cmdObj)
+      log.debug(`passUserInfo: webApiResult is ${JSON.stringify(webApiResult, 0, 2)}`)
       if (webApiResult.error) {
         throw new Error(webApiResult.error)
       }
@@ -115,12 +117,14 @@ export default class SimpleID {
     }
 
     try {
-      if (newUser) {
+      if (validUserData(newUser)) {
         log.debug(`Writing local storage:\nkey:${SIMPLEID_USER_SESSION}\nvalue:${JSON.stringify(newUser)}\n`)
         localStorage.setItem(SIMPLEID_USER_SESSION, JSON.stringify(newUser))
         this.passUserInfoStatus = 'complete'
         result = 'success'
         log.info(`${method}: Succeeded.`)
+      } else {
+        throw new Error(`User data returned from passUserInfo is not valid.`)
       }
     } catch (error) {
       this.passUserInfoStatus = undefined

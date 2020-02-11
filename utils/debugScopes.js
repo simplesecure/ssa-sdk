@@ -8,7 +8,7 @@ const prefix = require('loglevel-plugin-prefix');
 
 const ROOT_KEY = 'loglevel'
 const ALLOWED_SCOPES = [ ROOT_KEY,
-                        `${ROOT_KEY}:helpers`]
+                        `${ROOT_KEY}:helpers` ]
 const ALLOWED_LEVELS = [ 'TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR' ]
 // const DEFAULT_LOG_LEVEL="INFO"
 const DEFAULT_LOG_LEVEL="DEBUG"
@@ -19,7 +19,7 @@ function configureLogPrefix(aLog) {
     format(level, name, timestamp) {
       const moduleName = (name !== 'root') ?
         ` (${name})` : ''
-      return `${level}${moduleName}:`;
+      return `${level} SID-SDK${moduleName}:`;
     },
   })
 }

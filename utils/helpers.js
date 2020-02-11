@@ -8,12 +8,12 @@
  *
  *
  ****************************************************************************/
-
+ 
 import 'whatwg-fetch'
-
 import { getLog } from './debugScopes.js'
 const log = getLog('helpers')
 
+const retry = require('async-retry')
 const CONFIG = require('../config.json')
 
 export const SIMPLEID_USER_SESSION = 'SimpleID-User-Session';
@@ -47,30 +47,45 @@ let messageEl = undefined
  *             undefined.
  */
 export async function __issueWebApiCmd(cmdObj) {
+  const options = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(cmdObj)
+  }
+
   let result = {
     error: undefined,
     data: undefined
   }
 
   try {
-    const response = await fetch(CONFIG.SID_API_HOST, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(cmdObj)
-    })
+    result = await retry(async bail => {
+      // If anything throws in this block, we retry ...
+      const response = await fetch(CONFIG.SID_API_HOST, options)
+      //
+      // Some conditions don't make sense to retry, so exit ...
+      if (response.status >= 400 && response.status <= 499) {
+        bail(new Error(`__issueWebApiCmd failed with client error ${response.status}`))
+        return
+      }
 
-    result = await response.json()
+      return await response.json()
+    }, {
+      retries: 3,
+      minTimeout: 500,
+      maxTimeout: 5000,
+      onRetry: (error) => {log.warn(`Fetch attempt failed with error below. Retrying.\n${error}`)}
+    })
   } catch (error) {
+    log.debug(`in __issueWebApiCmd try/catch, error =\n${error}`)
     result.error = error
   }
 
-  log.debug('web api command result = ')
-  log.debug(JSON.stringify(result, 0, 2))
-
   return result
 }
+
 
 // TODO:
 //       - I think there's an infinite loop implied here:
@@ -107,7 +122,8 @@ export async function __fetchNotifications(appId, renderNotifications, config) {
       if (notificationData &&
           notificationData !== 'Error fetching app data' &&
           notificationData && notificationData.length > 0) {
-        log.debug(`notificationData value = ${notificationData}`)
+        // log.debug(`notificationData value = ${notificationData}`)
+        log.debug(`notificationData value = `, notificationData)
         log.debug(`notificationData type = ${typeof notificationData}`)
         let activeNotifications = notificationData.filter(a => a.active === true)
         //Now we check to see if there are more than one notification:
@@ -400,7 +416,7 @@ export async function __pingSimpleID(appId, renderNotifications, config) {
         }
         const result = await __issueWebApiCmd(cmdObj)
         if (result.error) {
-          throw new Error(result.error)
+          throw result.error
         }
 
         localStorage.setItem(PINGED_SIMPLE_ID, JSON.stringify(data))
@@ -409,8 +425,18 @@ export async function __pingSimpleID(appId, renderNotifications, config) {
           __fetchNotifications(appId, renderNotifications, config)
         }
       } catch(e) {
-        log.error("Error pinging: ", e)
+        log.error("Ping attempt failed:\n", e)
       }
     }
   }
+}
+
+export function validUserData(anObj) {
+  try {
+    if (anObj.wallet.ethAddr) {
+      return true
+    }
+  } catch (suppressedError) {}
+
+  return false
 }
