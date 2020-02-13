@@ -1,5 +1,4 @@
 import { SIMPLEID_USER_SESSION,
-         __pingSimpleID,
          __fetchNotifications,
          __issueWebApiCmd,
          __getUserData,
@@ -25,15 +24,6 @@ export default class SimpleID {
     this.appOrigin = params.appOrigin;
     this.renderNotifications = params.renderNotifications
     this.activeNotifications = []
-
-    // TODO: Change this.
-    //       Intention is to communicate to customer in SAAS product that
-    //       installation is complete. Shouldn't run for every user (i.e. check
-    //       DB).
-    //       Notification checking should just start.
-    //       Shouldn't check for notifications if someone is not signed in.
-    __pingSimpleID(this.appId, this.renderNotifications, this.config)
-
 
     this.passUserInfoStatus = undefined
   }

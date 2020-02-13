@@ -8,7 +8,7 @@
  *
  *
  ****************************************************************************/
- 
+
 import 'whatwg-fetch'
 import { getLog } from './debugScopes.js'
 const log = getLog('helpers')
@@ -19,7 +19,6 @@ const CONFIG = require('../config.json')
 export const SIMPLEID_USER_SESSION = 'SimpleID-User-Session';
 
 const ACTIVE_SID_MESSAGE = 'active-sid-message'
-const PINGED_SIMPLE_ID = 'pinged-simple-id'
 const MESSAGES_SEEN = 'messages-seen'
 const SIMPLEID_NOTIFICATION_FETCH = 'sid-notifications'
 
@@ -64,13 +63,12 @@ export async function __issueWebApiCmd(cmdObj) {
     result = await retry(async bail => {
       // If anything throws in this block, we retry ...
       const response = await fetch(CONFIG.SID_API_HOST, options)
-      //
+
       // Some conditions don't make sense to retry, so exit ...
       if (response.status >= 400 && response.status <= 499) {
-        bail(new Error(`__issueWebApiCmd failed with client error ${response.status}`))
+        bail(`__issueWebApiCmd failed with client error ${response.status} (${response.statusText})`)
         return
       }
-
       return await response.json()
     }, {
       retries: 3,
@@ -95,6 +93,8 @@ export async function __issueWebApiCmd(cmdObj) {
 // TODO: Justin, AC:
 //       - remove notificationCheck altogether (it's in there to prevent an infintie loop)
 export async function __fetchNotifications(appId, renderNotifications, config) {
+  log.debug(`__fetchNotifications called.`)
+
   if(notificationCheck) {
     const ud = __getUserData()
     let address = ""
@@ -144,6 +144,14 @@ export async function __fetchNotifications(appId, renderNotifications, config) {
 
           if(notificationsToReturn && notificationsToReturn.length > 0) {
             if (renderNotifications === true) {
+              //Throw up the button for the SID widget
+              const notification = notificationsToReturn[0];
+              const dataToPass = {
+                notification,
+                appId: appId
+              }
+              localStorage.setItem(ACTIVE_SID_MESSAGE, JSON.stringify(dataToPass))
+
               __loadButton(appId, renderNotifications, config)
             } else {
               if(notificationsToReturn.length > 0) {
@@ -379,56 +387,6 @@ function __addPlainText(notificationsToReturn) {
     updatedNotifications.push(notification)
   }
   return updatedNotifications
-}
-
-export async function __pingSimpleID(appId, renderNotifications, config) {
-  if (pingChecked) {
-    //No need to always ping
-    //This is to prevent endless loops that eventually can bog down memory
-    //Now we can check notifications
-
-    //TODO: If we want to handle notifications in the engagement app, this won't fly
-    if (notificationCheck && (appId !== SID_APP_ID) && renderNotifications) {
-        __fetchNotifications(appId, renderNotifications, config)
-    }
-  } else {
-    //Check localStorage for a flag that indicates a ping
-    const pinged = JSON.parse(localStorage.getItem(PINGED_SIMPLE_ID))
-    const thisOrigin = window.location.origin
-    pingChecked = true
-    if (pinged && pinged.date) {
-      if (notificationCheck && (appId !== SID_APP_ID) && renderNotifications) {
-        __fetchNotifications(appId, renderNotifications, config)
-      }
-    } else {
-      //Now we need to fire off a method that will ping SimpleID and let us know the app is connected
-      const data = {
-        appDetails: config,
-        date: Date.now(),
-        origin: thisOrigin
-      }
-      //TODO: Uncomment and pick up work after web worker stuff
-      try {
-        // await __handlePing(data)
-        const cmdObj = {
-          command: 'handlePing',
-          data
-        }
-        const result = await __issueWebApiCmd(cmdObj)
-        if (result.error) {
-          throw result.error
-        }
-
-        localStorage.setItem(PINGED_SIMPLE_ID, JSON.stringify(data))
-        //Only when the ping is complete should we fetch notifications
-        if ((appId !== SID_APP_ID) && renderNotifications) {
-          __fetchNotifications(appId, renderNotifications, config)
-        }
-      } catch(e) {
-        log.error("Ping attempt failed:\n", e)
-      }
-    }
-  }
 }
 
 export function validUserData(anObj) {
