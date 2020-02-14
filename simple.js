@@ -126,19 +126,20 @@ export default class SimpleID {
     if (result === 'success') {
       //TODO: need to make this happen without a refresh
       const delayMs = 2000
-      setTimeout( () => {
-                    __fetchNotifications(
-                      this.appId, this.renderNotifications, this.config)
-                  },
-                  delayMs)
+      setTimeout( () => { this.notifications() }, delayMs)
     }
 
     return result
   }
 
   async notifications() {
-    return await __fetchNotifications(
-      this.appId, this.renderNotifications, this.config)
+    try {
+      return await __fetchNotifications(
+        this.appId, this.renderNotifications, this.config)
+    } catch (error) {
+      log.warn(`Failed to fetch notifications.\n${error}`)
+      return []
+    }
   }
 
   signOut() {
