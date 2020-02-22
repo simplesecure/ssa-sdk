@@ -84,9 +84,8 @@ export default class SimpleID {
     let result = undefined
     let newUser = undefined
     try {
-      // newUser = await registerUser(this.appId, userInfo.email, userInfo.address)
       const cmdObj = {
-        command: 'registerUser',
+        command: 'registerUserV2',
         data: {
           appId: this.appId,
           email: userInfo.email,
