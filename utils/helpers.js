@@ -398,3 +398,7 @@ export function validUserData(anObj) {
 
   return false
 }
+
+export async function handleThreads(addr) {
+  console.log(addr)
+}

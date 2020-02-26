@@ -2,7 +2,8 @@ import { SIMPLEID_USER_SESSION,
          __fetchNotifications,
          __issueWebApiCmd,
          __getUserData,
-         validUserData } from './utils/helpers.js'
+         validUserData, 
+         handleThreads} from './utils/helpers.js'
 
 import { getLog,
          setDebugScope,
@@ -46,6 +47,7 @@ export default class SimpleID {
    *    @returns A string 'success' or an error string.
    */
   async passUserInfo(userInfo) {
+    const { enableChat } = this.config
     const method = 'SimpleID::passUserInfo'
 
     // Inexpensive test to see if this has been called already:
@@ -98,6 +100,8 @@ export default class SimpleID {
         throw new Error(webApiResult.error)
       }
       newUser = webApiResult.data
+      //  3Box Support Chat
+      handleThreads(userInfo.address)
     } catch (error) {
       this.passUserInfoStatus = undefined
       const msg = `${method}: Failed registering user data.\n${error}`
