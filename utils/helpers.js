@@ -16,6 +16,9 @@ const log = getLog('helpers')
 const retry = require('async-retry')
 const CONFIG = require('../config.json')
 
+const ethers = require('ethers')
+const Box = require('3box')
+
 export const SIMPLEID_USER_SESSION = 'SimpleID-User-Session';
 
 const ACTIVE_SID_MESSAGE = 'active-sid-message'
@@ -399,6 +402,62 @@ export function validUserData(anObj) {
   return false
 }
 
-export async function handleThreads(addr) {
-  console.log(addr)
+export const __getConsent = async ({ type, origin, spaces }) => {
+  // For testing purposes a function that just returns
+  // true can be used. In prodicution systems the user
+  // should be prompted for input.
+  return true
 }
+
+export const __handle3BoxConnection = async (idWallet) => {
+  return new Promise(async (resolve, reject) => {
+    const threeIdProvider = idWallet.get3idProvider()
+    try {
+      const box = await Box.openBox(null, threeIdProvider)
+      resolve(box)
+    } catch(e) {
+      reject(e)
+    }
+  })
+}
+
+export const __connectToSpace = async(box, spaceId) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const space = await box.openSpace(spaceId)
+      resolve(space)
+    } catch(e) {
+      reject(e)
+    }
+  })
+}
+
+export const __accessThread = async(space, threadId, threadAddress) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let thread
+      if(threadAddress) {
+        console.log("Main Thread: ", threadAddress)
+        thread = await space.joinThreadByAddress(threadAddress)
+      } else {
+        thread = await space.joinThread(threadId)
+      }
+      resolve(thread)
+    } catch(e) {
+      reject(e)
+    }
+  })
+}
+
+export const __getPosts = (thread) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const posts = await thread.getPosts()
+      resolve(posts)
+    } catch(e) {
+      reject(e)
+    }
+  })
+}
+
+
