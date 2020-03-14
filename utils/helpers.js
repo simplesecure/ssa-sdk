@@ -453,7 +453,8 @@ export const __getPosts = (thread) => {
   return new Promise(async (resolve, reject) => {
     try {
       const posts = await thread.getPosts()
-      resolve(posts)
+      const filteredPosts = posts.filter(p => JSON.parse(p.message).message !== "CONVERSATION CLOSED")
+      resolve(filteredPosts)
     } catch(e) {
       reject(e)
     }

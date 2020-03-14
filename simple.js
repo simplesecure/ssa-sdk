@@ -218,14 +218,17 @@ export default class SimpleID {
       this.box = await __handle3BoxConnection(idWallet)
       // Check if the 3box profile has a name already
       try {
-        const profile = await this.box.public.all()
+        let profile = await this.box.public.all()
         if(!profile.name) {
           //  If no name, let's create a human readbale name
           //  This can be updated later by the user
           const readableName = humanId()
           await this.box.public.set('name', readableName)
+          //  It's set, now fetch it back
+          this.profile = await this.box.public.all()
+        } else {
+          this.profile = profile
         }
-        this.profile = profile
       } catch(e) {
         console.log(e)
       }
