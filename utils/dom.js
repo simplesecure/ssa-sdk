@@ -56,7 +56,8 @@ export function __handleChatModal(modalConfig) {
       const wrapperDiv = document.createElement('div')
       const wrapperDivStyles = {
         display: "block",
-        height: "600px",
+        height: "75vh",
+        maxHeight: "600px",
         position: "fixed", 
         zIndex: "2000",
         transition: "opacity .2s ease-in-out",
@@ -79,7 +80,8 @@ export function __handleChatModal(modalConfig) {
         bottom: "60px",
         right: "15px",
         width: "350px",
-        height: "600px",
+        height: "75vh",
+        maxHeight: "600px",
         overflowY: "scroll",
         boxShadow: "0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23)",
         borderRadius: "5px"
@@ -91,7 +93,8 @@ export function __handleChatModal(modalConfig) {
       //  Now we build up the content div
       const contentDiv = document.createElement('div')
       const contentDivStyles = {
-        height: "600px",
+        height: "75vh",
+        maxHeight: "600px",
         overflowY: "scroll",
         boxShadow: "none",
         backgroundColor: "#fff",
@@ -143,13 +146,40 @@ export function __handleChatModal(modalConfig) {
       //  Attach the header text to the header div
       headerDiv.appendChild(headerText)
 
+      //  Create p element that can link out to handling profile updates and linking
+      // const headerP = document.createElement('p')
+      // const headerPStyles = {
+      //   textAling: "center", 
+      //   color: "#282828", 
+      //   fontSize: "10px", 
+      //   position: "absolute", 
+      //   right: "5px", 
+      //   bottom: "3px"
+      // }
+      // Object.assign(headerP.style, headerPStyles)
+      // headerDiv.appendChild(headerP)
+
+      // //  And now create the link
+      // const anchorButton = document.createElement('button')
+      // const anchorButtonStyles = {
+      //   background: "none", 
+      //   border: "none", 
+      //   color: "#282828", 
+      //   fontSize: "10px"
+      // }
+      // Object.assign(anchorButton.style, anchorButtonStyles)
+      // anchorButton.innerText = "See and control your data here"
+      // headerP.appendChild(anchorButton)
+
+
       //  Now we build up the body container div
       const bodyContainerDiv = document.createElement('div')
       bodyContainerDiv.setAttribute('id', 'sid-chat-body')
       const bodyContainerDivStyles = {
         position: "relative",
-        maxHeight: "500px",
-        marginTop: "50px",
+        maxHeight: "600px",
+        marginTop: "65px",
+        marginBottom: "60px",
         overflow: "scroll", 
         flex: "1 1 auto",
         padding: "1.875rem 2.1875rem"
@@ -164,7 +194,7 @@ export function __handleChatModal(modalConfig) {
         position: "fixed", 
         width: "350px",
         zIndex: "2000",
-        bottom: "65px",
+        bottom: "60px",
         background: "#fff",
         padding: ".9375rem 2.1875rem",
         borderTop: "1px solid #dfe1e3",

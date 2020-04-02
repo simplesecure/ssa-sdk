@@ -3,7 +3,9 @@
   "version": "1.1.0",
   "description": "SimpleID JS SDK",
   "main": "simple.js",
-  "scripts": {},
+  "scripts": {
+    "build": "parcel build simple.js"
+  },
   "author": "SimpleID",
   "license": "ISC",
   "dependencies": {
@@ -16,16 +18,10 @@
     "loglevel-plugin-prefix": "^0.8.4",
     "whatwg-fetch": "^3.0.0"
   },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+  "browserslist": [
+    "last 2 Chrome versions"
+  ],
+  "devDependencies": {
+    "parcel-bundler": "^1.12.4"
   }
 }
