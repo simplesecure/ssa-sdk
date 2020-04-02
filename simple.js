@@ -184,16 +184,16 @@ export default class SimpleID {
       try {
         const cmdObj = {
           command: 'storeEventData',
-          data: JSON.stringify({
+          data: {
           	"userId": this.userEthAddr,
           	"event": data.type,
           	"eventProperties": data.properties,
           	"groupId": this.appId,
             "appId": this.appId,
           	"groupName": this.appName,
-          	"page": "demoAppHome",
+          	"page": data.page,
           	"url": this.appOrigin
-          })
+          }
         }
         const webApiResult = await __issueWebApiCmd(cmdObj)
         log.debug(`storeEventData: webApiResult is ${JSON.stringify(webApiResult, 0, 2)}`)
