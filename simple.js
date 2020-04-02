@@ -3,14 +3,14 @@ import { SIMPLEID_USER_SESSION,
          __issueWebApiCmd,
          __getUserData,
          validUserData,
-         __handle3BoxConnection, 
+         __handle3BoxConnection,
          __connectToSpace,
-         __accessThread, 
+         __accessThread,
          __getPosts,
          __getConsent
         } from './utils/helpers.js'
 
-import { __createButton, 
+import { __createButton,
          __handleChatModal } from './utils/dom.js'
 
 import { getLog,
@@ -35,6 +35,7 @@ export default class SimpleID {
 
   constructor(params) {
     this.config = params
+    this.appName = params.appName
     this.appId = params.appId
     this.appOrigin = params.appOrigin
     this.chatAddress = params.chatAddress
@@ -50,7 +51,7 @@ export default class SimpleID {
     this.posts = []
 
     this.handleLiveChat = this.handleLiveChat()
-
+    this.storeEventStatus = undefined
     this.passUserInfoStatus = undefined
   }
 
@@ -168,6 +169,48 @@ export default class SimpleID {
     }
   }
 
+  async storeEvent(data) {
+    let result = undefined
+    const method = 'SimpleID::storeEventData'
+    if (!this.userEthAddr ||
+        !this.appId ||
+        !this.appName ||
+        !this.appOrigin
+    ) {
+      const msg = `${method}: invalid parameters.\n`
+      log.error(msg)
+      result = msg
+    } else {
+      try {
+        const cmdObj = {
+          command: 'storeEventData',
+          data: JSON.stringify({
+          	"userId": this.userEthAddr,
+          	"event": data.type,
+          	"eventProperties": data.properties,
+          	"groupId": this.appId,
+            "appId": this.appId,
+          	"groupName": this.appName,
+          	"page": "demoAppHome",
+          	"url": this.appOrigin
+          })
+        }
+        const webApiResult = await __issueWebApiCmd(cmdObj)
+        log.debug(`storeEventData: webApiResult is ${JSON.stringify(webApiResult, 0, 2)}`)
+        if (webApiResult.error) {
+          throw new Error(webApiResult.error)
+        }
+        result = webApiResult
+      } catch (error) {
+        this.storeEventStatus = undefined
+        const msg = `${method}: Failed storing event data.\n${error}`
+        log.error(msg)
+        result = msg
+      }
+    }
+    return result
+  }
+
   signOut() {
     try {
       localStorage.removeItem(SIMPLEID_USER_SESSION)
@@ -182,10 +225,10 @@ export default class SimpleID {
   }
 
   /*
- * 
- * 
+ *
+ *
     // This is how we will build up the support or sales live chat widget
-    // Ideally, we would create a react component here, but for non-react 
+    // Ideally, we would create a react component here, but for non-react
     // apps, that would not be a good idea.
  *
  *
@@ -253,14 +296,14 @@ export default class SimpleID {
           notificationEl.innerText = "!"
           notificationEl.setAttribute('id', 'sid-chat-notification')
           const notificationElStyles = {
-            position: "absolute", 
-            top: "-5px", 
+            position: "absolute",
+            top: "-5px",
             right: "-3px",
-            borderRadius: "50px", 
-            width: "15px", 
+            borderRadius: "50px",
+            width: "15px",
             height: "15px",
-            fontSize: "8px", 
-            background: "red", 
+            fontSize: "8px",
+            background: "red",
             padding: "3px"
           }
           Object.assign(notificationEl.style, notificationElStyles)
@@ -277,12 +320,12 @@ export default class SimpleID {
               const postEl = document.createElement('div')
               const postElStyles = {
                 float: this.box._3id._subDIDs[this.appId] === post.author ? "right" : "left",
-                clear: "both", 
+                clear: "both",
                 background: this.box._3id._subDIDs[this.appId] === post.author ? "#2568EF" : "#e1e5eb",
                 padding: "10px",
                 borderRadius: "30px",
                 color: this.box._3id._subDIDs[this.appId] === post.author ? "#fff" : "#282828",
-                marginBottom: "5px", 
+                marginBottom: "5px",
                 fontSize: "12px"
               }
               postEl.innerText = message
@@ -306,7 +349,7 @@ export default class SimpleID {
           if(filteredPosts < 1 || !filteredPosts) {
             const { name } = this.profile
             const post = {
-              name, 
+              name,
               message: this.thread.address
             }
             await this.mainThread.post(JSON.stringify(post))
@@ -317,7 +360,7 @@ export default class SimpleID {
       } else {
         const { name } = this.profile
         const post = {
-          name, 
+          name,
           message: this.thread.address
         }
         await this.mainThread.post(JSON.stringify(post))
@@ -341,18 +384,18 @@ export default class SimpleID {
       chatModal = document.getElementById('sid-chat-modal')
       if(chatModal) {
         const config = {
-          showModal: false, 
-          posts: this.posts, 
-          config: this.config, 
+          showModal: false,
+          posts: this.posts,
+          config: this.config,
           box: this.box
         }
         __handleChatModal(config)
         button.innerText = "?"
       } else {
         const config = {
-          showModal: true, 
-          posts: this.posts, 
-          config: this.config, 
+          showModal: true,
+          posts: this.posts,
+          config: this.config,
           box: this.box
         }
         __handleChatModal(config)
@@ -372,7 +415,7 @@ export default class SimpleID {
               try {
                 const { name } = this.profile
                 const post = {
-                  name, 
+                  name,
                   message
                 }
                 await this.thread.post(JSON.stringify(post))
@@ -386,9 +429,9 @@ export default class SimpleID {
     }
     document.body.appendChild(button)
     const config = {
-      showModal: chatModal ? true : false, 
-      posts: this.posts, 
-      config: this.config, 
+      showModal: chatModal ? true : false,
+      posts: this.posts,
+      config: this.config,
       box: this.box
     }
     __handleChatModal(config)
