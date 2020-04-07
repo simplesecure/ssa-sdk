@@ -169,13 +169,38 @@ export default class SimpleID {
     }
   }
 
+  async getAnalytics(data) {
+    let result = undefined
+    const method = 'SimpleID::getAnalytics'
+    try {
+      const cmdObj = {
+        command: 'getWeb2Analytics',
+        data: {
+          "appId": this.appId,
+          "event": data.event,
+        }
+      }
+      const webApiResult = await __issueWebApiCmd(cmdObj)
+      log.debug(`storeEventData: webApiResult is ${JSON.stringify(webApiResult, 0, 2)}`)
+      if (webApiResult.error) {
+        throw new Error(webApiResult.error)
+      }
+      result = webApiResult
+    } catch (error) {
+      this.storeEventStatus = undefined
+      const msg = `${method}: Failed storing event data.\n${error}`
+      log.error(msg)
+      result = msg
+    }
+    return result
+  }
+
   async storeEvent(data) {
     let result = undefined
     const method = 'SimpleID::storeEventData'
-    if (!this.userEthAddr ||
-        !this.appId ||
-        !this.appName ||
-        !this.appOrigin
+    if (!data ||
+        !data.event ||
+        !data.page
     ) {
       const msg = `${method}: invalid parameters.\n`
       log.error(msg)
@@ -186,13 +211,15 @@ export default class SimpleID {
           command: 'storeEventData',
           data: {
           	"userId": this.userEthAddr,
-          	"event": data.type,
-          	"eventProperties": data.properties,
           	"groupId": this.appId,
             "appId": this.appId,
-          	"groupName": this.appName,
+          	"groupName": this.groupId, //jeh pass this in somehow
+            "url": this.appOrigin, //jeh pass this in somehow
+            "appName": this.appName, //jeh pass this in somehow
+            //these are properties that are expected
           	"page": data.page,
-          	"url": this.appOrigin
+            "event": data.event,
+            "eventProperties": data.properties,
           }
         }
         const webApiResult = await __issueWebApiCmd(cmdObj)
