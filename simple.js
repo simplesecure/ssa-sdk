@@ -210,10 +210,10 @@ export default class SimpleID {
         const cmdObj = {
           command: 'storeEventData',
           data: {
-          	"userId": this.userEthAddr,
+          	"userId": this.getUserData().wallet.ethAddr,
           	"groupId": this.appId,
             "appId": this.appId,
-          	"groupName": this.groupId, //jeh pass this in somehow
+          	//"groupName": this.groupId, //jeh pass this in somehow
             "url": this.appOrigin, //jeh pass this in somehow
             "appName": this.appName, //jeh pass this in somehow
             //these are properties that are expected
@@ -222,6 +222,7 @@ export default class SimpleID {
             "eventProperties": data.properties,
           }
         }
+        console.log(cmdObj);
         const webApiResult = await __issueWebApiCmd(cmdObj)
         log.debug(`storeEventData: webApiResult is ${JSON.stringify(webApiResult, 0, 2)}`)
         if (webApiResult.error) {
