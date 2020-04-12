@@ -1,3 +1,4 @@
 {
-  "SID_API_HOST" : "https://new.simpleid.xyz"
+  "SID_API_HOST" : "https://api.simpleid.xyz", 
+  "SID_LOCAL_HOST": "http://localhost:3005"
 }
