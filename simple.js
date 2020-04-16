@@ -402,10 +402,14 @@ export default class SimpleID {
     //  First we need to create the button
     const button = __createButton()
     let chatModal = document.getElementById('sid-chat-modal')
+    const iconElement = document.createElement('i')
+    iconElement.setAttribute("class", "fas fa-comment")
+    const closeElement = document.createElement('i')
+    closeElement.setAttribute("class", "fas fa-window-close")
     if(chatModal) {
-      button.innerText = "X"
+      button.appendChild(closeElement)
     } else {
-      button.innerText = "?"
+      button.appendChild(iconElement)
     }
 
     button.onclick = () => {
@@ -418,7 +422,8 @@ export default class SimpleID {
           box: this.box
         }
         __handleChatModal(config)
-        button.innerText = "?"
+        button.appendChild(iconElement)
+        button.removeChild(closeElement)
       } else {
         const config = {
           showModal: true,
@@ -427,7 +432,8 @@ export default class SimpleID {
           box: this.box
         }
         __handleChatModal(config)
-        button.innerText = "X"
+        button.removeChild(iconElement)
+        button.appendChild(closeElement)
         const inputEl = document.getElementById('chat-input')
         if(inputEl) {
           inputEl.onfocus = () => {

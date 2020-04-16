@@ -9,7 +9,7 @@ export function __createButton() {
   const buttonEl = document.createElement('button')
   buttonEl.setAttribute('id', 'sid-chat-button')
   const buttonStyles = {
-    borderRadius: "50px", 
+    borderRadius: "50px",
     cursor: "pointer",
     position: "fixed",
     zIndex: "2000",
@@ -22,7 +22,7 @@ export function __createButton() {
     fontWeight: "300",
     fontFamily: "Poppins,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif",
     border: "1px solid transparent",
-    padding: ".75rem 1.25rem",
+    padding: "1rem 1rem",
     fontSize: ".875rem",
     lineHeight: "1.125",
     transition: "all 250ms cubic-bezier(.27,.01,.38,1.06)",
@@ -38,8 +38,8 @@ export function __createButton() {
 export function __handleChatModal(modalConfig) {
   //  check if the chat modal exists before building it
   const existingModal = document.getElementById('sid-chat-modal')
-  
-  //  For now, we are just checking if the modal should be open or not, 
+
+  //  For now, we are just checking if the modal should be open or not,
   //  But we can pass through a lot of config options here to handle
   //  custom styling as the organization needs
 
@@ -47,7 +47,7 @@ export function __handleChatModal(modalConfig) {
   if(modalConfig.showModal) {
     //  Because we might just want to update the posts, we need to check
     //  if the modal exists yet. If it does, just feed posts
-    //  bodyContainer is updated with new posts and needs to be available both 
+    //  bodyContainer is updated with new posts and needs to be available both
     //  insidethe if statement and out
 
     if(!existingModal) {
@@ -58,17 +58,17 @@ export function __handleChatModal(modalConfig) {
         display: "block",
         height: "75vh",
         maxHeight: "600px",
-        position: "fixed", 
+        position: "fixed",
         zIndex: "2000",
         transition: "opacity .2s ease-in-out",
         top: "0",
         left: "0",
         overflow: "hidden",
-        outline: "0", 
+        outline: "0",
         width: "100%"
       }
       Object.assign(wrapperDiv.style, wrapperDivStyles)
-      
+
       //  Now we build up the dialog div
       const dialogDiv = document.createElement('div')
       const dialogDivStyle = {
@@ -149,11 +149,11 @@ export function __handleChatModal(modalConfig) {
       //  Create p element that can link out to handling profile updates and linking
       // const headerP = document.createElement('p')
       // const headerPStyles = {
-      //   textAling: "center", 
-      //   color: "#282828", 
-      //   fontSize: "10px", 
-      //   position: "absolute", 
-      //   right: "5px", 
+      //   textAling: "center",
+      //   color: "#282828",
+      //   fontSize: "10px",
+      //   position: "absolute",
+      //   right: "5px",
       //   bottom: "3px"
       // }
       // Object.assign(headerP.style, headerPStyles)
@@ -162,9 +162,9 @@ export function __handleChatModal(modalConfig) {
       // //  And now create the link
       // const anchorButton = document.createElement('button')
       // const anchorButtonStyles = {
-      //   background: "none", 
-      //   border: "none", 
-      //   color: "#282828", 
+      //   background: "none",
+      //   border: "none",
+      //   color: "#282828",
       //   fontSize: "10px"
       // }
       // Object.assign(anchorButton.style, anchorButtonStyles)
@@ -180,7 +180,7 @@ export function __handleChatModal(modalConfig) {
         maxHeight: "600px",
         marginTop: "65px",
         marginBottom: "60px",
-        overflow: "scroll", 
+        overflow: "scroll",
         flex: "1 1 auto",
         padding: "1.875rem 2.1875rem"
       }
@@ -191,7 +191,7 @@ export function __handleChatModal(modalConfig) {
       //  Now we build up the footer div
       const footerDiv = document.createElement('div')
       const footerDivStyles = {
-        position: "fixed", 
+        position: "fixed",
         width: "350px",
         zIndex: "2000",
         bottom: "60px",
@@ -223,7 +223,7 @@ export function __handleChatModal(modalConfig) {
         willChange: "border-color,box-shadow",
         borderRadius: ".375rem",
         boxShadow: "none",
-        transition: "box-shadow 250ms cubic-bezier(.27,.01,.38,1.06),border 250ms cubic-bezier(.27,.01,.38,1.06)", 
+        transition: "box-shadow 250ms cubic-bezier(.27,.01,.38,1.06),border 250ms cubic-bezier(.27,.01,.38,1.06)",
         display: "block",
         width: "100%"
       }
@@ -236,7 +236,7 @@ export function __handleChatModal(modalConfig) {
       wrapperDiv.setAttribute('id', 'sid-chat-modal')
       //  Now we apply the entire chat modal to document
       document.body.appendChild(wrapperDiv)
-    } 
+    }
 
     //  Here we loop through the posts and build up the actual body
     const bodyDiv = document.getElementById('sid-chat-body')
@@ -247,12 +247,12 @@ export function __handleChatModal(modalConfig) {
         const postEl = document.createElement('div')
         const postElStyles = {
           float: modalConfig.box._3id._subDIDs[modalConfig.config.appId] === post.author ? "right" : "left",
-          clear: "both", 
+          clear: "both",
           background: modalConfig.box._3id._subDIDs[modalConfig.config.appId] === post.author ? "#2568EF" : "#e1e5eb",
           padding: "10px",
           borderRadius: "30px",
           color: modalConfig.box._3id._subDIDs[modalConfig.config.appId] === post.author ? "#fff" : "#282828",
-          marginBottom: "5px", 
+          marginBottom: "5px",
           fontSize: "12px"
         }
         postEl.innerText = message
