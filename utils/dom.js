@@ -1,4 +1,4 @@
-export function __createButton() {
+export function __createButton(configOptions) {
   const head = document.head || document.getElementsByTagName('head')[0]
   const linkEl = document.createElement('link')
   linkEl.rel = 'stylesheet'
@@ -7,7 +7,8 @@ export function __createButton() {
   head.appendChild(linkEl)
 
   const buttonEl = document.createElement('button')
-  buttonEl.setAttribute('id', 'sid-chat-button')
+  buttonEl.setAttribute('id', 'sid-chat-button');
+  const backgroundColor = configOptions && configOptions.backgroundColor ? configOptions.backgroundColor : "#2568EF";
   const buttonStyles = {
     borderRadius: "50px",
     cursor: "pointer",
@@ -16,8 +17,9 @@ export function __createButton() {
     bottom: "15px",
     right: "15px",
     color: "#fff",
+    outline: "none",
     borderColor: "#00b8d8",
-    backgroundColor: "#2568EF",
+    backgroundColor,
     boxShadow: "none",
     fontWeight: "300",
     fontFamily: "Poppins,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif",
@@ -77,7 +79,7 @@ export function __handleChatModal(modalConfig) {
         position: "fixed",
         top: "auto",
         left: "auto",
-        bottom: "60px",
+        bottom: "80px",
         right: "15px",
         width: "350px",
         height: "75vh",
@@ -194,7 +196,7 @@ export function __handleChatModal(modalConfig) {
         position: "fixed",
         width: "350px",
         zIndex: "2000",
-        bottom: "60px",
+        bottom: "80px",
         background: "#fff",
         padding: ".9375rem 2.1875rem",
         borderTop: "1px solid #dfe1e3",
@@ -202,6 +204,7 @@ export function __handleChatModal(modalConfig) {
         flexWrap: "wrap",
         alignItems: "center",
         justifyContent: "flex-end",
+        textAlign: "center",
         borderBottomRightRadius: "calc(.3rem - 1px)",
         borderBottomLeftRadius: "calc(.3rem - 1px)"
       }
@@ -209,6 +212,17 @@ export function __handleChatModal(modalConfig) {
       //  Attach the header text to the header div
       contentDiv.appendChild(footerDiv)
 
+      const poweredBy = document.createElement('p'); 
+      poweredBy.style.width = "100%";     
+      poweredBy.style.marginBottom = '-10px';
+      const poweredByLink = document.createElement('a');
+      poweredByLink.style.fontSize = '12px';
+      poweredByLink.style.color = '#9a9a9a';
+      poweredByLink.innerText = 'Powered By SimpleID';
+      poweredByLink.setAttribute('href', 'https://simpleid.xyz');
+      poweredByLink.setAttribute('target', '_blank');
+      poweredBy.appendChild(poweredByLink);
+      
       //  Create an input field for handling messages
       const inputEl = document.createElement('input')
       const inputElStyles = {
@@ -229,9 +243,22 @@ export function __handleChatModal(modalConfig) {
       }
       Object.assign(inputEl.style, inputElStyles)
       inputEl.setAttribute('id', 'chat-input')
+      inputEl.setAttribute('placeholder', 'Send a message...')
       //  Attach the header text to the header div
-      footerDiv.appendChild(inputEl)
+      footerDiv.appendChild(inputEl);
 
+      //  Create send icon
+      const sendIcon = document.createElement('i');
+      sendIcon.setAttribute('class', 'far fa-paper-plane');
+      sendIcon.setAttribute('id', 'send-button');
+      sendIcon.style.cursor = 'pointer';
+      sendIcon.style.position = 'absolute';
+      sendIcon.style.color = 'rgb(154, 154, 154)';
+      sendIcon.style.bottom = '40px';
+      sendIcon.style.right = '45px'
+      footerDiv.appendChild(sendIcon);
+
+      footerDiv.appendChild(poweredBy);
       //  Apply an id for using on dom events
       wrapperDiv.setAttribute('id', 'sid-chat-modal')
       //  Now we apply the entire chat modal to document
