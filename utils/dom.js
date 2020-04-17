@@ -282,7 +282,7 @@ export function __handleChatModal(modalConfig) {
           marginBottom: "5px",
           fontSize: "12px"
         }
-        postEl.innerText = message
+        postEl.innerHTML = message
         Object.assign(postEl.style, postElStyles)
         //  Attach to the body div
         if(bodyDiv) {

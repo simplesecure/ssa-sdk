@@ -95,7 +95,7 @@ export async function __issueWebApiCmd(cmdObj) {
 //
 // TODO: Justin, AC:
 //       - remove notificationCheck altogether (it's in there to prevent an infintie loop)
-export async function __fetchNotifications(appId, renderNotifications, config) {
+export async function __fetchNotifications(appId, renderNotifications, config, chatAddress) {
   log.debug(`__fetchNotifications called.`)
 
   if(notificationCheck) {
@@ -146,8 +146,8 @@ export async function __fetchNotifications(appId, renderNotifications, config) {
           }
 
           if(notificationsToReturn && notificationsToReturn.length > 0) {
-            if (renderNotifications === true) {
-              //Throw up the button for the SID widget
+            if (renderNotifications === true && !this.chatAddress) {              
+              //Throw up the button for the SID widget but only if the 3Box widget is not present
               const notification = notificationsToReturn[0];
               const dataToPass = {
                 notification,
@@ -187,7 +187,7 @@ export async function __fetchNotifications(appId, renderNotifications, config) {
             notificationsToReturn = activeNotifications
           }
           //need to check if the developer expects us to handle the widget
-          if(renderNotifications && notificationsToReturn.length > 0) {
+          if(renderNotifications && !this.chatAddress && notificationsToReturn.length > 0) {
             //Throw up the button for the SID widget
             const notification = notificationsToReturn[0];
             const dataToPass = {
@@ -233,6 +233,7 @@ export function __getUserData() {
 }
 
 function __loadButton(appId, renderNotifications, config) {
+
   const head = document.head || document.getElementsByTagName('head')[0]
   const linkEl = document.createElement('link');
   linkEl.rel = 'stylesheet';

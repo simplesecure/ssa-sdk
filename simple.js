@@ -172,7 +172,8 @@ export default class SimpleID {
       return await __fetchNotifications(
         this.appId,
         this.renderNotifications,
-        this.config
+        this.config, 
+        this.chatAddress
       );
     } catch (error) {
       log.warn(`Failed to fetch notifications.\n${error}`);
@@ -445,9 +446,29 @@ export default class SimpleID {
       button.appendChild(iconElement);
     }
 
-    button.onclick = (e) => {
+    button.onclick = async (e) => {
       chatModal = document.getElementById("sid-chat-modal");
-      if (chatModal) {
+      const notificationsForPosts = localStorage.getItem('sid-notifications');
+      if(this.renderNotifications && this.chatAddress) {
+        if(notificationsForPosts) {
+          const parsedNotifications = JSON.parse(notificationsForPosts);
+          for(const parsedNotification of parsedNotifications) {
+            const matchNotification = {
+              postId: parsedNotification.id, 
+              author: this.appName, 
+              message: JSON.stringify({
+                name: this.appName, 
+                message: parsedNotification.content
+              }), 
+              timestamp: Date.now()
+            }
+            this.posts.push(matchNotification);
+          }
+        }
+      }
+      
+      
+      if (chatModal) {                
         const config = {
           showModal: false,
           posts: this.posts,
