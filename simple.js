@@ -9,6 +9,7 @@ import {
   __accessThread,
   __getPosts,
   __getConsent,
+  __dismissMessages
 } from "./utils/helpers.js";
 
 import { __createButton, __handleChatModal } from "./utils/dom.js";
@@ -20,7 +21,9 @@ import {
 } from "./utils/debugScopes.js";
 
 import humanId from "human-id";
+import { NONCE_EXPIRED } from "ethers/errors";
 const log = getLog();
+const MESSAGES_SEEN = "messages-seen";
 const IdentityWallet = require("identity-wallet");
 const ethers = require("ethers");
 
@@ -172,7 +175,7 @@ export default class SimpleID {
       return await __fetchNotifications(
         this.appId,
         this.renderNotifications,
-        this.config, 
+        this.config,
         this.chatAddress
       );
     } catch (error) {
@@ -335,29 +338,13 @@ export default class SimpleID {
         posts = await __getPosts(this.mainThread);
       });
       this.thread = await __accessThread(this.space, this.appId);
+      console.log("ONLINE: ", await this.thread.listMembers())
       this.thread.onUpdate(async () => {
         console.log("Gettings new posts...");
         const buttonEl = document.getElementById("sid-chat-button");
         this.posts = await __getPosts(this.thread);
         const lastPost = this.posts[this.posts.length - 1];
-        if (this.box._3id._subDIDs[this.appId] !== lastPost.author) {
-          const notificationEl = document.createElement("span");
-          notificationEl.innerText = "!";
-          notificationEl.setAttribute("id", "sid-chat-notification");
-          const notificationElStyles = {
-            position: "absolute",
-            top: "-5px",
-            right: "-3px",
-            borderRadius: "50px",
-            width: "15px",
-            height: "15px",
-            fontSize: "8px",
-            background: "red",
-            padding: "3px",
-          };
-          Object.assign(notificationEl.style, notificationElStyles);
-          buttonEl.appendChild(notificationEl);
-        }
+        this.__renderNotificationIcon(lastPost, null, buttonEl, 0);
 
         const bodyDiv = document.getElementById("sid-chat-body");
         if (bodyDiv) {
@@ -430,6 +417,65 @@ export default class SimpleID {
     }
   }
 
+  __renderNotificationIcon(
+    lastPost,
+    sid_notifications,
+    buttonEl,
+    messageCount
+  ) {
+    if (
+      (!sid_notifications &&
+        this.box._3id._subDIDs[this.appId] !== lastPost.author) ||
+      sid_notifications
+    ) {
+      if (messageCount && messageCount > 0) {
+        //  display a count
+        const notificationEl = document.createElement("span");
+        notificationEl.innerText = messageCount;
+        notificationEl.setAttribute("id", "sid-chat-notification");
+        const notificationElStyles = {
+          position: 'absolute',
+          top: '-5px',
+          border: 'none',
+          padding: '3px',
+          right: '-3px',
+          width: '20px',
+          height: '20px',
+          fontSize: '12px',
+          background: 'red',
+          color: 'rgb(255, 255, 255)',
+          fontWeight: '600',
+          borderRadius: '50px'
+        };
+        Object.assign(notificationEl.style, notificationElStyles);
+        buttonEl.appendChild(notificationEl);
+      } else {
+        //  display a notification icon
+        const notificationEl = document.createElement("span");
+        const bellIcon = document.createElement('i');
+        notificationEl.setAttribute("id", "sid-chat-notification");
+        bellIcon.setAttribute("class", "fas fa-bell");
+        notificationEl.appendChild(bellIcon);
+        const notificationElStyles = {
+          position: "absolute",
+          top: "-5px",
+          border: "none",
+          padding: "3px",
+          right: "-3px",
+          width: "20px",
+          height: "20px",
+          fontSize: "12px",
+          background: "red",
+          color: "rgb(255, 255, 255)",
+          fontWeight: "600",
+          borderRadius: "50px",
+        };
+        Object.assign(notificationEl.style, notificationElStyles);
+        buttonEl.appendChild(notificationEl);
+      }
+    }
+  }
+
   __buildChatWidget() {
     //  First we need to create the button
     const button = __createButton();
@@ -446,29 +492,51 @@ export default class SimpleID {
       button.appendChild(iconElement);
     }
 
-    button.onclick = async (e) => {
-      chatModal = document.getElementById("sid-chat-modal");
-      const notificationsForPosts = localStorage.getItem('sid-notifications');
-      if(this.renderNotifications && this.chatAddress) {
-        if(notificationsForPosts) {
+    if (button) {
+      const notificationsForPosts = localStorage.getItem("sid-notifications");
+      if (this.renderNotifications && this.chatAddress) {
+        if (notificationsForPosts) {
           const parsedNotifications = JSON.parse(notificationsForPosts);
-          for(const parsedNotification of parsedNotifications) {
+          for (const parsedNotification of parsedNotifications) {
             const matchNotification = {
-              postId: parsedNotification.id, 
-              author: this.appName, 
+              postId: parsedNotification.id,
+              author: this.appName,
               message: JSON.stringify({
-                name: this.appName, 
-                message: parsedNotification.content
-              }), 
-              timestamp: Date.now()
-            }
+                name: this.appName,
+                message: parsedNotification.content,
+              }),
+              timestamp: Date.now(),
+            };
             this.posts.push(matchNotification);
+          }
+
+          //  Check if the notification has already been seen
+          const messagesSeen = localStorage.getItem(MESSAGES_SEEN);
+          let messages;
+          if (messagesSeen) {
+            messages = JSON.parse(messagesSeen);
+            if (messages.length < parsedNotifications.length) {
+              //  Need to show the notification
+              const messageCount = parsedNotifications.length - messages.length;
+              this.__renderNotificationIcon(null, true, button, messageCount);
+            }
+          } else {
+            //  No notifications seen yet
+            this.__renderNotificationIcon(
+              null,
+              true,
+              button,
+              parsedNotifications.length
+            );
           }
         }
       }
-      
-      
-      if (chatModal) {                
+    }
+
+    button.onclick = async (e) => {
+      chatModal = document.getElementById("sid-chat-modal");
+      __dismissMessages(this.appId, this.renderNotifications, this.config);
+      if (chatModal) {
         const config = {
           showModal: false,
           posts: this.posts,
