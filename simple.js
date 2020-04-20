@@ -338,7 +338,7 @@ export default class SimpleID {
         posts = await __getPosts(this.mainThread);
       });
       this.thread = await __accessThread(this.space, this.appId);
-      console.log("ONLINE: ", await this.thread.listMembers())
+   
       this.thread.onUpdate(async () => {
         console.log("Gettings new posts...");
         const buttonEl = document.getElementById("sid-chat-button");
