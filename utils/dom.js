@@ -1,4 +1,4 @@
-export function __createButton() {
+export function __createButton(configOptions) {
   const head = document.head || document.getElementsByTagName('head')[0]
   const linkEl = document.createElement('link')
   linkEl.rel = 'stylesheet'
@@ -7,22 +7,24 @@ export function __createButton() {
   head.appendChild(linkEl)
 
   const buttonEl = document.createElement('button')
-  buttonEl.setAttribute('id', 'sid-chat-button')
+  buttonEl.setAttribute('id', 'sid-chat-button');
+  const backgroundColor = configOptions && configOptions.backgroundColor ? configOptions.backgroundColor : "#2568EF";
   const buttonStyles = {
-    borderRadius: "50px", 
+    borderRadius: "50px",
     cursor: "pointer",
     position: "fixed",
     zIndex: "2000",
     bottom: "15px",
     right: "15px",
     color: "#fff",
+    outline: "none",
     borderColor: "#00b8d8",
-    backgroundColor: "#2568EF",
+    backgroundColor,
     boxShadow: "none",
     fontWeight: "300",
     fontFamily: "Poppins,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif",
     border: "1px solid transparent",
-    padding: ".75rem 1.25rem",
+    padding: "1rem 1rem",
     fontSize: ".875rem",
     lineHeight: "1.125",
     transition: "all 250ms cubic-bezier(.27,.01,.38,1.06)",
@@ -38,8 +40,8 @@ export function __createButton() {
 export function __handleChatModal(modalConfig) {
   //  check if the chat modal exists before building it
   const existingModal = document.getElementById('sid-chat-modal')
-  
-  //  For now, we are just checking if the modal should be open or not, 
+
+  //  For now, we are just checking if the modal should be open or not,
   //  But we can pass through a lot of config options here to handle
   //  custom styling as the organization needs
 
@@ -47,7 +49,7 @@ export function __handleChatModal(modalConfig) {
   if(modalConfig.showModal) {
     //  Because we might just want to update the posts, we need to check
     //  if the modal exists yet. If it does, just feed posts
-    //  bodyContainer is updated with new posts and needs to be available both 
+    //  bodyContainer is updated with new posts and needs to be available both
     //  insidethe if statement and out
 
     if(!existingModal) {
@@ -58,17 +60,17 @@ export function __handleChatModal(modalConfig) {
         display: "block",
         height: "75vh",
         maxHeight: "600px",
-        position: "fixed", 
+        position: "fixed",
         zIndex: "2000",
         transition: "opacity .2s ease-in-out",
         top: "0",
         left: "0",
         overflow: "hidden",
-        outline: "0", 
+        outline: "0",
         width: "100%"
       }
       Object.assign(wrapperDiv.style, wrapperDivStyles)
-      
+
       //  Now we build up the dialog div
       const dialogDiv = document.createElement('div')
       const dialogDivStyle = {
@@ -77,7 +79,7 @@ export function __handleChatModal(modalConfig) {
         position: "fixed",
         top: "auto",
         left: "auto",
-        bottom: "60px",
+        bottom: "80px",
         right: "15px",
         width: "350px",
         height: "75vh",
@@ -149,11 +151,11 @@ export function __handleChatModal(modalConfig) {
       //  Create p element that can link out to handling profile updates and linking
       // const headerP = document.createElement('p')
       // const headerPStyles = {
-      //   textAling: "center", 
-      //   color: "#282828", 
-      //   fontSize: "10px", 
-      //   position: "absolute", 
-      //   right: "5px", 
+      //   textAling: "center",
+      //   color: "#282828",
+      //   fontSize: "10px",
+      //   position: "absolute",
+      //   right: "5px",
       //   bottom: "3px"
       // }
       // Object.assign(headerP.style, headerPStyles)
@@ -162,9 +164,9 @@ export function __handleChatModal(modalConfig) {
       // //  And now create the link
       // const anchorButton = document.createElement('button')
       // const anchorButtonStyles = {
-      //   background: "none", 
-      //   border: "none", 
-      //   color: "#282828", 
+      //   background: "none",
+      //   border: "none",
+      //   color: "#282828",
       //   fontSize: "10px"
       // }
       // Object.assign(anchorButton.style, anchorButtonStyles)
@@ -180,7 +182,7 @@ export function __handleChatModal(modalConfig) {
         maxHeight: "600px",
         marginTop: "65px",
         marginBottom: "60px",
-        overflow: "scroll", 
+        overflow: "scroll",
         flex: "1 1 auto",
         padding: "1.875rem 2.1875rem"
       }
@@ -191,10 +193,10 @@ export function __handleChatModal(modalConfig) {
       //  Now we build up the footer div
       const footerDiv = document.createElement('div')
       const footerDivStyles = {
-        position: "fixed", 
+        position: "fixed",
         width: "350px",
         zIndex: "2000",
-        bottom: "60px",
+        bottom: "80px",
         background: "#fff",
         padding: ".9375rem 2.1875rem",
         borderTop: "1px solid #dfe1e3",
@@ -202,6 +204,7 @@ export function __handleChatModal(modalConfig) {
         flexWrap: "wrap",
         alignItems: "center",
         justifyContent: "flex-end",
+        textAlign: "center",
         borderBottomRightRadius: "calc(.3rem - 1px)",
         borderBottomLeftRadius: "calc(.3rem - 1px)"
       }
@@ -209,6 +212,17 @@ export function __handleChatModal(modalConfig) {
       //  Attach the header text to the header div
       contentDiv.appendChild(footerDiv)
 
+      const poweredBy = document.createElement('p'); 
+      poweredBy.style.width = "100%";     
+      poweredBy.style.marginBottom = '-10px';
+      const poweredByLink = document.createElement('a');
+      poweredByLink.style.fontSize = '12px';
+      poweredByLink.style.color = '#9a9a9a';
+      poweredByLink.innerText = 'Powered By SimpleID';
+      poweredByLink.setAttribute('href', 'https://simpleid.xyz');
+      poweredByLink.setAttribute('target', '_blank');
+      poweredBy.appendChild(poweredByLink);
+      
       //  Create an input field for handling messages
       const inputEl = document.createElement('input')
       const inputElStyles = {
@@ -223,20 +237,33 @@ export function __handleChatModal(modalConfig) {
         willChange: "border-color,box-shadow",
         borderRadius: ".375rem",
         boxShadow: "none",
-        transition: "box-shadow 250ms cubic-bezier(.27,.01,.38,1.06),border 250ms cubic-bezier(.27,.01,.38,1.06)", 
+        transition: "box-shadow 250ms cubic-bezier(.27,.01,.38,1.06),border 250ms cubic-bezier(.27,.01,.38,1.06)",
         display: "block",
         width: "100%"
       }
       Object.assign(inputEl.style, inputElStyles)
       inputEl.setAttribute('id', 'chat-input')
+      inputEl.setAttribute('placeholder', 'Send a message...')
       //  Attach the header text to the header div
-      footerDiv.appendChild(inputEl)
+      footerDiv.appendChild(inputEl);
 
+      //  Create send icon
+      const sendIcon = document.createElement('i');
+      sendIcon.setAttribute('class', 'far fa-paper-plane');
+      sendIcon.setAttribute('id', 'send-button');
+      sendIcon.style.cursor = 'pointer';
+      sendIcon.style.position = 'absolute';
+      sendIcon.style.color = 'rgb(154, 154, 154)';
+      sendIcon.style.bottom = '40px';
+      sendIcon.style.right = '45px'
+      footerDiv.appendChild(sendIcon);
+
+      footerDiv.appendChild(poweredBy);
       //  Apply an id for using on dom events
       wrapperDiv.setAttribute('id', 'sid-chat-modal')
       //  Now we apply the entire chat modal to document
       document.body.appendChild(wrapperDiv)
-    } 
+    }
 
     //  Here we loop through the posts and build up the actual body
     const bodyDiv = document.getElementById('sid-chat-body')
@@ -247,15 +274,15 @@ export function __handleChatModal(modalConfig) {
         const postEl = document.createElement('div')
         const postElStyles = {
           float: modalConfig.box._3id._subDIDs[modalConfig.config.appId] === post.author ? "right" : "left",
-          clear: "both", 
+          clear: "both",
           background: modalConfig.box._3id._subDIDs[modalConfig.config.appId] === post.author ? "#2568EF" : "#e1e5eb",
           padding: "10px",
           borderRadius: "30px",
           color: modalConfig.box._3id._subDIDs[modalConfig.config.appId] === post.author ? "#fff" : "#282828",
-          marginBottom: "5px", 
+          marginBottom: "5px",
           fontSize: "12px"
         }
-        postEl.innerText = message
+        postEl.innerHTML = message
         Object.assign(postEl.style, postElStyles)
         //  Attach to the body div
         if(bodyDiv) {
